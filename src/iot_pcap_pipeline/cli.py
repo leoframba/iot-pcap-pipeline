@@ -11,7 +11,9 @@ from iot_pcap_pipeline.paths import (
     DEFAULT_MANIFEST_DIR,
     DEFAULT_RAW_ROOT,
     DEFAULT_SPLIT_SEED,
+    PROJECT_ROOT,
 )
+from iot_pcap_pipeline.pcap.reader import summarize_pcap
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -43,6 +45,23 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_SPLIT_SEED,
         help=f"RNG seed for profiling split tie-breaks (default: {DEFAULT_SPLIT_SEED})",
     )
+
+    inspect_cmd = subparsers.add_parser(
+        "inspect-pcaps",
+        help="Stream-decode one or more PCAPs and print packet/protocol/error counts",
+    )
+    inspect_cmd.add_argument(
+        "pcaps",
+        nargs="+",
+        type=Path,
+        help="PCAP paths (absolute or repo-relative)",
+    )
+    inspect_cmd.add_argument(
+        "--max-packets",
+        type=int,
+        default=None,
+        help="Optional per-file packet cap (useful for large flood captures)",
+    )
     return parser
 
 
@@ -62,6 +81,29 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"Wrote {result['inventory_path']}")
         print(f"Wrote {result['split_path']}")
+        return 0
+
+    if args.command == "inspect-pcaps":
+        for raw in args.pcaps:
+            path = raw if raw.is_absolute() else (PROJECT_ROOT / raw)
+            stats = summarize_pcap(path, max_packets=args.max_packets)
+            duration = None
+            if stats.first_timestamp is not None and stats.last_timestamp is not None:
+                duration = stats.last_timestamp - stats.first_timestamp
+            print(f"\n=== {stats.path} ===")
+            print(f"linktype: {stats.linktype}")
+            print(f"packets_total: {stats.packets_total}")
+            print(f"packets_ok: {stats.packets_ok}")
+            if duration is not None:
+                print(f"duration_s: {duration:.6f}")
+            print(
+                "tcp/udp/icmp/icmpv6/igmp/arp: "
+                f"{stats.tcp}/{stats.udp}/{stats.icmp}/"
+                f"{stats.icmpv6}/{stats.igmp}/{stats.arp}"
+            )
+            print(f"ipv4/ipv6/vlan_frames: {stats.ipv4}/{stats.ipv6}/{stats.vlan_frames}")
+            print("parse_status:", dict(stats.by_parse_status))
+            print("protocols:", dict(stats.by_protocol))
         return 0
 
     parser.error(f"unknown command: {args.command}")

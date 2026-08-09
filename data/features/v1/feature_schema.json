@@ -1,5 +1,7 @@
 {
   "feature_strategy_version": "phase1c2_v1",
+  "gate_b_status": "passed",
+  "gate_b_decision": "Freeze FEATURE_STRATEGY_VERSION=phase1c2_v1 with all 27 ordered features after TRAIN smoke review. Keep tcp_urg_ratio despite smoke-constant zero; after full TRAIN extraction, report globally constant features and exclude from model input only via an explicit pre-training schema/model-contract decision (TEST must not be consulted).",
   "windowing": {
     "window_size": 25,
     "inactivity_timeout_seconds": 5.0,
@@ -16,7 +18,9 @@
     "partial_policy": "include in windows",
     "error_policy": "abort feature extraction for the PCAP",
     "partial_windows": "dropped at boundaries and EOF",
-    "feature_count": 27
+    "feature_count": 27,
+    "constant_feature_policy": "After full TRAIN feature build, report globally constant features. Exclusion from model input is allowed only before model training via an explicit schema/model-contract decision. TEST must not be consulted for that decision. Extraction still emits all 27 V1 columns unless/until the contract is revised.",
+    "full_build_note": "Phase 1C.3 must stream windows to Parquet; do not accumulate all FeatureVector rows in memory via the smoke list wrapper."
   },
   "features": [
     {
@@ -216,7 +220,7 @@
       "index": 24,
       "dtype": "float64",
       "unit": "ratio",
-      "definition": "TCP packets with URG / tcp_packet_count (0 if no TCP)",
+      "definition": "TCP packets with URG / tcp_packet_count (0 if no TCP). Retained in phase1c2_v1 even if smoke-constant; defer drop decision until full TRAIN constant-feature report",
       "denominator": "tcp_packet_count"
     },
     {

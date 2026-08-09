@@ -16,6 +16,15 @@ from iot_pcap_pipeline.windowing.policy import (
 
 DType = Literal["float64", "int64"]
 
+GATE_B_STATUS = "passed"
+GATE_B_DECISION = (
+    "Freeze FEATURE_STRATEGY_VERSION=phase1c2_v1 with all 27 ordered features "
+    "after TRAIN smoke review. Keep tcp_urg_ratio despite smoke-constant zero; "
+    "after full TRAIN extraction, report globally constant features and exclude "
+    "from model input only via an explicit pre-training schema/model-contract "
+    "decision (TEST must not be consulted)."
+)
+
 V1_FEATURE_NAMES: tuple[str, ...] = (
     "window_span_seconds",
     "iat_mean_seconds",
@@ -269,7 +278,11 @@ V1_FEATURE_SPECS: tuple[FeatureSpec, ...] = (
         24,
         "float64",
         "ratio",
-        "TCP packets with URG / tcp_packet_count (0 if no TCP)",
+        (
+            "TCP packets with URG / tcp_packet_count (0 if no TCP). "
+            "Retained in phase1c2_v1 even if smoke-constant; defer drop "
+            "decision until full TRAIN constant-feature report"
+        ),
         "tcp_packet_count",
     ),
     FeatureSpec(
@@ -295,6 +308,8 @@ def build_feature_schema_document() -> dict[str, Any]:
     """Canonical schema document for data/features/v1/feature_schema.json."""
     return {
         "feature_strategy_version": FEATURE_STRATEGY_VERSION,
+        "gate_b_status": GATE_B_STATUS,
+        "gate_b_decision": GATE_B_DECISION,
         "windowing": {
             "window_size": WINDOW_SIZE,
             "inactivity_timeout_seconds": INACTIVITY_TIMEOUT_SECONDS,
@@ -312,6 +327,17 @@ def build_feature_schema_document() -> dict[str, Any]:
             "error_policy": "abort feature extraction for the PCAP",
             "partial_windows": "dropped at boundaries and EOF",
             "feature_count": len(V1_FEATURE_NAMES),
+            "constant_feature_policy": (
+                "After full TRAIN feature build, report globally constant "
+                "features. Exclusion from model input is allowed only before "
+                "model training via an explicit schema/model-contract decision. "
+                "TEST must not be consulted for that decision. Extraction still "
+                "emits all 27 V1 columns unless/until the contract is revised."
+            ),
+            "full_build_note": (
+                "Phase 1C.3 must stream windows to Parquet; do not accumulate "
+                "all FeatureVector rows in memory via the smoke list wrapper."
+            ),
         },
         "features": [asdict(spec) for spec in V1_FEATURE_SPECS],
         "metadata_columns_not_features": list(METADATA_COLUMN_NAMES),

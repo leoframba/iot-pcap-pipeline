@@ -299,10 +299,14 @@ def format_smoke_summary(result: dict[str, Any]) -> str:
             f"Wrote {result['features_path']}",
             f"Wrote {result['characterization_path']}",
             "",
-            "GATE B — STOP FOR REVIEW",
-            "Do not extract all TRAIN windows.",
-            "Do not process TEST.",
-            "No model training / class balancing in this phase.",
+            "GATE B — PASSED",
+            f"Frozen feature contract: {FEATURE_STRATEGY_VERSION} (27 features).",
+            (
+                "tcp_urg_ratio retained; constant-feature drop deferred to post-TRAIN "
+                "contract review (TEST must not decide)."
+            ),
+            "Phase 1C.3: stream to Parquet (do not list-accumulate all windows).",
+            "Do not process TEST until 1C.3 TEST extraction is explicitly started.",
         ]
     )
     return "\n".join(lines)

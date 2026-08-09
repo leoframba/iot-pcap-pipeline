@@ -149,7 +149,7 @@ tolerated; V1 will not rely on packets/sec or bytes/sec.
 uv run iot-pcap-pipeline characterize-windowing --workers 4
 ```
 
-## Phase 1C.2 (current) — Gate B
+## Phase 1C.2 — Gate B (passed)
 
 V1 production window engine + 27-feature extractor using the frozen Gate-A
 policy. Same core path for offline and future inference:
@@ -157,6 +157,9 @@ policy. Same core path for offline and future inference:
 ```text
 iter_packets → iter_windows → extract_features
 ```
+
+**Frozen feature contract:** `FEATURE_STRATEGY_VERSION = phase1c2_v1`
+(exactly 27 ordered numeric features; see `data/features/v1/feature_schema.json`).
 
 ```bash
 # Write schema only
@@ -180,7 +183,18 @@ Parse-status policy:
 - `OK` / `UNSUPPORTED` / `PARTIAL` / `MALFORMED` → included in windows
 - `ERROR` → abort extraction for that PCAP
 
-**GATE B:** After the TRAIN smoke passes review, STOP. Do not extract all
-~27.6M TRAIN windows and do not process TEST until Gate B is approved.
+Notes carried into Phase 1C.3:
+
+- `tcp_urg_ratio` was constant-zero in the smoke set but remains in V1.
+  After the full TRAIN feature build, report globally constant features.
+  Dropping a constant from the **model input** requires an explicit
+  pre-training schema/model-contract decision; TEST must not decide it.
+- Full-corpus extraction must stream windows to Parquet. Do not reuse the
+  smoke helper that accumulates all rows in a Python list.
+
+## Phase 1C.3 (next)
+
+Partitioned Parquet build with multiprocessing / checkpoint-resume for complete
+TRAIN extraction, then frozen identical TEST extraction. No model training yet.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

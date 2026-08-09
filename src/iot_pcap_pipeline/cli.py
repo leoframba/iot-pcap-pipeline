@@ -37,6 +37,7 @@ from iot_pcap_pipeline.pcap.timestamps import (
 )
 from iot_pcap_pipeline.windowing.characterize import (
     DEFAULT_CHARACTERIZATION_CSV,
+    DEFAULT_SPAN_SAMPLE_CAP,
     characterize_train_windowing,
     format_characterization_summary,
 )
@@ -297,6 +298,15 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default: {DEFAULT_BACKWARD_RESET_SECONDS})"
         ),
     )
+    win_cmd.add_argument(
+        "--span-sample-cap",
+        type=int,
+        default=DEFAULT_SPAN_SAMPLE_CAP,
+        help=(
+            "Reservoir sample size for window-span percentiles "
+            f"(default: {DEFAULT_SPAN_SAMPLE_CAP:,}; exact when count <= cap)"
+        ),
+    )
     return parser
 
 
@@ -398,6 +408,7 @@ def main(argv: list[str] | None = None) -> int:
             policies=policies,
             workers=args.workers,
             max_packets=args.max_packets,
+            span_sample_cap=args.span_sample_cap,
             progress_file=sys.stderr,
         )
         print(format_characterization_summary(result.rows))

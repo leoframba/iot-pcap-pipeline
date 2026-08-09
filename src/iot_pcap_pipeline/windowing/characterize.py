@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import math
+import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,6 +32,8 @@ DEFAULT_CHARACTERIZATION_CSV = (
     DEFAULT_FEATURES_DIR / "windowing_characterization_train.csv"
 )
 DEFAULT_WORKERS = 4
+DEFAULT_SPAN_SAMPLE_CAP = 100_000
+DEFAULT_SPAN_SAMPLE_SEED = 42
 
 CHARACTERIZATION_COLUMNS: list[str] = [
     "pcap_path",
@@ -62,6 +65,8 @@ CHARACTERIZATION_COLUMNS: list[str] = [
     "window_span_p95",
     "window_span_p99",
     "window_span_max",
+    "window_span_percentile_method",
+    "window_span_percentile_sample_size",
     "windowing_strategy_version",
 ]
 
@@ -95,11 +100,39 @@ def _percentile(values: list[float], p: float) -> float | None:
     return xs[lo] * (1.0 - weight) + xs[hi] * weight
 
 
+class _SpanReservoir:
+    """Deterministic reservoir for window-span percentiles."""
+
+    def __init__(self, capacity: int, seed: int) -> None:
+        if capacity < 1:
+            raise ValueError("span_sample_cap must be >= 1")
+        self.capacity = capacity
+        self._rng = random.Random(seed)
+        self.samples: list[float] = []
+        self.seen = 0
+
+    def add(self, value: float) -> None:
+        self.seen += 1
+        if len(self.samples) < self.capacity:
+            self.samples.append(value)
+            return
+        j = self._rng.randint(0, self.seen - 1)
+        if j < self.capacity:
+            self.samples[j] = value
+
+
 @dataclass
 class PolicyAccumulator:
-    """Streaming state for one windowing policy over one PCAP."""
+    """Streaming state for one windowing policy over one PCAP.
+
+    Window span is ``max(ts) - min(ts)`` over packets in the window (never
+    last-first). Span percentiles use a deterministic reservoir when the full
+    window count exceeds ``span_sample_cap``; min/max/mean/zero-span are exact.
+    """
 
     policy: WindowPolicy
+    span_sample_cap: int = DEFAULT_SPAN_SAMPLE_CAP
+    span_sample_seed: int = DEFAULT_SPAN_SAMPLE_SEED
     packet_count: int = 0
     positive_gap_boundary_count: int = 0
     backward_discontinuity_boundary_count: int = 0
@@ -109,11 +142,20 @@ class PolicyAccumulator:
     dropped_partial_window_count: int = 0
     dropped_partial_packet_count: int = 0
     zero_span_window_count: int = 0
-    window_spans: list[float] = field(default_factory=list)
+    _span_sum: float = field(default=0.0, repr=False)
+    _span_min: float | None = field(default=None, repr=False)
+    _span_max: float | None = field(default=None, repr=False)
+    _span_reservoir: _SpanReservoir | None = field(default=None, repr=False)
     _prev_ts: float | None = field(default=None, repr=False)
     _win_count: int = field(default=0, repr=False)
-    _win_first_ts: float | None = field(default=None, repr=False)
-    _win_last_ts: float | None = field(default=None, repr=False)
+    _win_min_ts: float | None = field(default=None, repr=False)
+    _win_max_ts: float | None = field(default=None, repr=False)
+
+    def __post_init__(self) -> None:
+        if self._span_reservoir is None:
+            self._span_reservoir = _SpanReservoir(
+                self.span_sample_cap, self.span_sample_seed
+            )
 
     def observe(self, timestamp: float) -> None:
         """Consume one packet timestamp in original capture order."""
@@ -145,44 +187,50 @@ class PolicyAccumulator:
     def _start_segment(self, timestamp: float) -> None:
         self.segment_count += 1
         self._win_count = 1
-        self._win_first_ts = timestamp
-        self._win_last_ts = timestamp
+        self._win_min_ts = timestamp
+        self._win_max_ts = timestamp
         if self._win_count == self.policy.window_size:
             self._emit_full_window()
 
     def _add_to_window(self, timestamp: float) -> None:
         if self._win_count == 0:
-            self._win_first_ts = timestamp
-            self._win_last_ts = timestamp
+            self._win_min_ts = timestamp
+            self._win_max_ts = timestamp
             self._win_count = 1
         else:
             self._win_count += 1
-            self._win_last_ts = timestamp
+            assert self._win_min_ts is not None and self._win_max_ts is not None
+            self._win_min_ts = min(self._win_min_ts, timestamp)
+            self._win_max_ts = max(self._win_max_ts, timestamp)
         if self._win_count == self.policy.window_size:
             self._emit_full_window()
 
     def _emit_full_window(self) -> None:
-        assert self._win_first_ts is not None and self._win_last_ts is not None
-        span = self._win_last_ts - self._win_first_ts
+        assert self._win_min_ts is not None and self._win_max_ts is not None
+        span = self._win_max_ts - self._win_min_ts
+        assert span >= 0.0
         self.full_window_count += 1
         self.emitted_packet_count += self.policy.window_size
-        self.window_spans.append(span)
+        self._span_sum += span
+        self._span_min = span if self._span_min is None else min(self._span_min, span)
+        self._span_max = span if self._span_max is None else max(self._span_max, span)
+        assert self._span_reservoir is not None
+        self._span_reservoir.add(span)
         if span == 0.0:
             self.zero_span_window_count += 1
         self._win_count = 0
-        self._win_first_ts = None
-        self._win_last_ts = None
+        self._win_min_ts = None
+        self._win_max_ts = None
 
     def _close_partial(self) -> None:
         if self._win_count > 0:
             self.dropped_partial_window_count += 1
             self.dropped_partial_packet_count += self._win_count
             self._win_count = 0
-            self._win_first_ts = None
-            self._win_last_ts = None
+            self._win_min_ts = None
+            self._win_max_ts = None
 
     def to_row(self, meta: dict[str, Any]) -> dict[str, Any]:
-        spans = self.window_spans
         retention = (
             self.emitted_packet_count / self.packet_count
             if self.packet_count > 0
@@ -193,7 +241,26 @@ class PolicyAccumulator:
             if self.full_window_count > 0
             else None
         )
-        span_sum = sum(spans) if spans else 0.0
+        reservoir = self._span_reservoir
+        assert reservoir is not None
+        if self.full_window_count == 0:
+            method = "exact"
+            sample_size = 0
+            p50 = p95 = p99 = None
+            span_mean = None
+        else:
+            sample_size = len(reservoir.samples)
+            if self.full_window_count <= self.span_sample_cap:
+                method = "exact"
+            else:
+                method = (
+                    f"reservoir_n{self.span_sample_cap}_seed{self.span_sample_seed}"
+                )
+            p50 = _percentile(reservoir.samples, 50)
+            p95 = _percentile(reservoir.samples, 95)
+            p99 = _percentile(reservoir.samples, 99)
+            span_mean = self._span_sum / self.full_window_count
+
         return {
             **meta,
             "window_size": self.policy.window_size,
@@ -212,12 +279,14 @@ class PolicyAccumulator:
             "packet_retention_ratio": retention,
             "zero_span_window_count": self.zero_span_window_count,
             "zero_span_window_ratio": zero_ratio,
-            "window_span_min": min(spans) if spans else None,
-            "window_span_mean": (span_sum / len(spans)) if spans else None,
-            "window_span_p50": _percentile(spans, 50),
-            "window_span_p95": _percentile(spans, 95),
-            "window_span_p99": _percentile(spans, 99),
-            "window_span_max": max(spans) if spans else None,
+            "window_span_min": self._span_min,
+            "window_span_mean": span_mean,
+            "window_span_p50": p50,
+            "window_span_p95": p95,
+            "window_span_p99": p99,
+            "window_span_max": self._span_max,
+            "window_span_percentile_method": method,
+            "window_span_percentile_sample_size": sample_size,
             "windowing_strategy_version": WINDOWING_STRATEGY_VERSION,
         }
 
@@ -247,9 +316,19 @@ def summary_category(meta: dict[str, Any]) -> str | None:
 def characterize_timestamps(
     timestamps: list[float] | tuple[float, ...],
     policies: list[WindowPolicy],
+    *,
+    span_sample_cap: int = DEFAULT_SPAN_SAMPLE_CAP,
+    span_sample_seed: int = DEFAULT_SPAN_SAMPLE_SEED,
 ) -> list[PolicyAccumulator]:
     """Characterize an in-memory timestamp sequence (tests / small probes)."""
-    accs = [PolicyAccumulator(policy=p) for p in policies]
+    accs = [
+        PolicyAccumulator(
+            policy=p,
+            span_sample_cap=span_sample_cap,
+            span_sample_seed=span_sample_seed,
+        )
+        for p in policies
+    ]
     for ts in timestamps:
         for acc in accs:
             acc.observe(ts)
@@ -279,11 +358,20 @@ def characterize_pcap(
     meta: dict[str, Any] | None = None,
     max_packets: int | None = None,
     project_root: Path | None = None,
+    span_sample_cap: int = DEFAULT_SPAN_SAMPLE_CAP,
+    span_sample_seed: int = DEFAULT_SPAN_SAMPLE_SEED,
 ) -> list[dict[str, Any]]:
     """Scan one PCAP once; update all policies concurrently; return CSV rows."""
     path = Path(pcap_path)
     pols = policies if policies is not None else candidate_policies()
-    accs = [PolicyAccumulator(policy=p) for p in pols]
+    accs = [
+        PolicyAccumulator(
+            policy=p,
+            span_sample_cap=span_sample_cap,
+            span_sample_seed=span_sample_seed,
+        )
+        for p in pols
+    ]
 
     for _index, ts in iter_timestamps(path, max_packets=max_packets):
         for acc in accs:
@@ -365,6 +453,8 @@ def _characterize_one_job(
         meta=payload["meta"],
         max_packets=payload.get("max_packets"),
         project_root=project_root,
+        span_sample_cap=int(payload.get("span_sample_cap", DEFAULT_SPAN_SAMPLE_CAP)),
+        span_sample_seed=int(payload.get("span_sample_seed", DEFAULT_SPAN_SAMPLE_SEED)),
     )
 
 
@@ -396,6 +486,8 @@ def characterize_train_windowing(
     project_root: Path | None = None,
     workers: int = DEFAULT_WORKERS,
     max_packets: int | None = None,
+    span_sample_cap: int = DEFAULT_SPAN_SAMPLE_CAP,
+    span_sample_seed: int = DEFAULT_SPAN_SAMPLE_SEED,
     progress_file: TextIO | None = None,
 ) -> CharacterizationResult:
     """Characterize all TRAIN PCAPs under every candidate windowing policy."""
@@ -426,6 +518,8 @@ def characterize_train_windowing(
             "meta": _meta_from_inventory(row),
             "policies": policy_payload,
             "max_packets": max_packets,
+            "span_sample_cap": span_sample_cap,
+            "span_sample_seed": span_sample_seed,
         }
         for row in train_rows
     ]

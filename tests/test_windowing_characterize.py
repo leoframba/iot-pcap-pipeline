@@ -48,8 +48,11 @@ def test_exact_full_windows_no_gaps() -> None:
     assert acc.segment_count == 1
     assert acc.positive_gap_boundary_count == 0
     assert acc.backward_discontinuity_boundary_count == 0
-    assert acc.to_row({})["packet_retention_ratio"] == pytest.approx(1.0)
-    assert acc.window_spans[0] == pytest.approx(0.24)  # 24 gaps × 0.01
+    row = acc.to_row({})
+    assert row["packet_retention_ratio"] == pytest.approx(1.0)
+    assert row["window_span_min"] == pytest.approx(0.24)  # 24 gaps × 0.01
+    assert row["window_span_min"] >= 0
+    assert row["window_span_percentile_method"] == "exact"
 
 
 def test_partial_tail_dropped_at_eof() -> None:
@@ -88,6 +91,30 @@ def test_small_negative_jitter_stays_in_segment() -> None:
     assert acc.dropped_partial_packet_count == 0
 
 
+def test_tiny_negative_jitter_never_creates_negative_span() -> None:
+    timestamps = [1.0, 0.999999, 1.000001]
+    acc = _acc(WindowPolicy(3, 5.0), timestamps)
+    row = acc.to_row({})
+
+    expected = max(timestamps) - min(timestamps)
+    assert row["window_span_min"] == pytest.approx(expected)
+    assert row["window_span_max"] == pytest.approx(expected)
+    assert row["window_span_min"] >= 0
+    assert row["window_span_max"] >= 0
+    assert acc.zero_span_window_count == 0
+
+
+def test_first_equals_last_does_not_imply_zero_span() -> None:
+    timestamps = [1.0, 1.1, 1.0]
+    acc = _acc(WindowPolicy(3, 5.0), timestamps)
+    row = acc.to_row({})
+
+    assert row["window_span_min"] == pytest.approx(0.1)
+    assert row["window_span_max"] == pytest.approx(0.1)
+    assert acc.zero_span_window_count == 0
+    assert row["zero_span_window_ratio"] == pytest.approx(0.0)
+
+
 def test_large_backward_discontinuity_boundary() -> None:
     # -12.82s like Benign_train outlier → new segment; drop partial before it
     timestamps = [0.0, 1.0, 2.0, 2.0 - 12.82] + [
@@ -107,12 +134,32 @@ def test_large_backward_discontinuity_boundary() -> None:
 def test_duplicate_timestamps_stay_in_segment() -> None:
     timestamps = [0.0] * 25
     acc = _acc(WindowPolicy(25, 5.0), timestamps)
+    row = acc.to_row({})
 
     assert acc.segment_count == 1
     assert acc.full_window_count == 1
     assert acc.zero_span_window_count == 1
-    assert acc.window_spans[0] == 0.0
-    assert acc.to_row({})["zero_span_window_ratio"] == pytest.approx(1.0)
+    assert row["window_span_min"] == 0.0
+    assert row["window_span_max"] == 0.0
+    assert row["zero_span_window_ratio"] == pytest.approx(1.0)
+
+
+def test_span_reservoir_method_when_over_cap() -> None:
+    # 12 windows of size 5 → sample cap 5 forces reservoir method
+    timestamps = [float(i) for i in range(60)]
+    acc = characterize_timestamps(
+        timestamps,
+        [WindowPolicy(5, 30.0)],
+        span_sample_cap=5,
+        span_sample_seed=42,
+    )[0]
+    row = acc.to_row({})
+
+    assert acc.full_window_count == 12
+    assert row["window_span_percentile_method"].startswith("reservoir_n5_seed42")
+    assert row["window_span_percentile_sample_size"] == 5
+    assert row["window_span_min"] == pytest.approx(4.0)  # exact streaming
+    assert row["window_span_max"] == pytest.approx(4.0)
 
 
 def test_multi_config_single_pass_differs_by_window_size() -> None:

@@ -142,6 +142,11 @@ Segmentation rules (original capture order; never timestamp-sorted):
 
 On boundary or EOF: drop incomplete windows (no padding, no carry-over).
 
+Window span is `max(timestamp) - min(timestamp)` within each full window
+(never last−first). Span min/max/mean and zero-span counts are exact; p50/p95/p99
+use a deterministic reservoir when the window count exceeds
+`--span-sample-cap` (default 100,000).
+
 **GATE A:** After the CSV is written, STOP for human review. Do not choose
 `WINDOW_SIZE` automatically, do not scan TEST, and do not build features yet.
 

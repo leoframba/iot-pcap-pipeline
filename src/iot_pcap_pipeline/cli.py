@@ -6,13 +6,13 @@ import argparse
 import sys
 from pathlib import Path
 
+from iot_pcap_pipeline.audit.live_progress import DEFAULT_PROGRESS_EVERY_PACKETS
 from iot_pcap_pipeline.audit.policy import (
     DEFAULT_ISSUE_CAP_PER_CODE,
     DEFAULT_MALFORMED_CATASTROPHIC_RATE,
     DEFAULT_MALFORMED_HIGH_WARNING_RATE,
     DEFAULT_WORKERS,
 )
-from iot_pcap_pipeline.audit.live_progress import DEFAULT_PROGRESS_EVERY_PACKETS
 from iot_pcap_pipeline.audit.scan import audit_corpus
 from iot_pcap_pipeline.dataset.build import build_manifests
 from iot_pcap_pipeline.paths import (
@@ -24,6 +24,16 @@ from iot_pcap_pipeline.paths import (
 )
 from iot_pcap_pipeline.pcap.reader import summarize_pcap
 from iot_pcap_pipeline.pcap.stats import DEFAULT_IP_CARDINALITY_CAP
+from iot_pcap_pipeline.pcap.timestamps import (
+    DEFAULT_EXAMPLE_LIMIT,
+    DEFAULT_EXAMPLES_CSV,
+    DEFAULT_POSITIVE_SAMPLE_CAP,
+    DEFAULT_PROBE_CSV,
+    format_probe_summary,
+    probe_timestamps,
+    resolve_pcap_path,
+    write_probe_artifacts,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -166,6 +176,58 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default: {DEFAULT_PROGRESS_EVERY_PACKETS:,}; 0 disables mid-file updates)"
         ),
     )
+
+    probe_cmd = subparsers.add_parser(
+        "probe-timestamps",
+        help=(
+            "Phase 1B.3 timestamp-only ordering probe "
+            "(adjacent deltas; no frame decoding)"
+        ),
+    )
+    probe_cmd.add_argument(
+        "pcaps",
+        nargs="+",
+        type=Path,
+        help="PCAP paths (absolute or repo-relative)",
+    )
+    probe_cmd.add_argument(
+        "--example-limit",
+        type=int,
+        default=DEFAULT_EXAMPLE_LIMIT,
+        help=f"Max reversal examples retained per PCAP (default: {DEFAULT_EXAMPLE_LIMIT})",
+    )
+    probe_cmd.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_PROBE_CSV,
+        help=f"Summary CSV path (default: {DEFAULT_PROBE_CSV})",
+    )
+    probe_cmd.add_argument(
+        "--examples-output",
+        type=Path,
+        default=DEFAULT_EXAMPLES_CSV,
+        help=f"Reversal examples CSV path (default: {DEFAULT_EXAMPLES_CSV})",
+    )
+    probe_cmd.add_argument(
+        "--no-examples",
+        action="store_true",
+        help="Skip writing the reversal examples CSV",
+    )
+    probe_cmd.add_argument(
+        "--positive-sample-cap",
+        type=int,
+        default=DEFAULT_POSITIVE_SAMPLE_CAP,
+        help=(
+            "Reservoir sample size for positive-delta percentiles "
+            f"(default: {DEFAULT_POSITIVE_SAMPLE_CAP:,}; exact when count <= cap)"
+        ),
+    )
+    probe_cmd.add_argument(
+        "--max-packets",
+        type=int,
+        default=None,
+        help="Optional per-file packet cap (for smoke tests on large floods)",
+    )
     return parser
 
 
@@ -234,6 +296,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Wrote {result.train_path}")
         print(f"Wrote {result.issues_path}")
         return 1 if result.hard_fail else 0
+
+    if args.command == "probe-timestamps":
+        results = []
+        for raw in args.pcaps:
+            path = resolve_pcap_path(raw)
+            print(f"Probing {path} ...", file=sys.stderr)
+            probe = probe_timestamps(
+                path,
+                example_limit=args.example_limit,
+                positive_sample_cap=args.positive_sample_cap,
+                max_packets=args.max_packets,
+            )
+            results.append(probe)
+            print(format_probe_summary(probe))
+        written = write_probe_artifacts(
+            results,
+            output_path=args.output,
+            examples_path=None if args.no_examples else args.examples_output,
+        )
+        print(f"\nWrote {written['probe_path']}")
+        if "examples_path" in written:
+            print(f"Wrote {written['examples_path']}")
+        return 0
 
     parser.error(f"unknown command: {args.command}")
     return 2

@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import socket
 from pathlib import Path
 
 import dpkt
 from pcap_synth import (
     eth_arp,
+    eth_ieee8023_llc,
     eth_ip_icmp,
     eth_ip_igmp,
     eth_ip_tcp,
     eth_ip_udp,
     eth_ipv6_icmp,
     eth_ipv6_tcp,
+    eth_lldp,
     eth_unknown_ethertype,
     eth_vlan_ip_udp,
     write_pcap,
@@ -59,6 +62,31 @@ def test_vlan_frame(tmp_path: Path) -> None:
     assert record.ethertype == dpkt.ethernet.ETH_TYPE_IP
 
 
+def test_ieee8023_llc_not_unsupported_ethertype(tmp_path: Path) -> None:
+    path = write_pcap(tmp_path / "llc.pcap", [(1.0, eth_ieee8023_llc(length=6))])
+    record = next(iter_packets(path))
+    assert record.parse_status == ParseStatus.OK
+    assert record.is_llc is True
+    assert record.is_ethernet_ii is False
+    assert record.ethernet_type_or_length == 0x0006
+    assert record.ethertype is None
+    assert record.protocol_name == "llc"
+    assert record.extra.get("llc_dsap") == 0
+    assert record.extra.get("llc_ssap") == 1
+    assert record.is_failure is False
+
+
+def test_lldp_is_unsupported_not_failure(tmp_path: Path) -> None:
+    path = write_pcap(tmp_path / "lldp.pcap", [(1.0, eth_lldp())])
+    record = next(iter_packets(path))
+    assert record.parse_status == ParseStatus.UNSUPPORTED
+    assert record.protocol_name == "lldp"
+    assert record.is_failure is False
+    stats = summarize_pcap(path)
+    assert stats.packets_unsupported == 1
+    assert stats.packets_failed == 0
+
+
 def test_malformed_ethernet_short_frame(tmp_path: Path) -> None:
     path = write_pcap(tmp_path / "short.pcap", [(1.0, b"\x00" * 8)])
     record = next(iter_packets(path))
@@ -67,6 +95,7 @@ def test_malformed_ethernet_short_frame(tmp_path: Path) -> None:
     assert record.parse_status == ParseStatus.MALFORMED
     assert record.src_ip is None
     assert record.is_tcp is False
+    assert record.is_failure is True
 
 
 def test_malformed_ipv4_header(tmp_path: Path) -> None:
@@ -86,18 +115,49 @@ def test_malformed_ipv4_header(tmp_path: Path) -> None:
 def test_unknown_ethertype(tmp_path: Path) -> None:
     path = write_pcap(tmp_path / "unknown.pcap", [(1.0, eth_unknown_ethertype())])
     record = next(iter_packets(path))
-    assert record.parse_status == ParseStatus.UNSUPPORTED_PROTOCOL
+    assert record.parse_status == ParseStatus.UNSUPPORTED
     assert record.ethertype == 0x88B5
     assert record.frame_length > 0
+    assert record.is_failure is False
 
 
 def test_unsupported_linktype(tmp_path: Path) -> None:
     # DLT_LINUX_SLL = 113
     path = write_pcap(tmp_path / "sll.pcap", [(1.0, b"\x00" * 32)], linktype=113)
     record = next(iter_packets(path))
-    assert record.parse_status == ParseStatus.UNSUPPORTED_LINKTYPE
+    assert record.parse_status == ParseStatus.UNSUPPORTED
     assert record.linktype == 113
     assert "unsupported linktype" in (record.parse_detail or "")
+    assert record.is_failure is False
+
+
+def test_ipv6_hop_by_hop_uses_final_protocol(tmp_path: Path) -> None:
+    """Hop-by-Hop next-header 0 must not be reported as ip_proto_0."""
+    # Build IPv6 + Hop-by-Hop + ICMPv6 similar to Benign_test samples.
+    icmp6 = dpkt.icmp6.ICMP6(type=143, code=0, data=b"\x00" * 8)
+    # Hop-by-hop options header: nxt=ICMPv6, hdrlen=0 → 8 bytes total
+    hbh = b"\x3a\x00\x05\x02\x00\x00\x01\x00"
+    ip6 = dpkt.ip6.IP6(
+        src=socket.inet_pton(socket.AF_INET6, "fe80::1"),
+        dst=socket.inet_pton(socket.AF_INET6, "ff02::16"),
+        nxt=dpkt.ip.IP_PROTO_HOPOPTS,
+        data=hbh + bytes(icmp6),
+    )
+    ip6.plen = len(hbh) + len(icmp6)
+    eth = dpkt.ethernet.Ethernet(
+        dst=b"\x33\x33\x00\x00\x00\x16",
+        src=b"\x74\x78\x27\x81\xc6\x6f",
+        type=dpkt.ethernet.ETH_TYPE_IP6,
+        data=ip6,
+    )
+    path = write_pcap(tmp_path / "hbh.pcap", [(1.0, bytes(eth))])
+    record = next(iter_packets(path))
+    assert record.is_ipv6
+    assert record.ip_protocol == dpkt.ip.IP_PROTO_ICMP6
+    assert record.is_icmpv6
+    assert record.protocol_name == "icmpv6"
+    assert record.parse_status == ParseStatus.OK
+    assert record.extra.get("ipv6_first_next_header") == dpkt.ip.IP_PROTO_HOPOPTS
 
 
 def test_max_packets_and_summary(tmp_path: Path) -> None:
@@ -109,6 +169,7 @@ def test_max_packets_and_summary(tmp_path: Path) -> None:
     assert stats.packets_total == 3
     assert stats.tcp == 3
     assert stats.by_parse_status["ok"] == 3
+    assert stats.packets_failed == 0
 
 
 def test_decoder_ignores_path_labels(tmp_path: Path) -> None:

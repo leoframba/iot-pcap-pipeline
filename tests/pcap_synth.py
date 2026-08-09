@@ -199,3 +199,24 @@ def eth_unknown_ethertype() -> bytes:
     src = b"\x11\x22\x33\x44\x55\x66"
     # Experimental ethertype
     return dest + src + b"\x88\xb5" + b"\x00" * 20
+
+
+def eth_ieee8023_llc(*, length: int = 6) -> bytes:
+    """Minimal IEEE 802.3 + LLC frame matching SenseU/Singcall pattern."""
+    dest = b"\xff\xff\xff\xff\xff\xff"
+    src = b"\x34\x94\x54\xf0\xdb\xf0"
+    # length field < 0x0600
+    type_or_len = int(length).to_bytes(2, "big")
+    # LLC: DSAP=0, SSAP=1, Control=0xAF, plus 3 payload bytes (total LLC PDU len 6)
+    llc_pdu = b"\x00\x01\xaf\x81\x01\x02"
+    frame = dest + src + type_or_len + llc_pdu
+    # Pad to minimum Ethernet frame size
+    if len(frame) < 60:
+        frame = frame + b"\x00" * (60 - len(frame))
+    return frame
+
+
+def eth_lldp() -> bytes:
+    dest = b"\x01\x80\xc2\x00\x00\x0e"
+    src = b"\x11\x22\x33\x44\x55\x66"
+    return dest + src + b"\x88\xcc" + b"\x00" * 20

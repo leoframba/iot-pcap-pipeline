@@ -34,6 +34,10 @@ Thumbs.db
 # Dataset — raw PCAPs are large local-only source data (see README)
 data/raw/
 
+# Audit — ephemeral resume checkpoints and local run logs
+data/audit/.work/
+data/audit/*.log
+
 # Future pipeline outputs (not yet implemented)
 data/processed/
 data/features/

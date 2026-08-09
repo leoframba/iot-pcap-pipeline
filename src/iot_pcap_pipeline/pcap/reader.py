@@ -10,7 +10,7 @@ from pathlib import Path
 import dpkt
 
 from iot_pcap_pipeline.pcap.decode import decode_frame
-from iot_pcap_pipeline.pcap.packet import PacketRecord, ParseStatus
+from iot_pcap_pipeline.pcap.packet import FAILURE_STATUSES, PacketRecord, ParseStatus
 
 
 @dataclass
@@ -20,6 +20,9 @@ class PcapReadStats:
     path: str
     packets_total: int = 0
     packets_ok: int = 0
+    packets_unsupported: int = 0
+    packets_partial: int = 0
+    packets_failed: int = 0
     by_parse_status: Counter[str] = field(default_factory=Counter)
     by_protocol: Counter[str] = field(default_factory=Counter)
     tcp: int = 0
@@ -28,6 +31,7 @@ class PcapReadStats:
     icmpv6: int = 0
     igmp: int = 0
     arp: int = 0
+    llc: int = 0
     ipv4: int = 0
     ipv6: int = 0
     vlan_frames: int = 0
@@ -40,6 +44,12 @@ class PcapReadStats:
         self.by_parse_status[record.parse_status.value] += 1
         if record.parse_status == ParseStatus.OK:
             self.packets_ok += 1
+        elif record.parse_status == ParseStatus.UNSUPPORTED:
+            self.packets_unsupported += 1
+        elif record.parse_status == ParseStatus.PARTIAL:
+            self.packets_partial += 1
+        if record.parse_status in FAILURE_STATUSES:
+            self.packets_failed += 1
         proto = record.protocol_name or "unknown"
         self.by_protocol[proto] += 1
         if record.is_tcp:
@@ -54,6 +64,8 @@ class PcapReadStats:
             self.igmp += 1
         if record.is_arp:
             self.arp += 1
+        if record.is_llc:
+            self.llc += 1
         if record.is_ipv4:
             self.ipv4 += 1
         if record.is_ipv6:

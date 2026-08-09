@@ -8,14 +8,27 @@ from typing import Any
 
 
 class ParseStatus(str, Enum):
-    """Outcome of decoding a single PCAP record."""
+    """Outcome of decoding a single PCAP record.
+
+    These statuses are not interchangeable with "success/failure":
+
+    - ``ok``: known framing decoded to a supported L3/L4 view (or LLC recognized)
+    - ``partial``: valid frame, but some expected layer could not be recovered
+    - ``unsupported``: structurally valid packet/protocol we intentionally do not
+      deep-decode (e.g. LLDP, exotic IP proto). Not a parse failure.
+    - ``malformed``: truncated or structurally invalid frame/headers
+    - ``error``: unexpected decoder exception
+    """
 
     OK = "ok"
     PARTIAL = "partial"
+    UNSUPPORTED = "unsupported"
     MALFORMED = "malformed"
-    UNSUPPORTED_LINKTYPE = "unsupported_linktype"
-    UNSUPPORTED_PROTOCOL = "unsupported_protocol"
     ERROR = "error"
+
+
+# Statuses that indicate a real decode problem (not merely "other protocol").
+FAILURE_STATUSES = frozenset({ParseStatus.MALFORMED, ParseStatus.ERROR})
 
 
 @dataclass(frozen=True)
@@ -34,9 +47,15 @@ class PacketRecord:
     parse_status: ParseStatus
     parse_detail: str | None = None
 
+    # Raw 16-bit Ethernet type/length field when linktype is Ethernet.
+    ethernet_type_or_length: int | None = None
+    # True when type/length >= 0x0600 (Ethernet II). False for IEEE 802.3 length.
+    is_ethernet_ii: bool | None = None
+    # Effective EtherType after VLAN unwrap for Ethernet II; None for 802.3/LLC.
     ethertype: int | None = None
     vlan_ids: tuple[int, ...] = ()
 
+    is_llc: bool = False
     is_arp: bool = False
     is_ipv4: bool = False
     is_ipv6: bool = False
@@ -65,8 +84,13 @@ class PacketRecord:
     protocol_name: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def is_failure(self) -> bool:
+        return self.parse_status in FAILURE_STATUSES
+
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["parse_status"] = self.parse_status.value
         data["vlan_ids"] = list(self.vlan_ids)
+        data["is_failure"] = self.is_failure
         return data

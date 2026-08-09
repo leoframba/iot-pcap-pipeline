@@ -16,10 +16,14 @@ DLT_RAW = 101
 DLT_IPV4 = 228
 DLT_IPV6 = 229
 
+# Values below this in the Ethernet type/length field are IEEE 802.3 lengths.
+ETHERNET_TYPE_MIN = 0x0600
+
 _ETH_TYPE_NAMES = {
     dpkt.ethernet.ETH_TYPE_IP: "ipv4",
     dpkt.ethernet.ETH_TYPE_IP6: "ipv6",
     dpkt.ethernet.ETH_TYPE_ARP: "arp",
+    0x88CC: "lldp",
 }
 
 
@@ -45,13 +49,18 @@ def _vlan_ids_from_ethernet(eth: dpkt.ethernet.Ethernet) -> tuple[int, ...]:
     tags = getattr(eth, "vlan_tags", None) or []
     ids: list[int] = []
     for tag in tags:
-        # dpkt.ethernet.VLANtag8021Q exposes .id
         vid = getattr(tag, "id", None)
         if vid is None and isinstance(tag, int):
             vid = tag & 0x0FFF
         if vid is not None:
             ids.append(int(vid))
     return tuple(ids)
+
+
+def _raw_type_or_length(buf: bytes) -> int | None:
+    if len(buf) < 14:
+        return None
+    return int.from_bytes(buf[12:14], "big")
 
 
 def _effective_ethertype(eth: dpkt.ethernet.Ethernet) -> int:
@@ -143,9 +152,11 @@ def _decode_l4(record: PacketRecord, ip_proto: int, payload: Any) -> PacketRecor
     if ip_proto == dpkt.ip.IP_PROTO_IGMP:
         return replace(record, is_igmp=True, protocol_name="igmp")
 
+    # IPv6 Hop-by-Hop / other extension headers should already be walked via ip6.p.
+    # Remaining unknown IP protocols are valid but intentionally not deep-decoded.
     return replace(
         record,
-        parse_status=ParseStatus.UNSUPPORTED_PROTOCOL,
+        parse_status=ParseStatus.UNSUPPORTED,
         parse_detail=f"unsupported ip protocol: {ip_proto}",
         protocol_name=f"ip_proto_{ip_proto}",
     )
@@ -165,18 +176,24 @@ def _decode_ipv4(record: PacketRecord, ip: dpkt.ip.IP) -> PacketRecord:
 
 
 def _decode_ipv6(record: PacketRecord, ip6: dpkt.ip6.IP6) -> PacketRecord:
-    # dpkt exposes the last/next header in .nxt after extension walking when possible.
-    nxt = int(getattr(ip6, "nxt", 0))
+    # dpkt keeps the first next-header in .nxt and the final L4 protocol in .p
+    # after walking extension headers (e.g. Hop-by-Hop nxt=0 → ICMPv6 p=58).
+    final_proto = int(getattr(ip6, "p", getattr(ip6, "nxt", 0)))
+    first_nxt = int(getattr(ip6, "nxt", final_proto))
     record = replace(
         record,
         is_ipv6=True,
         ip_version=6,
-        ip_protocol=nxt,
+        ip_protocol=final_proto,
         src_ip=_ip6_to_str(ip6.src),
         dst_ip=_ip6_to_str(ip6.dst),
         protocol_name="ipv6",
+        extra={
+            **record.extra,
+            "ipv6_first_next_header": first_nxt,
+        },
     )
-    return _decode_l4(record, nxt, ip6.data)
+    return _decode_l4(record, final_proto, ip6.data)
 
 
 def _decode_arp(record: PacketRecord, arp: dpkt.arp.ARP) -> PacketRecord:
@@ -195,12 +212,54 @@ def _decode_arp(record: PacketRecord, arp: dpkt.arp.ARP) -> PacketRecord:
     )
 
 
-def _decode_ethernet_payload(record: PacketRecord, eth: dpkt.ethernet.Ethernet) -> PacketRecord:
+def _decode_llc(record: PacketRecord, payload: Any) -> PacketRecord:
+    """Recognize IEEE 802.3 + LLC without deep application decoding."""
+    llc = payload
+    if not isinstance(llc, dpkt.llc.LLC):
+        try:
+            raw = payload if isinstance(payload, (bytes, bytearray)) else bytes(payload)
+            llc = dpkt.llc.LLC(raw)
+        except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError, ValueError, TypeError) as exc:
+            return replace(
+                record,
+                parse_status=ParseStatus.PARTIAL,
+                parse_detail=f"llc decode failed: {exc}",
+                protocol_name="ieee802.3",
+            )
+
+    dsap = int(getattr(llc, "dsap", 0))
+    ssap = int(getattr(llc, "ssap", 0))
+    ctl = getattr(llc, "ctl", getattr(llc, "ctrl", None))
+    return replace(
+        record,
+        is_llc=True,
+        ethertype=None,
+        protocol_name="llc",
+        parse_status=ParseStatus.OK,
+        parse_detail=None,
+        extra={
+            **record.extra,
+            "llc_dsap": dsap,
+            "llc_ssap": ssap,
+            "llc_ctrl": int(ctl) if ctl is not None else None,
+        },
+    )
+
+
+def _decode_ethernet_payload(
+    record: PacketRecord,
+    eth: dpkt.ethernet.Ethernet,
+    *,
+    raw_type_or_length: int | None,
+) -> PacketRecord:
     vlan_ids = _vlan_ids_from_ethernet(eth)
-    ethertype = _effective_ethertype(eth)
+    is_ethernet_ii = (
+        raw_type_or_length is None or raw_type_or_length >= ETHERNET_TYPE_MIN
+    )
     record = replace(
         record,
-        ethertype=ethertype,
+        ethernet_type_or_length=raw_type_or_length,
+        is_ethernet_ii=is_ethernet_ii,
         vlan_ids=vlan_ids,
         extra={
             **record.extra,
@@ -210,6 +269,24 @@ def _decode_ethernet_payload(record: PacketRecord, eth: dpkt.ethernet.Ethernet) 
     )
 
     data = eth.data
+
+    # IEEE 802.3 length field → LLC (and optionally SNAP) payload.
+    if not is_ethernet_ii or isinstance(data, dpkt.llc.LLC):
+        return _decode_llc(
+            replace(
+                record,
+                ethertype=None,
+                parse_detail=(
+                    None
+                    if is_ethernet_ii
+                    else f"ieee802.3 length={raw_type_or_length}"
+                ),
+            ),
+            data,
+        )
+
+    ethertype = _effective_ethertype(eth)
+    record = replace(record, ethertype=ethertype)
 
     if ethertype == dpkt.ethernet.ETH_TYPE_ARP or isinstance(data, dpkt.arp.ARP):
         if not isinstance(data, dpkt.arp.ARP):
@@ -253,7 +330,7 @@ def _decode_ethernet_payload(record: PacketRecord, eth: dpkt.ethernet.Ethernet) 
     name = _ETH_TYPE_NAMES.get(ethertype, f"ethertype_0x{ethertype:04x}")
     return replace(
         record,
-        parse_status=ParseStatus.UNSUPPORTED_PROTOCOL,
+        parse_status=ParseStatus.UNSUPPORTED,
         parse_detail=f"unsupported ethertype: 0x{ethertype:04x}",
         protocol_name=name,
     )
@@ -289,6 +366,7 @@ def decode_frame(
                     parse_detail="ethernet frame shorter than 14 bytes",
                     protocol_name="ethernet",
                 )
+            raw_tol = _raw_type_or_length(buf)
             try:
                 eth = dpkt.ethernet.Ethernet(buf)
             except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError, ValueError) as exc:
@@ -297,8 +375,14 @@ def decode_frame(
                     parse_status=ParseStatus.MALFORMED,
                     parse_detail=f"ethernet unpack failed: {exc}",
                     protocol_name="ethernet",
+                    ethernet_type_or_length=raw_tol,
+                    is_ethernet_ii=(
+                        None if raw_tol is None else raw_tol >= ETHERNET_TYPE_MIN
+                    ),
                 )
-            return _decode_ethernet_payload(base, eth)
+            return _decode_ethernet_payload(
+                base, eth, raw_type_or_length=raw_tol
+            )
 
         if linktype in {DLT_RAW, DLT_IPV4}:
             try:
@@ -324,8 +408,9 @@ def decode_frame(
 
         return replace(
             base,
-            parse_status=ParseStatus.UNSUPPORTED_LINKTYPE,
+            parse_status=ParseStatus.UNSUPPORTED,
             parse_detail=f"unsupported linktype: {linktype}",
+            protocol_name=f"linktype_{linktype}",
         )
     except Exception as exc:  # noqa: BLE001 - must never crash the streamer
         return replace(

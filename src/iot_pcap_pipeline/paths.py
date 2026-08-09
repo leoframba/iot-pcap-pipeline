@@ -9,10 +9,13 @@ PROJECT_ROOT = PACKAGE_ROOT.parent.parent
 
 DEFAULT_RAW_ROOT = PROJECT_ROOT / "data" / "raw" / "WiFI_and_MQTT"
 DEFAULT_MANIFEST_DIR = PROJECT_ROOT / "data" / "manifests"
+DEFAULT_AUDIT_DIR = PROJECT_ROOT / "data" / "audit"
+DEFAULT_AUDIT_CHECKPOINT_DIR = DEFAULT_AUDIT_DIR / ".work"
 
 DATASET_SCOPE = "wifi_mqtt"
 SPLIT_STRATEGY_VERSION = "phase1a_v1"
 DEFAULT_SPLIT_SEED = 42
+AUDIT_STRATEGY_VERSION = "phase1b2_v1"
 
 
 def to_repo_relative(path: Path, project_root: Path | None = None) -> str:

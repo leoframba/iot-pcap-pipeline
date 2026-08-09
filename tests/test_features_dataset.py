@@ -261,3 +261,60 @@ def test_reject_non_train_split(tmp_path: Path) -> None:
             inventory_path=tmp_path / "missing.csv",
             project_root=tmp_path,
         )
+
+
+def test_concurrent_workers_share_one_schema_hash(tmp_path: Path) -> None:
+    """Several workers must hash the same parent-written schema (no truncate race)."""
+    import json
+
+    from iot_pcap_pipeline.features.parquet import feature_schema_sha256
+
+    rels = [f"data/raw/w{i}.pcap" for i in range(6)]
+    rows = [
+        _make_train_pcap(
+            tmp_path,
+            rel,
+            n_packets=40 + 5 * i,
+            binary_label="BENIGN" if i % 2 == 0 else "ATTACK",
+        )
+        for i, rel in enumerate(rels)
+    ]
+    inv = _write_inventory(tmp_path / "inv.csv", rows)
+    schema = write_feature_schema(tmp_path / "feature_schema.json")
+    expected_hash = feature_schema_sha256(schema)
+
+    first = build_feature_dataset(
+        inventory_path=inv,
+        output_dir=tmp_path / "train",
+        checkpoint_dir=tmp_path / ".work",
+        manifest_path=tmp_path / "build_manifest.csv",
+        schema_path=schema,
+        project_root=tmp_path,
+        workers=4,
+        resume=False,
+        pcap_paths=rels,
+    )
+    assert first.ok_count == 6
+    hashes = {r.feature_schema_sha256 for r in first.results_by_path.values()}
+    assert hashes == {expected_hash}
+    assert expected_hash != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    payload = json.loads(schema.read_text(encoding="utf-8"))
+    assert payload.get("feature_strategy_version") == "phase1c2_v1"
+    assert schema.stat().st_size > 0
+
+    second = build_feature_dataset(
+        inventory_path=inv,
+        output_dir=tmp_path / "train",
+        checkpoint_dir=tmp_path / ".work",
+        manifest_path=tmp_path / "build_manifest2.csv",
+        schema_path=schema,
+        project_root=tmp_path,
+        workers=4,
+        resume=True,
+        pcap_paths=rels,
+    )
+    assert second.ok_count == 6
+    assert second.resumed_count == 6
+    assert {
+        r.feature_schema_sha256 for r in second.results_by_path.values()
+    } == {expected_hash}

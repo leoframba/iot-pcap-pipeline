@@ -81,6 +81,31 @@ def test_feature_strategy_version_unchanged() -> None:
     assert FEATURE_BUILD_STRATEGY_VERSION == "phase1c3_v1"
 
 
+def test_feature_schema_sha256_is_read_only(tmp_path: Path) -> None:
+    missing = tmp_path / "missing_schema.json"
+    with pytest.raises(FileNotFoundError, match="feature schema missing"):
+        feature_schema_sha256(missing)
+    empty = tmp_path / "empty.json"
+    empty.write_bytes(b"")
+    with pytest.raises(ValueError, match="feature schema is empty"):
+        feature_schema_sha256(empty)
+
+
+def test_write_feature_schema_is_atomic(tmp_path: Path) -> None:
+    out = tmp_path / "feature_schema.json"
+    write_feature_schema(out)
+    assert out.is_file()
+    assert not out.with_suffix(".json.tmp").exists()
+    data = out.read_bytes()
+    assert data
+    assert b"phase1c2_v1" in data
+    # Second write replaces atomically; no empty intermediate left behind.
+    write_feature_schema(out)
+    assert out.read_bytes()
+    assert not out.with_suffix(".json.tmp").exists()
+
+
+
 def test_arrow_schema_matches_contract() -> None:
     schema = feature_parquet_arrow_schema()
     assert [f.name for f in schema] == [

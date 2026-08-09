@@ -75,11 +75,21 @@ def pcap_id_from_path(
 
 
 def feature_schema_sha256(schema_path: Path | str | None = None) -> str:
-    """SHA-256 of the on-disk V1 feature schema JSON (utf-8 bytes)."""
+    """SHA-256 of an existing on-disk V1 feature schema JSON (read-only).
+
+    Does not create the schema file. Callers (parent process) must write it
+    once via ``write_feature_schema`` before workers hash it.
+    """
     path = Path(schema_path or DEFAULT_FEATURE_SCHEMA_PATH)
     if not path.is_file():
-        write_feature_schema(path)
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+        raise FileNotFoundError(
+            f"feature schema missing: {path} "
+            "(write it once in the parent before build_pcap_parquet)"
+        )
+    data = path.read_bytes()
+    if not data:
+        raise ValueError(f"feature schema is empty: {path}")
+    return hashlib.sha256(data).hexdigest()
 
 
 def feature_parquet_arrow_schema() -> pa.Schema:
@@ -363,7 +373,6 @@ def build_pcap_parquet(
     schema_file = Path(schema_path or DEFAULT_FEATURE_SCHEMA_PATH)
     if not schema_file.is_absolute():
         schema_file = root / schema_file
-    write_feature_schema(schema_file)
     schema_hash = feature_schema_sha256(schema_file)
     input_size = pcap.stat().st_size
     rel = to_repo_relative(pcap, project_root=root)
@@ -519,6 +528,8 @@ def run_parquet_smoke(
     if not ckpt_dir.is_absolute():
         ckpt_dir = root / ckpt_dir
 
+    schema_file = write_feature_schema()
+
     results: list[BuildResult] = []
     for path in paths:
         rel = to_repo_relative(path, project_root=root)
@@ -530,6 +541,7 @@ def run_parquet_smoke(
             out_dir / f"{pcap_id}.parquet",
             checkpoint_path=ckpt_dir / f"{pcap_id}.json",
             project_root=root,
+            schema_path=schema_file,
             resume=resume,
             buffer_rows=buffer_rows,
         )

@@ -10,9 +10,9 @@ checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.w
 Feature dataset build: split=train pcaps=6 workers=4 resume=True
 output_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/dataset
 checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.work/smoke
-[1/6] Recon-OS_Scan_train.pcap: status=ok rows=6736 resumed=True
-[2/6] Recon-VulScan_train.pcap: status=ok rows=869 resumed=True
-[3/6] ARP_Spoofing_train.pcap: status=ok rows=6423 resumed=True
-[4/6] Idle.pcap: status=ok rows=13149 resumed=True
+[1/6] Idle.pcap: status=ok rows=13149 resumed=True
+[2/6] ARP_Spoofing_train.pcap: status=ok rows=6423 resumed=True
+[3/6] Recon-OS_Scan_train.pcap: status=ok rows=6736 resumed=True
+[4/6] Recon-VulScan_train.pcap: status=ok rows=869 resumed=True
 [5/6] Recon-Ping_Sweep_train.pcap: status=ok rows=296 resumed=True
 [6/6] Blink_Mini_Camera_Power.pcap: status=ok rows=15 resumed=True

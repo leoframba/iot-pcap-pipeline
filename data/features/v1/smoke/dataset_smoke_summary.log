@@ -6,7 +6,7 @@ workers: 4
 resume: False
 pcaps: 6 (ok=6, failed=0)
 checkpoint_hits: 0
-elapsed_seconds: 15.170
+elapsed_seconds: 13.999
 output_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/dataset
 checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.work/smoke
 manifest: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/build_manifest_smoke.csv
@@ -19,7 +19,7 @@ workers: 4
 resume: True
 pcaps: 6 (ok=6, failed=0)
 checkpoint_hits: 6
-elapsed_seconds: 0.222
+elapsed_seconds: 0.188
 output_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/dataset
 checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.work/smoke
 manifest: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/build_manifest_smoke.csv

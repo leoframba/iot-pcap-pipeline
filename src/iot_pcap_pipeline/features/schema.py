@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -345,8 +346,15 @@ def build_feature_schema_document() -> dict[str, Any]:
 
 
 def write_feature_schema(path: Path | str | None = None) -> Path:
+    """Atomically write the V1 feature schema JSON (tmp → fsync → replace)."""
     out = Path(path or DEFAULT_FEATURE_SCHEMA_PATH)
     out.parent.mkdir(parents=True, exist_ok=True)
     doc = build_feature_schema_document()
-    out.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    encoded = json.dumps(doc, indent=2) + "\n"
+    tmp = out.with_suffix(out.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as handle:
+        handle.write(encoded)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, out)
     return out

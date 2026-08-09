@@ -52,5 +52,7 @@ data/features/**
 !data/features/v1/**/*.csv
 # Still ignore heavy parquet / full builds under v1 if added later
 data/features/v1/**/*.parquet
+data/features/v1/**/*.parquet.tmp
+data/features/v1/.work/
 data/features/v1/train/
 data/features/v1/test/

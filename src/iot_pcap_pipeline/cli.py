@@ -25,6 +25,15 @@ from iot_pcap_pipeline.features.build import (
     run_smoke_extraction,
 )
 from iot_pcap_pipeline.features.characterize import write_characterization_csv
+from iot_pcap_pipeline.features.parquet import (
+    DEFAULT_BUFFER_ROWS,
+    DEFAULT_FEATURE_CHECKPOINT_DIR,
+    DEFAULT_PARQUET_SMOKE_DIR,
+    build_pcap_parquet,
+    format_parquet_smoke_summary,
+    pcap_id_from_path,
+    run_parquet_smoke,
+)
 from iot_pcap_pipeline.features.schema import (
     METADATA_COLUMN_NAMES,
     V1_FEATURE_NAMES,
@@ -376,6 +385,60 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Only write data/features/v1/feature_schema.json and exit",
     )
+
+    pq_cmd = subparsers.add_parser(
+        "build-feature-parquet",
+        help=(
+            "Phase 1C.3a streaming Parquet shards for frozen V1 features "
+            "(atomic write + resume checkpoints)"
+        ),
+    )
+    pq_cmd.add_argument(
+        "pcaps",
+        nargs="*",
+        type=Path,
+        help="PCAP paths (absolute or repo-relative). Omit with --smoke.",
+    )
+    pq_cmd.add_argument(
+        "--smoke",
+        action="store_true",
+        help=(
+            "Run the 1C.3a TRAIN-only Parquet smoke "
+            "(Benign_train, Idle, Recon-VulScan_train)"
+        ),
+    )
+    pq_cmd.add_argument(
+        "--inventory",
+        type=Path,
+        default=DEFAULT_MANIFEST_DIR / "pcap_inventory.csv",
+        help="Inventory for binary_label join",
+    )
+    pq_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_PARQUET_SMOKE_DIR,
+        help=f"Directory for <pcap-id>.parquet shards (default: {DEFAULT_PARQUET_SMOKE_DIR})",
+    )
+    pq_cmd.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        default=DEFAULT_FEATURE_CHECKPOINT_DIR,
+        help=(
+            "Per-PCAP checkpoint directory "
+            f"(default: {DEFAULT_FEATURE_CHECKPOINT_DIR})"
+        ),
+    )
+    pq_cmd.add_argument(
+        "--buffer-rows",
+        type=int,
+        default=DEFAULT_BUFFER_ROWS,
+        help=f"In-memory Parquet write buffer size (default: {DEFAULT_BUFFER_ROWS:,})",
+    )
+    pq_cmd.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Ignore checkpoints and rebuild every PCAP",
+    )
     return parser
 
 
@@ -551,6 +614,66 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"Wrote {char_path}")
         write_feature_schema()
+        return 0
+
+    if args.command == "build-feature-parquet":
+        resume = not args.no_resume
+        if args.smoke:
+            payload = run_parquet_smoke(
+                inventory_path=args.inventory,
+                output_dir=args.output_dir,
+                checkpoint_dir=args.checkpoint_dir,
+                resume=resume,
+                buffer_rows=args.buffer_rows,
+            )
+            print(format_parquet_smoke_summary(payload))
+            # Second pass verifies resume hits when resume is enabled.
+            if resume:
+                payload2 = run_parquet_smoke(
+                    inventory_path=args.inventory,
+                    output_dir=args.output_dir,
+                    checkpoint_dir=args.checkpoint_dir,
+                    resume=True,
+                    buffer_rows=args.buffer_rows,
+                )
+                hits = sum(1 for r in payload2["results"] if r.resumed)
+                print(f"\nResume verification: {hits}/{len(payload2['results'])} hits")
+            return 0
+
+        if not args.pcaps:
+            parser.error("provide PCAP paths or --smoke")
+
+        inv = args.inventory
+        inv_path = inv if inv.is_absolute() else (PROJECT_ROOT / inv)
+        index = load_inventory_index(inv_path)
+        out_dir = args.output_dir
+        if not out_dir.is_absolute():
+            out_dir = PROJECT_ROOT / out_dir
+        ckpt_dir = args.checkpoint_dir
+        if not ckpt_dir.is_absolute():
+            ckpt_dir = PROJECT_ROOT / ckpt_dir
+
+        for raw in args.pcaps:
+            path = raw if raw.is_absolute() else (PROJECT_ROOT / raw)
+            rel = to_repo_relative(path)
+            meta = dict(index.get(rel, {}))
+            pcap_id = pcap_id_from_path(path)
+            try:
+                result = build_pcap_parquet(
+                    path,
+                    meta,
+                    out_dir / f"{pcap_id}.parquet",
+                    checkpoint_path=ckpt_dir / f"{pcap_id}.json",
+                    resume=resume,
+                    buffer_rows=args.buffer_rows,
+                )
+            except (FeatureExtractionError, FeatureInvariantError, OSError) as exc:
+                print(f"FAILED {path}: {exc}", file=sys.stderr)
+                return 1
+            print(
+                f"{result.pcap_id}: rows={result.row_count} "
+                f"resumed={result.resumed} elapsed={result.elapsed_seconds:.3f}s"
+            )
         return 0
 
     parser.error(f"unknown command: {args.command}")

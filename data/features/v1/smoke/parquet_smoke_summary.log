@@ -1,0 +1,80 @@
+Phase 1C.3a — streaming Parquet smoke
+feature_strategy_version: phase1c2_v1
+feature_build_strategy_version: phase1c3_v1
+output_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet
+checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.work/train
+
+=== Benign_train ===
+  resumed:              False
+  packets_processed:    1,935,680
+  windows_written:      77,427
+  parquet_rows:         77,427
+  parquet_size_bytes:   4,247,924
+  elapsed_seconds:      78.862
+  packets_per_sec:      24,545.2
+  windows_per_sec:      981.8
+  output:               /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet/Benign_train.parquet
+
+=== Idle ===
+  resumed:              False
+  packets_processed:    328,923
+  windows_written:      13,149
+  parquet_rows:         13,149
+  parquet_size_bytes:   852,462
+  elapsed_seconds:      13.699
+  packets_per_sec:      24,010.3
+  windows_per_sec:      959.8
+  output:               /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet/Idle.parquet
+
+=== Recon-VulScan_train ===
+  resumed:              False
+  packets_processed:    21,747
+  windows_written:      869
+  parquet_rows:         869
+  parquet_size_bytes:   53,077
+  elapsed_seconds:      0.884
+  packets_per_sec:      24,602.3
+  windows_per_sec:      983.1
+  output:               /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet/Recon-VulScan_train.parquet
+
+Phase 1C.3a — streaming Parquet smoke
+feature_strategy_version: phase1c2_v1
+feature_build_strategy_version: phase1c3_v1
+output_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet
+checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.work/train
+
+=== Benign_train ===
+  resumed:              True
+  packets_processed:    1,935,680
+  windows_written:      77,427
+  parquet_rows:         77,427
+  parquet_size_bytes:   4,247,924
+  elapsed_seconds:      0.000
+  packets_per_sec:      nan
+  windows_per_sec:      nan
+  output:               /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet/Benign_train.parquet
+
+=== Idle ===
+  resumed:              True
+  packets_processed:    328,923
+  windows_written:      13,149
+  parquet_rows:         13,149
+  parquet_size_bytes:   852,462
+  elapsed_seconds:      0.000
+  packets_per_sec:      nan
+  windows_per_sec:      nan
+  output:               /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet/Idle.parquet
+
+=== Recon-VulScan_train ===
+  resumed:              True
+  packets_processed:    21,747
+  windows_written:      869
+  parquet_rows:         869
+  parquet_size_bytes:   53,077
+  elapsed_seconds:      0.000
+  packets_per_sec:      nan
+  windows_per_sec:      nan
+  output:               /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/parquet/Recon-VulScan_train.parquet
+
+
+Resume verification: 3/3 hits

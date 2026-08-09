@@ -192,9 +192,39 @@ Notes carried into Phase 1C.3:
 - Full-corpus extraction must stream windows to Parquet. Do not reuse the
   smoke helper that accumulates all rows in a Python list.
 
-## Phase 1C.3 (next)
+## Phase 1C.3a — Streaming Parquet smoke
 
-Partitioned Parquet build with multiprocessing / checkpoint-resume for complete
-TRAIN extraction, then frozen identical TEST extraction. No model training yet.
+Storage layer for the frozen `phase1c2_v1` extractor. Feature values and
+windowing are unchanged; only the write path is new.
+
+```text
+PCAP → iter_packets → iter_windows → extract_features → buffer → Parquet
+```
+
+- `FEATURE_STRATEGY_VERSION = phase1c2_v1` (unchanged)
+- `FEATURE_BUILD_STRATEGY_VERSION = phase1c3_v1` (build/storage contract)
+- Atomic shards: write `<pcap-id>.parquet.tmp`, then `os.replace` to final
+- Resume checkpoints under `data/features/v1/.work/train/`
+
+```bash
+# Unit tests (storage contract)
+uv run pytest tests/test_features_parquet.py -q
+
+# TRAIN-only real smoke (Benign_train, Idle, Recon-VulScan_train) + resume check
+uv run iot-pcap-pipeline build-feature-parquet --smoke
+```
+
+Artifacts:
+
+- `data/features/v1/smoke/parquet/<pcap-id>.parquet`
+- `data/features/v1/.work/train/<pcap-id>.json`
+
+Not in 1C.3a: full 85-PCAP TRAIN, TEST extraction, multi-worker scheduler,
+global manifests, constant-feature report, or model training.
+
+## Phase 1C.3b (next)
+
+Partitioned full TRAIN Parquet build (multiprocessing / scheduling), then
+identical TEST extraction. No model training yet.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

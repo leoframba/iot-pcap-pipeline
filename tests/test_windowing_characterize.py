@@ -36,6 +36,20 @@ def test_candidate_grid_has_six_configs() -> None:
     assert all(p.backward_reset_seconds == 1.0 for p in policies)
 
 
+def test_frozen_window_policy_gate_a() -> None:
+    from iot_pcap_pipeline.windowing.policy import (
+        GATE_A_STATUS,
+        frozen_window_policy,
+    )
+
+    policy = frozen_window_policy()
+    assert GATE_A_STATUS == "passed"
+    assert policy.window_size == 25
+    assert policy.inactivity_timeout_seconds == 5.0
+    assert policy.backward_reset_seconds == 1.0
+    assert policy.config_id == "w25_gap5_bw1"
+
+
 def test_exact_full_windows_no_gaps() -> None:
     # 100 packets, 0.01s apart → exactly 4 windows of size 25, no drops
     timestamps = [i * 0.01 for i in range(100)]
@@ -247,6 +261,7 @@ def test_format_summary_includes_gate_a(tmp_path: Path) -> None:
     assert "GATE A" in text
     assert "publisher_benign" in text
     assert "window_size=25" in text
+    assert "PASSED" in text or "Freeze after review" in text
 
 
 def test_30s_timeout_does_not_split_where_5s_does() -> None:

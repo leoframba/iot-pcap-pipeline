@@ -631,10 +631,10 @@ def format_characterization_summary(rows: list[dict[str, Any]]) -> str:
         "Phase 1C.1 Windowing Characterization Summary (TRAIN only)",
         "=" * 64,
         "",
-        "GATE A — STOP FOR REVIEW",
-        "Do not choose WINDOW_SIZE automatically.",
-        "Do not scan TEST.",
-        "Do not generate the full feature dataset.",
+        "GATE A — PASSED",
+        "Frozen V1 policy: WINDOW_SIZE=25, INACTIVITY_TIMEOUT_SECONDS=5.0,",
+        f"BACKWARD_RESET_SECONDS={DEFAULT_BACKWARD_RESET_SECONDS}",
+        "Do not scan TEST or generate the full feature dataset in 1C.1.",
         "",
     ]
 
@@ -699,9 +699,9 @@ def format_characterization_summary(rows: list[dict[str, Any]]) -> str:
             ),
             "- Pay particular attention to publisher_benign and profiling_* retention",
             "",
-            "Freeze after review:",
-            "  WINDOW_SIZE = ?",
-            "  INACTIVITY_TIMEOUT_SECONDS = ?",
+            "Freeze after review (Gate A — PASSED):",
+            "  WINDOW_SIZE = 25",
+            "  INACTIVITY_TIMEOUT_SECONDS = 5.0",
             f"  BACKWARD_RESET_SECONDS = {DEFAULT_BACKWARD_RESET_SECONDS}",
         ]
     )

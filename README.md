@@ -114,48 +114,44 @@ Interpretation focus columns: `negative_delta_count`, `negative_delta_ratio`,
 `negative_delta_p50_magnitude`, `negative_delta_p95_magnitude`,
 `negative_delta_p99_magnitude`, `negative_delta_max_magnitude`.
 
-## Phase 1C.1 (current) — Gate A
+## Phase 1C.1 — Gate A (passed)
 
 TRAIN-only windowing-policy characterization. Timestamp-only (no frame decode).
-Each TRAIN PCAP is scanned **once** while all six candidate configs update
-concurrently:
+Each TRAIN PCAP was scanned **once** while all six candidate configs updated
+concurrently. Artifact:
 
-| window_size | inactivity_timeout | backward_reset |
-|------------:|-------------------:|---------------:|
-| 25 / 50 / 100 | 5s / 30s | 1.0s (fixed) |
+- `data/features/windowing_characterization_train.csv` — 85 TRAIN PCAPs × 6
+  policies (`phase1c1_v2`)
+
+**Frozen V1 windowing policy (Gate A):**
+
+```text
+WINDOW_SIZE = 25
+INACTIVITY_TIMEOUT_SECONDS = 5.0
+BACKWARD_RESET_SECONDS = 1.0
+```
+
+Semantics:
+
+- `delta > 5s` → close segment; drop incomplete window
+- `delta < -1s` → close segment; drop incomplete window
+- `-1s <= delta < 0` → keep packet (sanitized IAT → 0 in later phases)
+- `delta == 0` → keep packet; IAT = 0
+- full window → exactly 25 non-overlapping packets
+- window span → `max(timestamp) - min(timestamp)`
+
+Rationale (summary): 25/5 maximizes detection responsiveness vs 50/100, keeps
+benign profiling retention strong except sparse power (accepted), and avoids
+30s windows that can span minutes. ~2.95% zero-span windows at size 25 are
+tolerated; V1 will not rely on packets/sec or bytes/sec.
 
 ```bash
 uv run iot-pcap-pipeline characterize-windowing --workers 4
 ```
 
-Artifact:
+## Phase 1C.2 (next)
 
-- `data/features/windowing_characterization_train.csv` — one row per
-  TRAIN PCAP × candidate configuration
-
-Segmentation rules (original capture order; never timestamp-sorted):
-
-- `delta > inactivity_timeout` → positive inactivity boundary
-- `delta < -1.0s` → backward discontinuity boundary
-- `-1.0 <= delta <= inactivity_timeout` → continue segment
-  (includes duplicates and small ordering jitter)
-
-On boundary or EOF: drop incomplete windows (no padding, no carry-over).
-
-Window span is `max(timestamp) - min(timestamp)` within each full window
-(never last−first). Span min/max/mean and zero-span counts are exact; p50/p95/p99
-use a deterministic reservoir when the window count exceeds
-`--span-sample-cap` (default 100,000).
-
-**GATE A:** After the CSV is written, STOP for human review. Do not choose
-`WINDOW_SIZE` automatically, do not scan TEST, and do not build features yet.
-
-Freeze after review:
-
-```text
-WINDOW_SIZE = ?
-INACTIVITY_TIMEOUT_SECONDS = ?
-BACKWARD_RESET_SECONDS = 1.0
-```
+V1 feature extractor + TRAIN-only validation, using the frozen windowing policy
+above. Do not start until feature schema design is ready.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

@@ -225,9 +225,39 @@ Artifacts:
 Not in 1C.3a: full 85-PCAP TRAIN, TEST extraction, multi-worker scheduler,
 global manifests, constant-feature report, or model training.
 
-## Phase 1C.3b (next)
+## Phase 1C.3b step 1 — TRAIN corpus orchestration
 
-Partitioned full TRAIN Parquet build (multiprocessing / scheduling), then
-identical TEST extraction. No model training yet.
+Multiprocess wrapper around the frozen single-PCAP Parquet builder.
+
+```text
+inventory → 85 TRAIN PCAPs → size check → largest-first
+  → ProcessPoolExecutor → build_pcap_parquet → build_manifest.csv
+```
+
+```bash
+# Orchestration smoke (6 modest TRAIN PCAPs, workers=4)
+uv run iot-pcap-pipeline build-feature-dataset --split train --workers 4 --resume --smoke
+
+# Full TRAIN corpus (do not start until smoke is green)
+uv run iot-pcap-pipeline build-feature-dataset --split train --workers 4 --resume
+```
+
+Artifacts (full TRAIN):
+
+- `data/features/v1/train/<pcap-id>.parquet` (gitignored)
+- `data/features/v1/.work/train/<pcap-id>.json`
+- `data/features/v1/build_manifest.csv` (deterministic, sorted by `pcap_path`)
+
+Smoke artifacts:
+
+- `data/features/v1/smoke/dataset/<pcap-id>.parquet`
+- `data/features/v1/.work/smoke/<pcap-id>.json`
+- `data/features/v1/smoke/build_manifest_smoke.csv`
+Not yet: TRAIN-wide feature statistics, constant-feature report, TEST
+extraction, class balancing, or model training.
+
+## Phase 1C.3b step 2 (next)
+
+Full 85-PCAP TRAIN build after orchestration smoke, then TEST extraction.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

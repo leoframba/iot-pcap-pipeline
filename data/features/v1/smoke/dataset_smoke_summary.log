@@ -1,0 +1,26 @@
+Phase 1C.3b — feature dataset build
+split: train
+feature_strategy_version: phase1c2_v1
+feature_build_strategy_version: phase1c3_v1
+workers: 4
+resume: False
+pcaps: 6 (ok=6, failed=0)
+checkpoint_hits: 0
+elapsed_seconds: 15.170
+output_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/dataset
+checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.work/smoke
+manifest: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/build_manifest_smoke.csv
+
+Phase 1C.3b — feature dataset build
+split: train
+feature_strategy_version: phase1c2_v1
+feature_build_strategy_version: phase1c3_v1
+workers: 4
+resume: True
+pcaps: 6 (ok=6, failed=0)
+checkpoint_hits: 6
+elapsed_seconds: 0.222
+output_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/dataset
+checkpoint_dir: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/.work/smoke
+manifest: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/smoke/build_manifest_smoke.csv
+

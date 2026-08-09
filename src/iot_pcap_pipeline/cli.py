@@ -25,6 +25,17 @@ from iot_pcap_pipeline.features.build import (
     run_smoke_extraction,
 )
 from iot_pcap_pipeline.features.characterize import write_characterization_csv
+from iot_pcap_pipeline.features.dataset import (
+    DEFAULT_BUILD_MANIFEST_PATH,
+    DEFAULT_FEATURE_DATASET_WORKERS,
+    DEFAULT_SMOKE_BUILD_MANIFEST_PATH,
+    DEFAULT_SMOKE_CHECKPOINT_DIR,
+    DEFAULT_SMOKE_DATASET_DIR,
+    DEFAULT_TRAIN_PARQUET_DIR,
+    EXPECTED_TRAIN_PCAP_COUNT,
+    build_feature_dataset,
+    format_feature_dataset_summary,
+)
 from iot_pcap_pipeline.features.parquet import (
     DEFAULT_BUFFER_ROWS,
     DEFAULT_FEATURE_CHECKPOINT_DIR,
@@ -439,6 +450,93 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Ignore checkpoints and rebuild every PCAP",
     )
+
+    ds_cmd = subparsers.add_parser(
+        "build-feature-dataset",
+        help=(
+            "Phase 1C.3b corpus orchestration: TRAIN inventory → "
+            "largest-first process pool → Parquet shards + build_manifest.csv"
+        ),
+    )
+    ds_cmd.add_argument(
+        "--split",
+        choices=["train"],
+        default="train",
+        help="Dataset split to build (only train in 1C.3b step 1)",
+    )
+    ds_cmd.add_argument(
+        "--workers",
+        type=int,
+        default=DEFAULT_FEATURE_DATASET_WORKERS,
+        help=(
+            "Process pool size (default: "
+            f"{DEFAULT_FEATURE_DATASET_WORKERS}; use 1 for sequential)"
+        ),
+    )
+    ds_cmd.add_argument(
+        "--inventory",
+        type=Path,
+        default=DEFAULT_MANIFEST_DIR / "pcap_inventory.csv",
+        help="PCAP inventory CSV",
+    )
+    ds_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Per-PCAP Parquet shard directory "
+            f"(default: {DEFAULT_TRAIN_PARQUET_DIR}; "
+            f"smoke → {DEFAULT_SMOKE_DATASET_DIR})"
+        ),
+    )
+    ds_cmd.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Per-PCAP checkpoint directory "
+            f"(default: {DEFAULT_FEATURE_CHECKPOINT_DIR}; "
+            f"smoke → {DEFAULT_SMOKE_CHECKPOINT_DIR})"
+        ),
+    )
+    ds_cmd.add_argument(
+        "--manifest-output",
+        type=Path,
+        default=None,
+        help=(
+            "Build manifest CSV path "
+            f"(default: {DEFAULT_BUILD_MANIFEST_PATH}; "
+            f"smoke → {DEFAULT_SMOKE_BUILD_MANIFEST_PATH})"
+        ),
+    )
+    ds_cmd.add_argument(
+        "--buffer-rows",
+        type=int,
+        default=DEFAULT_BUFFER_ROWS,
+        help=f"Parquet write buffer size (default: {DEFAULT_BUFFER_ROWS:,})",
+    )
+    ds_cmd.add_argument(
+        "--smoke",
+        action="store_true",
+        help=(
+            "Orchestration smoke: 6 modest TRAIN PCAPs only "
+            f"(skips full {EXPECTED_TRAIN_PCAP_COUNT}-PCAP assertion)"
+        ),
+    )
+    resume_group = ds_cmd.add_mutually_exclusive_group()
+    resume_group.add_argument(
+        "--resume",
+        dest="resume",
+        action="store_true",
+        help="Reuse valid per-PCAP checkpoints (default)",
+    )
+    resume_group.add_argument(
+        "--no-resume",
+        dest="resume",
+        action="store_false",
+        help="Ignore checkpoints and rebuild every PCAP",
+    )
+    ds_cmd.set_defaults(resume=True)
     return parser
 
 
@@ -674,6 +772,33 @@ def main(argv: list[str] | None = None) -> int:
                 f"{result.pcap_id}: rows={result.row_count} "
                 f"resumed={result.resumed} elapsed={result.elapsed_seconds:.3f}s"
             )
+        return 0
+
+    if args.command == "build-feature-dataset":
+        try:
+            result = build_feature_dataset(
+                split=args.split,
+                inventory_path=args.inventory,
+                output_dir=args.output_dir,
+                checkpoint_dir=args.checkpoint_dir,
+                manifest_path=args.manifest_output,
+                workers=args.workers,
+                resume=args.resume,
+                buffer_rows=args.buffer_rows,
+                smoke=args.smoke,
+                progress_file=sys.stderr,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_feature_dataset_summary(result))
+        if result.failed_count:
+            print(
+                f"Completed with {result.failed_count} failed PCAP(s); "
+                f"see {result.manifest_path}",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     parser.error(f"unknown command: {args.command}")

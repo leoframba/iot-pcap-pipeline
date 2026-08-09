@@ -37,14 +37,19 @@ def _steady_pcap(path: Path, n_packets: int = 80) -> Path:
     return write_pcap(path, frames)
 
 
-def _expected_from_pcap(pcap_path: Path) -> list[dict]:
+def _expected_from_pcap(
+    pcap_path: Path,
+    *,
+    project_root: Path | None = None,
+    binary_label: str = "BENIGN",
+) -> list[dict]:
     rows = []
-    pcap_id = pcap_id_from_path(pcap_path)
+    pcap_id = pcap_id_from_path(pcap_path, project_root=project_root)
     for window in iter_windows(iter_packets(pcap_path), frozen_window_policy()):
         feats = extract_features(window)
         row = {
             "pcap_id": pcap_id,
-            "binary_label": "BENIGN",
+            "binary_label": binary_label,
             "segment_index": window.segment_index,
             "window_index": window.window_index,
             "packet_index_start": window.packet_index_start,
@@ -114,10 +119,25 @@ def test_parquet_round_trip_matches_extractor(tmp_path: Path) -> None:
     assert out.is_file()
     assert not out.with_suffix(".parquet.tmp").exists()
 
-    expected = _expected_from_pcap(pcap)
+    expected = _expected_from_pcap(pcap, project_root=tmp_path)
     actual = read_feature_rows_from_parquet(out)
     assert result.row_count == len(expected)
     _assert_rows_equal(actual, expected)
+
+
+def test_pcap_id_is_path_stable(tmp_path: Path) -> None:
+    a = tmp_path / "dir_a" / "capture.pcap"
+    b = tmp_path / "dir_b" / "capture.pcap"
+    a.parent.mkdir()
+    b.parent.mkdir()
+    _steady_pcap(a, n_packets=10)
+    _steady_pcap(b, n_packets=10)
+    id_a = pcap_id_from_path(a, project_root=tmp_path)
+    id_b = pcap_id_from_path(b, project_root=tmp_path)
+    assert id_a.startswith("capture-")
+    assert id_b.startswith("capture-")
+    assert id_a != id_b
+    assert id_a == pcap_id_from_path(a, project_root=tmp_path)
 
 
 def test_multiple_batches_one_valid_file(tmp_path: Path) -> None:
@@ -249,6 +269,8 @@ def test_missing_parquet_invalidates_checkpoint(tmp_path: Path) -> None:
             pcap_path=pcap,
             input_file_size=pcap.stat().st_size,
             schema_sha256=feature_schema_sha256(schema_path),
+            binary_label="BENIGN",
+            project_root=tmp_path,
         )
         is False
     )
@@ -290,6 +312,8 @@ def test_corrupted_parquet_invalidates_checkpoint(tmp_path: Path) -> None:
             pcap_path=pcap,
             input_file_size=pcap.stat().st_size,
             schema_sha256=feature_schema_sha256(schema_path),
+            binary_label="BENIGN",
+            project_root=tmp_path,
         )
         is False
     )
@@ -318,6 +342,8 @@ def test_changed_schema_hash_invalidates_checkpoint(tmp_path: Path) -> None:
             pcap_path=pcap,
             input_file_size=pcap.stat().st_size,
             schema_sha256="0" * 64,
+            binary_label="BENIGN",
+            project_root=tmp_path,
         )
         is False
     )
@@ -346,9 +372,142 @@ def test_changed_input_size_invalidates_checkpoint(tmp_path: Path) -> None:
             pcap_path=pcap,
             input_file_size=pcap.stat().st_size + 1,
             schema_sha256=feature_schema_sha256(schema_path),
+            binary_label="BENIGN",
+            project_root=tmp_path,
         )
         is False
     )
+
+
+def test_changed_binary_label_invalidates_checkpoint(tmp_path: Path) -> None:
+    pcap = _steady_pcap(tmp_path / "label.pcap", n_packets=50)
+    schema_path = tmp_path / "feature_schema.json"
+    write_feature_schema(schema_path)
+    out = tmp_path / "label.parquet"
+    ckpt = tmp_path / "label.json"
+
+    first = build_pcap_parquet(
+        pcap,
+        {"binary_label": "BENIGN"},
+        out,
+        checkpoint_path=ckpt,
+        schema_path=schema_path,
+        project_root=tmp_path,
+        resume=False,
+    )
+    assert first.resumed is False
+    assert (
+        checkpoint_is_reusable(
+            checkpoint_path=ckpt,
+            output_path=out,
+            pcap_path=pcap,
+            input_file_size=pcap.stat().st_size,
+            schema_sha256=feature_schema_sha256(schema_path),
+            binary_label="ATTACK",
+            project_root=tmp_path,
+        )
+        is False
+    )
+    rebuilt = build_pcap_parquet(
+        pcap,
+        {"binary_label": "ATTACK"},
+        out,
+        checkpoint_path=ckpt,
+        schema_path=schema_path,
+        project_root=tmp_path,
+        resume=True,
+    )
+    assert rebuilt.resumed is False
+    rows = read_feature_rows_from_parquet(out)
+    assert rows
+    assert all(r["binary_label"] == "ATTACK" for r in rows)
+
+
+def test_changed_output_path_or_size_invalidates_checkpoint(tmp_path: Path) -> None:
+    pcap = _steady_pcap(tmp_path / "outpath.pcap", n_packets=50)
+    schema_path = tmp_path / "feature_schema.json"
+    write_feature_schema(schema_path)
+    out = tmp_path / "outpath.parquet"
+    ckpt = tmp_path / "outpath.json"
+
+    build_pcap_parquet(
+        pcap,
+        {"binary_label": "BENIGN"},
+        out,
+        checkpoint_path=ckpt,
+        schema_path=schema_path,
+        project_root=tmp_path,
+        resume=False,
+    )
+    other = tmp_path / "other.parquet"
+    other.write_bytes(out.read_bytes())
+    assert (
+        checkpoint_is_reusable(
+            checkpoint_path=ckpt,
+            output_path=other,
+            pcap_path=pcap,
+            input_file_size=pcap.stat().st_size,
+            schema_sha256=feature_schema_sha256(schema_path),
+            binary_label="BENIGN",
+            project_root=tmp_path,
+        )
+        is False
+    )
+    # Truncate final shard so on-disk size no longer matches checkpoint.
+    out.write_bytes(out.read_bytes()[: max(64, out.stat().st_size // 2)])
+    assert (
+        checkpoint_is_reusable(
+            checkpoint_path=ckpt,
+            output_path=out,
+            pcap_path=pcap,
+            input_file_size=pcap.stat().st_size,
+            schema_sha256=feature_schema_sha256(schema_path),
+            binary_label="BENIGN",
+            project_root=tmp_path,
+        )
+        is False
+    )
+
+
+def test_zero_window_pcap_writes_empty_shard(tmp_path: Path) -> None:
+    pcap = _steady_pcap(tmp_path / "sparse.pcap", n_packets=10)
+    schema_path = tmp_path / "feature_schema.json"
+    write_feature_schema(schema_path)
+    out = tmp_path / "sparse.parquet"
+    ckpt = tmp_path / "sparse.json"
+
+    first = build_pcap_parquet(
+        pcap,
+        {"binary_label": "BENIGN"},
+        out,
+        checkpoint_path=ckpt,
+        schema_path=schema_path,
+        project_root=tmp_path,
+        resume=False,
+    )
+    assert first.row_count == 0
+    assert first.packets_processed == 10
+    assert out.is_file()
+    assert pq.read_table(out).num_rows == 0
+    assert pq.read_schema(out).equals(
+        feature_parquet_arrow_schema(), check_metadata=False
+    )
+    payload = load_build_checkpoint(ckpt)
+    assert payload is not None
+    assert payload["output_row_count"] == 0
+    assert payload["binary_label"] == "BENIGN"
+
+    second = build_pcap_parquet(
+        pcap,
+        {"binary_label": "BENIGN"},
+        out,
+        checkpoint_path=ckpt,
+        schema_path=schema_path,
+        project_root=tmp_path,
+        resume=True,
+    )
+    assert second.resumed is True
+    assert second.row_count == 0
 
 
 def test_checkpoint_payload_fields(tmp_path: Path) -> None:
@@ -372,6 +531,7 @@ def test_checkpoint_payload_fields(tmp_path: Path) -> None:
     for key in (
         "pcap_id",
         "pcap_path",
+        "binary_label",
         "input_file_size",
         "feature_strategy_version",
         "feature_build_strategy_version",
@@ -383,7 +543,9 @@ def test_checkpoint_payload_fields(tmp_path: Path) -> None:
         assert key in payload
     assert payload["feature_strategy_version"] == "phase1c2_v1"
     assert payload["feature_build_strategy_version"] == "phase1c3_v1"
+    assert payload["binary_label"] == "BENIGN"
     assert payload["output_row_count"] == result.row_count
+    assert payload["pcap_id"] == pcap_id_from_path(pcap, project_root=tmp_path)
 
 
 def test_writer_buffer_clears_between_batches(tmp_path: Path) -> None:

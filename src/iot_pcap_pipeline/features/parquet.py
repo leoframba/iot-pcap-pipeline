@@ -62,9 +62,16 @@ DEFAULT_PARQUET_SMOKE_PCAP_PATHS: tuple[str, ...] = (
 )
 
 
-def pcap_id_from_path(pcap_path: Path | str) -> str:
-    """Human-readable shard id from the PCAP filename stem."""
-    return Path(pcap_path).stem
+def pcap_id_from_path(
+    pcap_path: Path | str,
+    *,
+    project_root: Path | None = None,
+) -> str:
+    """Path-stable shard id: ``<stem>-<sha256(repo-relative)[:16]>``."""
+    path = Path(pcap_path)
+    rel = to_repo_relative(path, project_root=project_root)
+    digest = hashlib.sha256(rel.encode("utf-8")).hexdigest()[:16]
+    return f"{path.stem}-{digest}"
 
 
 def feature_schema_sha256(schema_path: Path | str | None = None) -> str:
@@ -271,14 +278,29 @@ def checkpoint_is_reusable(
     pcap_path: Path,
     input_file_size: int,
     schema_sha256: str,
+    binary_label: str,
+    project_root: Path | None = None,
     expected_schema: pa.Schema | None = None,
 ) -> bool:
     """Return True only when checkpoint + shard pass all resume checks."""
+    root = (project_root or PROJECT_ROOT).resolve()
     payload = load_build_checkpoint(checkpoint_path)
     if payload is None:
         return False
 
-    if payload.get("pcap_id") != pcap_id_from_path(pcap_path):
+    pcap = Path(pcap_path)
+    out = Path(output_path)
+    expected_rel = to_repo_relative(pcap, project_root=root)
+    expected_out_rel = to_repo_relative(out, project_root=root)
+    expected_id = pcap_id_from_path(pcap, project_root=root)
+
+    if payload.get("pcap_id") != expected_id:
+        return False
+    if payload.get("pcap_path") != expected_rel:
+        return False
+    if payload.get("binary_label") != binary_label:
+        return False
+    if payload.get("output_path") != expected_out_rel:
         return False
     if int(payload.get("input_file_size", -1)) != int(input_file_size):
         return False
@@ -289,8 +311,9 @@ def checkpoint_is_reusable(
     if payload.get("feature_schema_sha256") != schema_sha256:
         return False
 
-    out = Path(output_path)
     if not out.is_file():
+        return False
+    if int(payload.get("output_file_size", -1)) != int(out.stat().st_size):
         return False
     if parquet_row_count(out) != int(payload.get("output_row_count", -1)):
         return False
@@ -332,7 +355,7 @@ def build_pcap_parquet(
     out = Path(output_path)
     if not out.is_absolute():
         out = root / out
-    pcap_id = pcap_id_from_path(pcap)
+    pcap_id = pcap_id_from_path(pcap, project_root=root)
     ckpt = Path(checkpoint_path) if checkpoint_path is not None else checkpoint_path_for(pcap_id)
     if not ckpt.is_absolute():
         ckpt = root / ckpt
@@ -344,6 +367,7 @@ def build_pcap_parquet(
     schema_hash = feature_schema_sha256(schema_file)
     input_size = pcap.stat().st_size
     rel = to_repo_relative(pcap, project_root=root)
+    out_rel = to_repo_relative(out, project_root=root)
     binary_label = ""
     if metadata:
         binary_label = str(metadata.get("binary_label") or "")
@@ -354,6 +378,8 @@ def build_pcap_parquet(
         pcap_path=pcap,
         input_file_size=input_size,
         schema_sha256=schema_hash,
+        binary_label=binary_label,
+        project_root=root,
     ):
         payload = load_build_checkpoint(ckpt) or {}
         return BuildResult(
@@ -417,11 +443,12 @@ def build_pcap_parquet(
     payload = {
         "pcap_id": pcap_id,
         "pcap_path": rel,
+        "binary_label": binary_label,
         "input_file_size": input_size,
         "feature_strategy_version": FEATURE_STRATEGY_VERSION,
         "feature_build_strategy_version": FEATURE_BUILD_STRATEGY_VERSION,
         "feature_schema_sha256": schema_hash,
-        "output_path": to_repo_relative(out, project_root=root),
+        "output_path": out_rel,
         "output_row_count": row_count,
         "output_file_size": output_size,
         "packets_processed": stats.packets_seen,
@@ -496,7 +523,7 @@ def run_parquet_smoke(
     for path in paths:
         rel = to_repo_relative(path, project_root=root)
         meta = dict(index.get(rel, {}))
-        pcap_id = pcap_id_from_path(path)
+        pcap_id = pcap_id_from_path(path, project_root=root)
         result = build_pcap_parquet(
             path,
             meta,

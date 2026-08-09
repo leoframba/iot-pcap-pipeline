@@ -205,6 +205,9 @@ PCAP → iter_packets → iter_windows → extract_features → buffer → Parqu
 - `FEATURE_BUILD_STRATEGY_VERSION = phase1c3_v1` (build/storage contract)
 - Atomic shards: write `<pcap-id>.parquet.tmp`, then `os.replace` to final
 - Resume checkpoints under `data/features/v1/.work/train/`
+- `pcap_id` is path-stable: `<stem>-<sha256(repo-relative-path)[:16]>`
+- Checkpoint identity includes `pcap_path`, `binary_label`, `output_path`,
+  and `output_file_size` (label corrections force rebuild)
 
 ```bash
 # Unit tests (storage contract)

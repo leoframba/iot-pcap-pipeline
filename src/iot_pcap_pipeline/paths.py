@@ -11,12 +11,14 @@ DEFAULT_RAW_ROOT = PROJECT_ROOT / "data" / "raw" / "WiFI_and_MQTT"
 DEFAULT_MANIFEST_DIR = PROJECT_ROOT / "data" / "manifests"
 DEFAULT_AUDIT_DIR = PROJECT_ROOT / "data" / "audit"
 DEFAULT_AUDIT_CHECKPOINT_DIR = DEFAULT_AUDIT_DIR / ".work"
+DEFAULT_FEATURES_DIR = PROJECT_ROOT / "data" / "features"
 
 DATASET_SCOPE = "wifi_mqtt"
 SPLIT_STRATEGY_VERSION = "phase1a_v1"
 DEFAULT_SPLIT_SEED = 42
 AUDIT_STRATEGY_VERSION = "phase1b2_v1"
 TIMESTAMP_PROBE_STRATEGY_VERSION = "phase1b3_v2"
+WINDOWING_STRATEGY_VERSION = "phase1c1_v1"
 
 
 def to_repo_relative(path: Path, project_root: Path | None = None) -> str:

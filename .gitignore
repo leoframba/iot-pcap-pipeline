@@ -38,7 +38,11 @@ data/raw/
 data/audit/.work/
 data/audit/*.log
 
-# Future pipeline outputs (not yet implemented)
+# Future pipeline outputs
 data/processed/
-data/features/
 data/windows/
+
+# Feature builds are heavy; keep characterization CSVs trackable
+data/features/**
+!data/features/
+!data/features/windowing_characterization*.csv

@@ -35,6 +35,18 @@ from iot_pcap_pipeline.pcap.timestamps import (
     resolve_pcap_path,
     write_probe_artifacts,
 )
+from iot_pcap_pipeline.windowing.characterize import (
+    DEFAULT_CHARACTERIZATION_CSV,
+    characterize_train_windowing,
+    format_characterization_summary,
+)
+from iot_pcap_pipeline.windowing.characterize import (
+    DEFAULT_WORKERS as WINDOWING_DEFAULT_WORKERS,
+)
+from iot_pcap_pipeline.windowing.policy import (
+    DEFAULT_BACKWARD_RESET_SECONDS,
+    candidate_policies,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -241,6 +253,50 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional per-file packet cap (for smoke tests on large floods)",
     )
+
+    win_cmd = subparsers.add_parser(
+        "characterize-windowing",
+        help=(
+            "Phase 1C.1 TRAIN-only windowing-policy characterization "
+            "(timestamp-only; Gate A — stop for review)"
+        ),
+    )
+    win_cmd.add_argument(
+        "--inventory",
+        type=Path,
+        default=DEFAULT_MANIFEST_DIR / "pcap_inventory.csv",
+        help="Path to pcap_inventory.csv",
+    )
+    win_cmd.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_CHARACTERIZATION_CSV,
+        help=f"Characterization CSV path (default: {DEFAULT_CHARACTERIZATION_CSV})",
+    )
+    win_cmd.add_argument(
+        "--workers",
+        type=int,
+        default=WINDOWING_DEFAULT_WORKERS,
+        help=(
+            "Process pool size across TRAIN PCAPs "
+            f"(default: {WINDOWING_DEFAULT_WORKERS}; use 1 for sequential)"
+        ),
+    )
+    win_cmd.add_argument(
+        "--max-packets",
+        type=int,
+        default=None,
+        help="Optional per-file packet cap (smoke tests only)",
+    )
+    win_cmd.add_argument(
+        "--backward-reset",
+        type=float,
+        default=DEFAULT_BACKWARD_RESET_SECONDS,
+        help=(
+            "Backward discontinuity threshold in seconds "
+            f"(default: {DEFAULT_BACKWARD_RESET_SECONDS})"
+        ),
+    )
     return parser
 
 
@@ -332,6 +388,25 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\nWrote {written['probe_path']}")
         if "examples_path" in written:
             print(f"Wrote {written['examples_path']}")
+        return 0
+
+    if args.command == "characterize-windowing":
+        policies = candidate_policies(backward_reset_seconds=args.backward_reset)
+        result = characterize_train_windowing(
+            inventory_path=args.inventory,
+            output_path=args.output,
+            policies=policies,
+            workers=args.workers,
+            max_packets=args.max_packets,
+            progress_file=sys.stderr,
+        )
+        print(format_characterization_summary(result.rows))
+        print(f"\nWrote {result.output_path}")
+        print(
+            f"Rows: {len(result.rows)} "
+            f"({result.train_pcap_count} TRAIN PCAPs × {result.policy_count} policies)"
+        )
+        print("\n*** GATE A COMPLETE — awaiting human config freeze ***")
         return 0
 
     parser.error(f"unknown command: {args.command}")

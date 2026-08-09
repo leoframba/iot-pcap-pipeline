@@ -74,7 +74,7 @@ counts solely for parser/integrity validation. Feature selection and behavioral
 comparisons for Phase 1C must use `training_characterization.csv` only. Do not
 choose features by comparing held-out TEST distributions.
 
-## Phase 1B.3 (current)
+## Phase 1B.3
 
 Timestamp-only ordering probe. Reads PCAPs in original capture order, ignores
 frame buffers, and measures adjacent timestamp deltas (positive / duplicate /
@@ -113,5 +113,44 @@ Notes:
 Interpretation focus columns: `negative_delta_count`, `negative_delta_ratio`,
 `negative_delta_p50_magnitude`, `negative_delta_p95_magnitude`,
 `negative_delta_p99_magnitude`, `negative_delta_max_magnitude`.
+
+## Phase 1C.1 (current) — Gate A
+
+TRAIN-only windowing-policy characterization. Timestamp-only (no frame decode).
+Each TRAIN PCAP is scanned **once** while all six candidate configs update
+concurrently:
+
+| window_size | inactivity_timeout | backward_reset |
+|------------:|-------------------:|---------------:|
+| 25 / 50 / 100 | 5s / 30s | 1.0s (fixed) |
+
+```bash
+uv run iot-pcap-pipeline characterize-windowing --workers 4
+```
+
+Artifact:
+
+- `data/features/windowing_characterization_train.csv` — one row per
+  TRAIN PCAP × candidate configuration
+
+Segmentation rules (original capture order; never timestamp-sorted):
+
+- `delta > inactivity_timeout` → positive inactivity boundary
+- `delta < -1.0s` → backward discontinuity boundary
+- `-1.0 <= delta <= inactivity_timeout` → continue segment
+  (includes duplicates and small ordering jitter)
+
+On boundary or EOF: drop incomplete windows (no padding, no carry-over).
+
+**GATE A:** After the CSV is written, STOP for human review. Do not choose
+`WINDOW_SIZE` automatically, do not scan TEST, and do not build features yet.
+
+Freeze after review:
+
+```text
+WINDOW_SIZE = ?
+INACTIVITY_TIMEOUT_SECONDS = ?
+BACKWARD_RESET_SECONDS = 1.0
+```
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

@@ -1,0 +1,23 @@
+{
+  "artifacts": {
+    "build_manifest": "/Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/build_manifest.csv",
+    "constant_features": "/Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/train_constant_features.csv",
+    "feature_summary": "/Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/train_feature_summary.csv"
+  },
+  "constant_feature_count": 0,
+  "constant_features": [],
+  "feature_build_strategy_version": "phase1c3_v1",
+  "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+  "feature_strategy_version": "phase1c2_v1",
+  "note": "Constant features are reported only; exclusion from model input requires an explicit pre-training contract decision. TEST must not be consulted.",
+  "pcap_count": 85,
+  "split": "train",
+  "total_feature_rows": 27645149,
+  "validation_status": "passed",
+  "windowing": {
+    "backward_reset_seconds": 1.0,
+    "inactivity_timeout_seconds": 5.0,
+    "window_size": 25
+  },
+  "windowing_strategy_version": "phase1c1_v2"
+}

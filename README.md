@@ -256,8 +256,27 @@ Smoke artifacts:
 Not yet: TRAIN-wide feature statistics, constant-feature report, TEST
 extraction, class balancing, or model training.
 
+## Phase 1C.3b — validate TRAIN build (read-only)
+
+After the full 85-PCAP TRAIN Parquet build, validate shards against the
+manifest, audit integrity packet counts, and frozen 25/5s/1s windowing
+characterization. Streams feature columns only (no PCAP decode).
+
+```bash
+uv run iot-pcap-pipeline validate-feature-dataset --split train
+```
+
+Artifacts:
+
+- `data/features/v1/train_feature_summary.csv`
+- `data/features/v1/train_constant_features.csv`
+- `data/features/v1/train_build_complete.json` — written **only** if all checks pass
+
+Constant features (e.g. `tcp_urg_ratio`) are reported only; do not drop from
+V1 without an explicit pre-training contract. TEST is not consulted.
+
 ## Phase 1C.3b step 2 (next)
 
-Full 85-PCAP TRAIN build after orchestration smoke, then TEST extraction.
+TEST extraction after TRAIN validation passes.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

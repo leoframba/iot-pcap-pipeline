@@ -1,0 +1,11 @@
+Validating 85 TRAIN shards (read-only; no PCAP decode)
+[1/85] ARP_Spoofing_train.pcap: rows=6423
+[10/85] Recon-Port_Scan_train.pcap: rows=33594
+[20/85] TCP_IP-DDoS-SYN1_train.pcap: rows=797279
+[30/85] TCP_IP-DDoS-UDP3_train.pcap: rows=826055
+[40/85] TCP_IP-DoS-SYN1_train.pcap: rows=445545
+[50/85] TCP_IP-DoS-UDP3_train.pcap: rows=584337
+[60/85] Ecobee_Camera_LAN_WATCH.pcap: rows=1464
+[70/85] M1T_Camera_WAN_WATCH.pcap: rows=629
+[80/85] Singcall_WAN_PHYSICAL.pcap: rows=12
+[85/85] Singcall_Power.pcap: rows=16

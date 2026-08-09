@@ -51,6 +51,14 @@ from iot_pcap_pipeline.features.schema import (
     write_feature_schema,
 )
 from iot_pcap_pipeline.features.validate import FeatureInvariantError
+from iot_pcap_pipeline.features.validate_dataset import (
+    DEFAULT_INTEGRITY_CSV,
+    DEFAULT_TRAIN_BUILD_COMPLETE_JSON,
+    DEFAULT_TRAIN_CONSTANT_FEATURES_CSV,
+    DEFAULT_TRAIN_FEATURE_SUMMARY_CSV,
+    format_validation_summary,
+    validate_feature_dataset,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -537,6 +545,65 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ignore checkpoints and rebuild every PCAP",
     )
     ds_cmd.set_defaults(resume=True)
+
+    val_cmd = subparsers.add_parser(
+        "validate-feature-dataset",
+        help=(
+            "Read-only TRAIN Parquet build validation "
+            "(shard schema/rows + audit/windowing joins + feature summaries)"
+        ),
+    )
+    val_cmd.add_argument(
+        "--split",
+        choices=["train"],
+        default="train",
+        help="Dataset split to validate (only train for now)",
+    )
+    val_cmd.add_argument(
+        "--manifest",
+        type=Path,
+        default=DEFAULT_BUILD_MANIFEST_PATH,
+        help=f"Build manifest CSV (default: {DEFAULT_BUILD_MANIFEST_PATH})",
+    )
+    val_cmd.add_argument(
+        "--integrity",
+        type=Path,
+        default=DEFAULT_INTEGRITY_CSV,
+        help=f"pcap_integrity.csv (default: {DEFAULT_INTEGRITY_CSV})",
+    )
+    val_cmd.add_argument(
+        "--characterization",
+        type=Path,
+        default=DEFAULT_CHARACTERIZATION_CSV,
+        help=(
+            "Windowing characterization CSV "
+            f"(default: {DEFAULT_CHARACTERIZATION_CSV})"
+        ),
+    )
+    val_cmd.add_argument(
+        "--summary-output",
+        type=Path,
+        default=DEFAULT_TRAIN_FEATURE_SUMMARY_CSV,
+        help=f"Feature summary CSV (default: {DEFAULT_TRAIN_FEATURE_SUMMARY_CSV})",
+    )
+    val_cmd.add_argument(
+        "--constant-output",
+        type=Path,
+        default=DEFAULT_TRAIN_CONSTANT_FEATURES_CSV,
+        help=(
+            "Constant-feature report CSV "
+            f"(default: {DEFAULT_TRAIN_CONSTANT_FEATURES_CSV})"
+        ),
+    )
+    val_cmd.add_argument(
+        "--complete-output",
+        type=Path,
+        default=DEFAULT_TRAIN_BUILD_COMPLETE_JSON,
+        help=(
+            "Pass marker JSON written only when all checks pass "
+            f"(default: {DEFAULT_TRAIN_BUILD_COMPLETE_JSON})"
+        ),
+    )
     return parser
 
 
@@ -800,6 +867,24 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
         return 0
+
+    if args.command == "validate-feature-dataset":
+        try:
+            result = validate_feature_dataset(
+                split=args.split,
+                manifest_path=args.manifest,
+                integrity_path=args.integrity,
+                characterization_path=args.characterization,
+                summary_output=args.summary_output,
+                constant_output=args.constant_output,
+                complete_output=args.complete_output,
+                progress_file=sys.stderr,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_validation_summary(result))
+        return 0 if result.passed else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

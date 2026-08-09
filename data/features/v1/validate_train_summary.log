@@ -1,0 +1,14 @@
+Phase 1C.3b — validate feature dataset (read-only)
+split: train
+validation_status: passed
+pcap_count: 85
+total_feature_rows: 27,645,149
+issue_count: 0
+constant_features: 0
+feature_strategy_version: phase1c2_v1
+feature_build_strategy_version: phase1c3_v1
+feature_schema_sha256: d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b
+feature_summary: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/train_feature_summary.csv
+constant_features_csv: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/train_constant_features.csv
+build_complete: /Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/train_build_complete.json
+

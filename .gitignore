@@ -42,7 +42,15 @@ data/audit/*.log
 data/processed/
 data/windows/
 
-# Feature builds are heavy; keep characterization CSVs trackable
+# Feature builds are heavy; keep characterization / V1 schema / smoke trackable
 data/features/**
 !data/features/
 !data/features/windowing_characterization*.csv
+!data/features/v1/
+!data/features/v1/**
+!data/features/v1/**/*.json
+!data/features/v1/**/*.csv
+# Still ignore heavy parquet / full builds under v1 if added later
+data/features/v1/**/*.parquet
+data/features/v1/train/
+data/features/v1/test/

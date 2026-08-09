@@ -19,6 +19,12 @@ from iot_pcap_pipeline.windowing.policy import (
     candidate_policies,
     frozen_window_policy,
 )
+from iot_pcap_pipeline.windowing.stream import (
+    FeatureExtractionError,
+    WindowStreamStats,
+    iter_windows,
+)
+from iot_pcap_pipeline.windowing.window import PacketWindow
 
 __all__ = [
     "BACKWARD_RESET_SECONDS",
@@ -29,11 +35,15 @@ __all__ = [
     "WINDOWING_STRATEGY_VERSION",
     "WINDOW_SIZE",
     "CharacterizationResult",
+    "FeatureExtractionError",
+    "PacketWindow",
     "WindowPolicy",
+    "WindowStreamStats",
     "candidate_policies",
     "characterize_pcap",
     "characterize_timestamps",
     "characterize_train_windowing",
     "format_characterization_summary",
     "frozen_window_policy",
+    "iter_windows",
 ]

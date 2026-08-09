@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import sys
 from pathlib import Path
 
@@ -15,12 +16,28 @@ from iot_pcap_pipeline.audit.policy import (
 )
 from iot_pcap_pipeline.audit.scan import audit_corpus
 from iot_pcap_pipeline.dataset.build import build_manifests
+from iot_pcap_pipeline.features.build import (
+    DEFAULT_MAX_WINDOWS_PER_PCAP,
+    DEFAULT_SMOKE_FEATURES_CSV,
+    extract_pcap_feature_rows,
+    format_smoke_summary,
+    load_inventory_index,
+    run_smoke_extraction,
+)
+from iot_pcap_pipeline.features.characterize import write_characterization_csv
+from iot_pcap_pipeline.features.schema import (
+    METADATA_COLUMN_NAMES,
+    V1_FEATURE_NAMES,
+    write_feature_schema,
+)
+from iot_pcap_pipeline.features.validate import FeatureInvariantError
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
     DEFAULT_RAW_ROOT,
     DEFAULT_SPLIT_SEED,
     PROJECT_ROOT,
+    to_repo_relative,
 )
 from iot_pcap_pipeline.pcap.reader import summarize_pcap
 from iot_pcap_pipeline.pcap.stats import DEFAULT_IP_CARDINALITY_CAP
@@ -48,6 +65,7 @@ from iot_pcap_pipeline.windowing.policy import (
     DEFAULT_BACKWARD_RESET_SECONDS,
     candidate_policies,
 )
+from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -307,6 +325,57 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default: {DEFAULT_SPAN_SAMPLE_CAP:,}; exact when count <= cap)"
         ),
     )
+
+    feat_cmd = subparsers.add_parser(
+        "extract-features",
+        help=(
+            "Phase 1C.2 V1 windowing + feature extraction "
+            "(Gate B smoke / arbitrary PCAPs)"
+        ),
+    )
+    feat_cmd.add_argument(
+        "pcaps",
+        nargs="*",
+        type=Path,
+        help="PCAP paths (absolute or repo-relative). Omit with --smoke.",
+    )
+    feat_cmd.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Run the representative TRAIN-only Gate B smoke set",
+    )
+    feat_cmd.add_argument(
+        "--inventory",
+        type=Path,
+        default=DEFAULT_MANIFEST_DIR / "pcap_inventory.csv",
+        help="Inventory for optional metadata join (not required for extraction)",
+    )
+    feat_cmd.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_SMOKE_FEATURES_CSV,
+        help=f"Feature CSV path (default: {DEFAULT_SMOKE_FEATURES_CSV})",
+    )
+    feat_cmd.add_argument(
+        "--characterization-output",
+        type=Path,
+        default=None,
+        help="Optional feature characterization CSV path (default under smoke dir)",
+    )
+    feat_cmd.add_argument(
+        "--max-windows-per-pcap",
+        type=int,
+        default=DEFAULT_MAX_WINDOWS_PER_PCAP,
+        help=(
+            "Stop after N emitted windows per PCAP "
+            f"(default: {DEFAULT_MAX_WINDOWS_PER_PCAP:,}; use 0 for uncapped)"
+        ),
+    )
+    feat_cmd.add_argument(
+        "--write-schema-only",
+        action="store_true",
+        help="Only write data/features/v1/feature_schema.json and exit",
+    )
     return parser
 
 
@@ -418,6 +487,70 @@ def main(argv: list[str] | None = None) -> int:
             f"({result.train_pcap_count} TRAIN PCAPs × {result.policy_count} policies)"
         )
         print("\n*** GATE A COMPLETE — awaiting human config freeze ***")
+        return 0
+
+    if args.command == "extract-features":
+        if args.write_schema_only:
+            path = write_feature_schema()
+            print(f"Wrote {path}")
+            return 0
+
+        max_windows = args.max_windows_per_pcap
+        if max_windows == 0:
+            max_windows = None
+
+        if args.smoke:
+            result = run_smoke_extraction(
+                inventory_path=args.inventory,
+                output_path=args.output,
+                characterization_path=args.characterization_output,
+                max_windows_per_pcap=max_windows,
+                progress_file=sys.stderr,
+            )
+            print(format_smoke_summary(result))
+            return 0
+
+        if not args.pcaps:
+            parser.error("provide PCAP paths or --smoke")
+
+        inv = args.inventory
+        inv_path = inv if inv.is_absolute() else (PROJECT_ROOT / inv)
+        index = load_inventory_index(inv_path)
+        all_rows: list[dict] = []
+        for raw in args.pcaps:
+            path = raw if raw.is_absolute() else (PROJECT_ROOT / raw)
+            rel = to_repo_relative(path)
+            meta = dict(index.get(rel, {}))
+            try:
+                rows, _stats = extract_pcap_feature_rows(
+                    path,
+                    meta=meta,
+                    max_windows=max_windows,
+                    validate=True,
+                )
+            except (FeatureExtractionError, FeatureInvariantError) as exc:
+                print(f"FAILED {path}: {exc}", file=sys.stderr)
+                return 1
+            all_rows.extend(rows)
+            print(f"{path}: {len(rows)} windows", file=sys.stderr)
+
+        out = args.output
+        if not out.is_absolute():
+            out = PROJECT_ROOT / out
+        out.parent.mkdir(parents=True, exist_ok=True)
+        columns = list(METADATA_COLUMN_NAMES) + list(V1_FEATURE_NAMES)
+        with out.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
+            writer.writeheader()
+            for row in all_rows:
+                writer.writerow({c: row.get(c, "") for c in columns})
+        print(f"Wrote {out} ({len(all_rows)} windows)")
+        if args.characterization_output is not None:
+            char_path = write_characterization_csv(
+                all_rows, args.characterization_output
+            )
+            print(f"Wrote {char_path}")
+        write_feature_schema()
         return 0
 
     parser.error(f"unknown command: {args.command}")

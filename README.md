@@ -149,9 +149,38 @@ tolerated; V1 will not rely on packets/sec or bytes/sec.
 uv run iot-pcap-pipeline characterize-windowing --workers 4
 ```
 
-## Phase 1C.2 (next)
+## Phase 1C.2 (current) — Gate B
 
-V1 feature extractor + TRAIN-only validation, using the frozen windowing policy
-above. Do not start until feature schema design is ready.
+V1 production window engine + 27-feature extractor using the frozen Gate-A
+policy. Same core path for offline and future inference:
+
+```text
+iter_packets → iter_windows → extract_features
+```
+
+```bash
+# Write schema only
+uv run iot-pcap-pipeline extract-features --write-schema-only
+
+# Representative TRAIN smoke (capped windows per PCAP)
+uv run iot-pcap-pipeline extract-features --smoke --max-windows-per-pcap 10000
+
+# Arbitrary PCAP (no labels required)
+uv run iot-pcap-pipeline extract-features path/to/capture.pcap --output /tmp/feats.csv
+```
+
+Artifacts:
+
+- `data/features/v1/feature_schema.json` — frozen V1 contract
+- `data/features/v1/smoke/train_features_smoke.csv` — diagnostic TRAIN smoke
+- `data/features/v1/smoke/training_feature_characterization.csv`
+
+Parse-status policy:
+
+- `OK` / `UNSUPPORTED` / `PARTIAL` / `MALFORMED` → included in windows
+- `ERROR` → abort extraction for that PCAP
+
+**GATE B:** After the TRAIN smoke passes review, STOP. Do not extract all
+~27.6M TRAIN windows and do not process TEST until Gate B is approved.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

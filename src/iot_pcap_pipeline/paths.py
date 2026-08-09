@@ -19,6 +19,7 @@ DEFAULT_SPLIT_SEED = 42
 AUDIT_STRATEGY_VERSION = "phase1b2_v1"
 TIMESTAMP_PROBE_STRATEGY_VERSION = "phase1b3_v2"
 WINDOWING_STRATEGY_VERSION = "phase1c1_v2"
+FEATURE_STRATEGY_VERSION = "phase1c2_v1"
 
 
 def to_repo_relative(path: Path, project_root: Path | None = None) -> str:

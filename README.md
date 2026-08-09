@@ -97,7 +97,8 @@ uv run iot-pcap-pipeline probe-timestamps \
 Artifacts:
 
 - `data/audit/timestamp_probe.csv` — one row per probed PCAP
-- `data/audit/timestamp_reversal_examples.csv` — bounded first-N negative events
+- `data/audit/timestamp_reversal_examples.csv` — bounded first-N and
+  largest-N (by magnitude) negative events (`example_kind` column)
 
 Notes:
 

@@ -171,14 +171,49 @@ def test_all_increasing_timestamps(tmp_path: Path) -> None:
 def test_bounded_example_limit(tmp_path: Path) -> None:
     # five consecutive reversals
     path = _pcap(tmp_path, "burst.pcap", [10.0, 9.0, 8.0, 7.0, 6.0, 5.0])
-    result = probe_timestamps(path, example_limit=2)
+    result = probe_timestamps(path, example_limit=2, largest_example_limit=2)
 
     assert result.negative_delta_count == 5
     assert len(result.examples) == 2
     assert result.examples[0].packet_index_current == 1
     assert result.examples[1].packet_index_current == 2
+    assert result.examples[0].example_kind == "first"
     assert result.negative_run_count == 1
     assert result.negative_run_max_length == 5
+
+    # magnitudes are all 1.0; earliest indices win the magnitude-tie break
+    assert len(result.largest_examples) == 2
+    assert result.largest_examples[0].example_kind == "largest"
+    assert {ex.packet_index_current for ex in result.largest_examples} == {1, 2}
+
+
+def test_largest_examples_capture_outlier_not_in_first_n(tmp_path: Path) -> None:
+    # Many tiny early reversals, then one huge late outlier (like Benign_train).
+    timestamps = [0.0]
+    t = 0.0
+    for i in range(12):
+        t += 1.0
+        timestamps.append(t)
+        timestamps.append(t - 1e-4)  # ~100 µs reversal
+        t = t - 1e-4
+    t += 1.0
+    timestamps.append(t)
+    timestamps.append(t - 12.8218)  # extreme outlier
+
+    path = _pcap(tmp_path, "outlier.pcap", timestamps)
+    result = probe_timestamps(path, example_limit=5, largest_example_limit=3)
+
+    assert result.negative_delta_count == 13
+    assert len(result.examples) == 5
+    assert all(ex.delta_magnitude_seconds < 1e-3 for ex in result.examples)
+
+    assert len(result.largest_examples) == 3
+    assert result.largest_examples[0].delta_magnitude_seconds == pytest.approx(12.8218)
+    assert result.largest_examples[0].example_kind == "largest"
+    assert result.negative_delta_max_magnitude == pytest.approx(12.8218)
+
+    rows_kinds = {ex.example_kind for ex in result.all_examples()}
+    assert rows_kinds == {"first", "largest"}
 
 
 def test_positive_reservoir_method_documented(tmp_path: Path) -> None:
@@ -215,7 +250,9 @@ def test_write_probe_artifacts(tmp_path: Path) -> None:
 
     with examples_csv.open(newline="", encoding="utf-8") as handle:
         examples = list(csv.DictReader(handle))
-    assert len(examples) == 1
+    # one first + one largest for the same event
+    assert len(examples) == 2
+    assert {row["example_kind"] for row in examples} == {"first", "largest"}
     assert float(examples[0]["delta_magnitude_seconds"]) == pytest.approx(0.05)
 
 

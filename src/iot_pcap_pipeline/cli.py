@@ -27,6 +27,7 @@ from iot_pcap_pipeline.pcap.stats import DEFAULT_IP_CARDINALITY_CAP
 from iot_pcap_pipeline.pcap.timestamps import (
     DEFAULT_EXAMPLE_LIMIT,
     DEFAULT_EXAMPLES_CSV,
+    DEFAULT_LARGEST_EXAMPLE_LIMIT,
     DEFAULT_POSITIVE_SAMPLE_CAP,
     DEFAULT_PROBE_CSV,
     format_probe_summary,
@@ -194,7 +195,19 @@ def build_parser() -> argparse.ArgumentParser:
         "--example-limit",
         type=int,
         default=DEFAULT_EXAMPLE_LIMIT,
-        help=f"Max reversal examples retained per PCAP (default: {DEFAULT_EXAMPLE_LIMIT})",
+        help=(
+            "Max first-seen reversal examples retained per PCAP "
+            f"(default: {DEFAULT_EXAMPLE_LIMIT})"
+        ),
+    )
+    probe_cmd.add_argument(
+        "--largest-example-limit",
+        type=int,
+        default=DEFAULT_LARGEST_EXAMPLE_LIMIT,
+        help=(
+            "Max largest-by-magnitude reversal examples retained per PCAP "
+            f"(default: {DEFAULT_LARGEST_EXAMPLE_LIMIT})"
+        ),
     )
     probe_cmd.add_argument(
         "--output",
@@ -305,6 +318,7 @@ def main(argv: list[str] | None = None) -> int:
             probe = probe_timestamps(
                 path,
                 example_limit=args.example_limit,
+                largest_example_limit=args.largest_example_limit,
                 positive_sample_cap=args.positive_sample_cap,
                 max_packets=args.max_packets,
             )

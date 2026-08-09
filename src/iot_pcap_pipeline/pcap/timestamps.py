@@ -12,12 +12,13 @@ always exact. Min / max / mean for both classes are exact streaming values.
 from __future__ import annotations
 
 import csv
+import heapq
 import math
 import random
 from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import dpkt
 
@@ -29,11 +30,14 @@ from iot_pcap_pipeline.paths import (
 )
 
 DEFAULT_EXAMPLE_LIMIT = 10
+DEFAULT_LARGEST_EXAMPLE_LIMIT = 10
 DEFAULT_POSITIVE_SAMPLE_CAP = 100_000
 DEFAULT_POSITIVE_SAMPLE_SEED = 42
 
 DEFAULT_PROBE_CSV = DEFAULT_AUDIT_DIR / "timestamp_probe.csv"
 DEFAULT_EXAMPLES_CSV = DEFAULT_AUDIT_DIR / "timestamp_reversal_examples.csv"
+
+ExampleKind = Literal["first", "largest"]
 
 PROBE_COLUMNS: list[str] = [
     "pcap_path",
@@ -66,6 +70,7 @@ PROBE_COLUMNS: list[str] = [
 
 EXAMPLE_COLUMNS: list[str] = [
     "pcap_path",
+    "example_kind",
     "packet_index_previous",
     "packet_index_current",
     "previous_timestamp",
@@ -86,6 +91,7 @@ class ReversalExample:
     current_timestamp: float
     delta_seconds: float
     delta_magnitude_seconds: float
+    example_kind: ExampleKind = "first"
 
 
 @dataclass
@@ -119,12 +125,18 @@ class TimestampProbeResult:
     negative_run_mean_length: float | None = None
     probe_strategy_version: str = TIMESTAMP_PROBE_STRATEGY_VERSION
     examples: list[ReversalExample] = field(default_factory=list)
+    largest_examples: list[ReversalExample] = field(default_factory=list)
 
     def to_row(self) -> dict[str, Any]:
         """Serialize summary fields for CSV (excludes examples)."""
         row = asdict(self)
         row.pop("examples", None)
+        row.pop("largest_examples", None)
         return row
+
+    def all_examples(self) -> list[ReversalExample]:
+        """First-N examples followed by largest-N examples (may overlap)."""
+        return [*self.examples, *self.largest_examples]
 
 
 class _ReservoirSampler:
@@ -194,6 +206,7 @@ def probe_timestamps(
     pcap_path: Path | str,
     *,
     example_limit: int = DEFAULT_EXAMPLE_LIMIT,
+    largest_example_limit: int = DEFAULT_LARGEST_EXAMPLE_LIMIT,
     positive_sample_cap: int = DEFAULT_POSITIVE_SAMPLE_CAP,
     positive_sample_seed: int = DEFAULT_POSITIVE_SAMPLE_SEED,
     max_packets: int | None = None,
@@ -208,6 +221,9 @@ def probe_timestamps(
     - ``delta < 0`` → negative / reversal
 
     Values are never modified. Packets are never sorted.
+
+    Retains both the first ``example_limit`` reversals (for burst locality) and
+    the ``largest_example_limit`` reversals by magnitude (for outlier location).
     """
     path = Path(pcap_path)
     rel = to_repo_relative(path, project_root=project_root)
@@ -215,6 +231,8 @@ def probe_timestamps(
 
     if example_limit < 0:
         raise ValueError("example_limit must be >= 0")
+    if largest_example_limit < 0:
+        raise ValueError("largest_example_limit must be >= 0")
 
     prev_ts: float | None = None
     prev_index: int | None = None
@@ -227,6 +245,8 @@ def probe_timestamps(
 
     current_run_length = 0
     run_lengths: list[int] = []
+    # Min-heap of (magnitude, packet_index_current, example) → keep largest N.
+    largest_heap: list[tuple[float, int, ReversalExample]] = []
 
     for index, ts in iter_timestamps(path, max_packets=max_packets):
         result.packet_count += 1
@@ -258,24 +278,48 @@ def probe_timestamps(
             result.negative_delta_count += 1
             negative_magnitudes.append(magnitude)
             current_run_length += 1
+            example = ReversalExample(
+                pcap_path=rel,
+                packet_index_previous=prev_index,
+                packet_index_current=index,
+                previous_timestamp=prev_ts,
+                current_timestamp=ts,
+                delta_seconds=delta,
+                delta_magnitude_seconds=magnitude,
+                example_kind="first",
+            )
             if len(result.examples) < example_limit:
-                result.examples.append(
-                    ReversalExample(
-                        pcap_path=rel,
-                        packet_index_previous=prev_index,
-                        packet_index_current=index,
-                        previous_timestamp=prev_ts,
-                        current_timestamp=ts,
-                        delta_seconds=delta,
-                        delta_magnitude_seconds=magnitude,
-                    )
+                result.examples.append(example)
+            if largest_example_limit > 0:
+                largest = ReversalExample(
+                    pcap_path=rel,
+                    packet_index_previous=prev_index,
+                    packet_index_current=index,
+                    previous_timestamp=prev_ts,
+                    current_timestamp=ts,
+                    delta_seconds=delta,
+                    delta_magnitude_seconds=magnitude,
+                    example_kind="largest",
                 )
+                item = (magnitude, index, largest)
+                if len(largest_heap) < largest_example_limit:
+                    heapq.heappush(largest_heap, item)
+                elif magnitude > largest_heap[0][0]:
+                    heapq.heapreplace(largest_heap, item)
 
         prev_ts = ts
         prev_index = index
 
     if current_run_length > 0:
         run_lengths.append(current_run_length)
+
+    if largest_heap:
+        result.largest_examples = [
+            ex
+            for _mag, _idx, ex in sorted(
+                largest_heap, key=lambda item: (-item[0], item[1])
+            )
+        ]
 
     n_adj = result.adjacent_delta_count
     if n_adj > 0:
@@ -339,7 +383,7 @@ def write_probe_artifacts(
     written: dict[str, Path] = {"probe_path": out}
     if examples_path is not None:
         ex_path = Path(examples_path)
-        example_rows = [asdict(ex) for r in results for ex in r.examples]
+        example_rows = [asdict(ex) for r in results for ex in r.all_examples()]
         _write_csv(ex_path, example_rows, EXAMPLE_COLUMNS)
         written["examples_path"] = ex_path
     return written
@@ -352,6 +396,14 @@ def format_probe_summary(result: TimestampProbeResult) -> str:
         if seconds is None:
             return "n/a"
         return f"{seconds * 1e6:.3f} µs ({seconds:.9f} s)"
+
+    def _format_example(ex: ReversalExample) -> str:
+        return (
+            f"  idx {ex.packet_index_previous}->{ex.packet_index_current}: "
+            f"Δ={ex.delta_seconds:.9f} s  "
+            f"|Δ|={ex.delta_magnitude_seconds * 1e6:.3f} µs "
+            f"({ex.delta_magnitude_seconds:.9f} s)"
+        )
 
     lines = [
         f"\n=== {result.pcap_path} ===",
@@ -399,14 +451,16 @@ def format_probe_summary(result: TimestampProbeResult) -> str:
         )
     else:
         lines.append("negative_runs: none")
+    if result.largest_examples:
+        lines.append(
+            f"largest_reversals (top {len(result.largest_examples)} by magnitude):"
+        )
+        for ex in result.largest_examples:
+            lines.append(_format_example(ex))
     if result.examples:
-        lines.append(f"reversal_examples (first {len(result.examples)}):")
+        lines.append(f"first_reversals (first {len(result.examples)}):")
         for ex in result.examples:
-            lines.append(
-                f"  idx {ex.packet_index_previous}->{ex.packet_index_current}: "
-                f"Δ={ex.delta_seconds:.9f} s  "
-                f"|Δ|={ex.delta_magnitude_seconds * 1e6:.3f} µs"
-            )
+            lines.append(_format_example(ex))
     return "\n".join(lines)
 
 

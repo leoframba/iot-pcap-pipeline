@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "build_manifest": "data/features/v1/test_build_manifest.csv",
+    "train_build_complete": "data/features/v1/train_build_complete.json"
+  },
+  "feature_build_strategy_version": "phase1c3_v1",
+  "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+  "feature_strategy_version": "phase1c2_v1",
+  "note": "Structural TEST validation only. No TEST feature characterization, constant-feature decisions, feature selection, or model scoring.",
+  "pcap_count": 29,
+  "split": "test",
+  "total_feature_rows": 6206674,
+  "train_contract_verified": true,
+  "validation_status": "passed",
+  "windowing": {
+    "backward_reset_seconds": 1.0,
+    "inactivity_timeout_seconds": 5.0,
+    "window_size": 25
+  },
+  "windowing_strategy_version": "phase1c1_v2"
+}

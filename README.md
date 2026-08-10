@@ -6,6 +6,10 @@ Phase 1 targets a deterministic, reusable conversion path:
 PCAP → packet parsing → fixed windows → clean network features → training-ready dataset
 ```
 
+**Phase 1C (feature engineering) is closed:** frozen 25/5/1 windowing, 27 V1
+features, TRAIN (85) + TEST (29) Parquet corpora under the same contract.
+See [Phase 1C — closed](#phase-1c--closed).
+
 ## Dataset scope
 
 `dataset_scope = wifi_mqtt`
@@ -183,14 +187,12 @@ Parse-status policy:
 - `OK` / `UNSUPPORTED` / `PARTIAL` / `MALFORMED` → included in windows
 - `ERROR` → abort extraction for that PCAP
 
-Notes carried into Phase 1C.3:
+Notes resolved in Phase 1C.3:
 
-- `tcp_urg_ratio` was constant-zero in the smoke set but remains in V1.
-  After the full TRAIN feature build, report globally constant features.
-  Dropping a constant from the **model input** requires an explicit
-  pre-training schema/model-contract decision; TEST must not decide it.
-- Full-corpus extraction must stream windows to Parquet. Do not reuse the
-  smoke helper that accumulates all rows in a Python list.
+- `tcp_urg_ratio` was smoke-constant but nonzero on full TRAIN; kept in Gate C.
+  Globally constant features on TRAIN: **none**. Any future model-input drop
+  still needs an explicit pre-training contract; TEST must not decide it.
+- Full-corpus extraction streams windows to Parquet (no whole-PCAP row lists).
 
 ## Phase 1C.3a — Streaming Parquet smoke
 
@@ -222,10 +224,10 @@ Artifacts:
 - `data/features/v1/smoke/parquet/<pcap-id>.parquet`
 - `data/features/v1/.work/train/<pcap-id>.json`
 
-Not in 1C.3a: full 85-PCAP TRAIN, TEST extraction, multi-worker scheduler,
-global manifests, constant-feature report, or model training.
+1C.3a delivered the single-PCAP writer + resume smoke. Full TRAIN/TEST
+orchestration and validation are covered in 1C.3b / 1C.3c below.
 
-## Phase 1C.3b step 1 — TRAIN corpus orchestration
+## Phase 1C.3b — TRAIN corpus orchestration
 
 Multiprocess wrapper around the frozen single-PCAP Parquet builder.
 
@@ -253,8 +255,6 @@ Smoke artifacts:
 - `data/features/v1/smoke/dataset/<pcap-id>.parquet`
 - `data/features/v1/.work/smoke/<pcap-id>.json`
 - `data/features/v1/smoke/build_manifest_smoke.csv`
-
-TRAIN validation / characterization / Gate C freeze are documented below.
 
 ## Phase 1C.3b — validate TRAIN build (read-only)
 
@@ -310,13 +310,12 @@ No Phase 1C extractor changes. Artifact:
 `data/features/v1/train_feature_contract.json` (separate from
 `feature_schema.json` so the TRAIN-pinned schema hash is unchanged).
 
-## Phase 1C.3c — Held-out TEST feature build
+## Phase 1C.3c — Held-out TEST feature build (passed)
 
-Uses the identical frozen transformation (`phase1c2_v1` features,
+Identical frozen transformation as TRAIN (`phase1c2_v1` features,
 `phase1c3_v1` storage, 25 / 5s / 1s). Requires
-`data/features/v1/train_build_complete.json` with
-`validation_status=passed` and `pcap_count=85`, matching the installed
-versions / schema hash / windowing.
+`data/features/v1/train_build_complete.json` (`validation_status=passed`,
+`pcap_count=85`) matching the installed versions / schema hash / windowing.
 
 ```bash
 # TEST orchestration smoke (3 PCAPs → canonical test/ + .work/test/)
@@ -326,7 +325,7 @@ uv run iot-pcap-pipeline build-feature-dataset \
   --resume \
   --smoke
 
-# Full TEST corpus (29 PCAPs; after smoke is green)
+# Full TEST corpus (29 PCAPs)
 uv run iot-pcap-pipeline build-feature-dataset \
   --split test \
   --workers 4 \
@@ -344,7 +343,35 @@ Artifacts:
 - `data/features/v1/test_build_complete.json` — written only if all checks pass
 - smoke manifest: `data/features/v1/smoke/test_build_manifest_smoke.csv`
 
-TEST shards stay separate from TRAIN. No TEST behavioral characterization,
-feature selection, or model training in 1C.3c.
+Validation checks (structural): 29 shards, schema/row counts, integrity
+packet joins, independent frozen 25/5/1 window recount, finite/range
+invariants, schema hash match to TRAIN. No TEST class/feature
+characterization, feature selection, or model scoring.
+
+## Phase 1C — closed
+
+Feature engineering for the Wi-Fi/MQTT binary IDS path is complete.
+
+| Contract | Value |
+|----------|--------|
+| Windowing | 25 / 5s / 1s (`phase1c1_v2`) |
+| Features | 27 ordered V1 columns (`phase1c2_v1`) |
+| Build/storage | streaming Parquet (`phase1c3_v1`) |
+| Schema hash | pinned by TRAIN build / mirrored on TEST |
+| TRAIN | 85 PCAPs → 27,645,149 feature rows |
+| TEST | 29 PCAPs → 6,206,674 feature rows |
+
+Gates: **A** (windowing) → **B** (extractor) → **C** (TRAIN freeze) →
+held-out TEST under the same contract.
+
+Completion markers:
+
+- `data/features/v1/train_build_complete.json`
+- `data/features/v1/test_build_complete.json`
+- `data/features/v1/train_feature_contract.json`
+
+**Out of Phase 1C / next work:** model training, class balancing, feature
+drops for model input (explicit pre-training contract only; not from TEST),
+thresholds, and inference packaging.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

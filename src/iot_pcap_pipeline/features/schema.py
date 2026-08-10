@@ -33,8 +33,8 @@ GATE_C_DECISION = (
     "keep WINDOW_SIZE=25 / INACTIVITY=5s / BACKWARD_RESET=1s; keep all 27 V1 "
     "features including tcp_urg_ratio, temporal features, frame-length features, "
     "and rare protocol ratios. No Phase 1C extractor changes. No feature drops "
-    "from the TRAIN constant/group reports. Next: identical TEST extraction "
-    "under the same frozen contract (TEST must not revise features)."
+    "from the TRAIN constant/group reports. Held-out TEST was extracted under "
+    "the identical contract; Phase 1C feature engineering is complete."
 )
 
 DEFAULT_TRAIN_FEATURE_CONTRACT_PATH = (
@@ -422,14 +422,18 @@ def write_train_feature_contract(
         },
         "extractor_changes": "none",
         "feature_schema_sha256_pinned_to_train_build": feature_schema_sha256,
+        "phase_1c_status": "complete",
         "next": (
-            "Extract TEST with the identical frozen windowing + 27-feature "
-            "contract. TEST must not revise or drop features."
+            "Phase 1C closed. Proceed to model training / evaluation under "
+            "the frozen 25/5/1 + 27-feature contract. Do not revise features "
+            "from TEST."
         ),
         "artifacts": {
             "feature_schema": "data/features/v1/feature_schema.json",
             "build_manifest": "data/features/v1/build_manifest.csv",
             "train_build_complete": "data/features/v1/train_build_complete.json",
+            "test_build_complete": "data/features/v1/test_build_complete.json",
+            "test_build_manifest": "data/features/v1/test_build_manifest.csv",
             "train_feature_summary": "data/features/v1/train_feature_summary.csv",
             "train_feature_group_summary": (
                 "data/features/v1/train_feature_group_summary.csv"

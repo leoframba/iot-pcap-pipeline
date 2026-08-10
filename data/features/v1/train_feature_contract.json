@@ -2,6 +2,8 @@
   "artifacts": {
     "build_manifest": "data/features/v1/build_manifest.csv",
     "feature_schema": "data/features/v1/feature_schema.json",
+    "test_build_complete": "data/features/v1/test_build_complete.json",
+    "test_build_manifest": "data/features/v1/test_build_manifest.csv",
     "train_build_complete": "data/features/v1/train_build_complete.json",
     "train_feature_group_characterization": "data/features/v1/train_feature_group_characterization.json",
     "train_feature_group_summary": "data/features/v1/train_feature_group_summary.csv",
@@ -10,7 +12,7 @@
   "extractor_changes": "none",
   "feature_schema_sha256_pinned_to_train_build": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
   "feature_strategy_version": "phase1c2_v1",
-  "gate_c_decision": "Freeze the TRAIN-side feature engineering contract for the full pipeline: keep WINDOW_SIZE=25 / INACTIVITY=5s / BACKWARD_RESET=1s; keep all 27 V1 features including tcp_urg_ratio, temporal features, frame-length features, and rare protocol ratios. No Phase 1C extractor changes. No feature drops from the TRAIN constant/group reports. Next: identical TEST extraction under the same frozen contract (TEST must not revise features).",
+  "gate_c_decision": "Freeze the TRAIN-side feature engineering contract for the full pipeline: keep WINDOW_SIZE=25 / INACTIVITY=5s / BACKWARD_RESET=1s; keep all 27 V1 features including tcp_urg_ratio, temporal features, frame-length features, and rare protocol ratios. No Phase 1C extractor changes. No feature drops from the TRAIN constant/group reports. Held-out TEST was extracted under the identical contract; Phase 1C feature engineering is complete.",
   "gate_c_status": "passed",
   "keep": {
     "frame_length_features": true,
@@ -20,7 +22,8 @@
     "v1_feature_count": 27,
     "windowing_25_5_1": true
   },
-  "next": "Extract TEST with the identical frozen windowing + 27-feature contract. TEST must not revise or drop features.",
+  "next": "Phase 1C closed. Proceed to model training / evaluation under the frozen 25/5/1 + 27-feature contract. Do not revise features from TEST.",
+  "phase_1c_status": "complete",
   "train_feature_contract": "frozen",
   "windowing": {
     "backward_reset_seconds": 1.0,

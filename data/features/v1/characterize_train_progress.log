@@ -1,0 +1,11 @@
+Characterizing 85 TRAIN shards (read-only Parquet; sample_cap=200,000)
+[1/85] ARP_Spoofing_train.pcap: rows=6423 group=Spoofing
+[10/85] Recon-Port_Scan_train.pcap: rows=33594 group=Recon
+[20/85] TCP_IP-DDoS-SYN1_train.pcap: rows=797279 group=DDoS
+[30/85] TCP_IP-DDoS-UDP3_train.pcap: rows=826055 group=DDoS
+[40/85] TCP_IP-DoS-SYN1_train.pcap: rows=445545 group=DoS
+[50/85] TCP_IP-DoS-UDP3_train.pcap: rows=584337 group=DoS
+[60/85] Ecobee_Camera_LAN_WATCH.pcap: rows=1464 group=profiling_interaction
+[70/85] M1T_Camera_WAN_WATCH.pcap: rows=629 group=profiling_interaction
+[80/85] Singcall_WAN_PHYSICAL.pcap: rows=12 group=profiling_interaction
+[85/85] Singcall_Power.pcap: rows=16 group=profiling_power

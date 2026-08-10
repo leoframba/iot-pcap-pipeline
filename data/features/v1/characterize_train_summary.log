@@ -1,0 +1,8 @@
+Phase 1C.3b — TRAIN per-group feature characterization (read-only)
+pcap_count: 85
+total_feature_rows: 27,645,149
+group_count: 34
+group_summary: data/features/v1/train_feature_group_summary.csv
+pcap_diagnostics: data/features/v1/train_feature_pcap_diagnostics.csv
+summary_json: data/features/v1/train_feature_group_characterization.json
+

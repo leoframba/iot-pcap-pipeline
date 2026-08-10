@@ -275,8 +275,26 @@ Artifacts:
 Constant features (e.g. `tcp_urg_ratio`) are reported only; do not drop from
 V1 without an explicit pre-training contract. TEST is not consulted.
 
+## Phase 1C.3b — TRAIN per-group characterization (read-only)
+
+After validation, characterize feature distributions over existing Parquet
+shards (no PCAP decode). Groups: all TRAIN, publisher benign, profiling
+types, attack families, and attack types.
+
+```bash
+uv run iot-pcap-pipeline characterize-feature-dataset --split train
+```
+
+Artifacts:
+
+- `data/features/v1/train_feature_group_summary.csv`
+- `data/features/v1/train_feature_pcap_diagnostics.csv`
+- `data/features/v1/train_feature_group_characterization.json`
+
+Do not drop features from this report alone.
+
 ## Phase 1C.3b step 2 (next)
 
-TEST extraction after TRAIN validation passes.
+TEST extraction after TRAIN validation / characterization review.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

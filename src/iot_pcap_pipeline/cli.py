@@ -25,6 +25,14 @@ from iot_pcap_pipeline.features.build import (
     run_smoke_extraction,
 )
 from iot_pcap_pipeline.features.characterize import write_characterization_csv
+from iot_pcap_pipeline.features.characterize_dataset import (
+    DEFAULT_GROUP_CHARACTERIZATION_JSON,
+    DEFAULT_GROUP_SUMMARY_CSV,
+    DEFAULT_PCAP_DIAGNOSTICS_CSV,
+    DEFAULT_PERCENTILE_SAMPLE_CAP,
+    characterize_train_feature_groups,
+    format_group_characterization_summary,
+)
 from iot_pcap_pipeline.features.dataset import (
     DEFAULT_BUILD_MANIFEST_PATH,
     DEFAULT_FEATURE_DATASET_WORKERS,
@@ -604,6 +612,65 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default: {DEFAULT_TRAIN_BUILD_COMPLETE_JSON})"
         ),
     )
+
+    char_ds_cmd = subparsers.add_parser(
+        "characterize-feature-dataset",
+        help=(
+            "TRAIN-only read-only per-group feature characterization "
+            "over existing Parquet shards (no PCAP decode)"
+        ),
+    )
+    char_ds_cmd.add_argument(
+        "--split",
+        choices=["train"],
+        default="train",
+        help="Dataset split to characterize (only train for now)",
+    )
+    char_ds_cmd.add_argument(
+        "--manifest",
+        type=Path,
+        default=DEFAULT_BUILD_MANIFEST_PATH,
+        help=f"Build manifest CSV (default: {DEFAULT_BUILD_MANIFEST_PATH})",
+    )
+    char_ds_cmd.add_argument(
+        "--inventory",
+        type=Path,
+        default=DEFAULT_MANIFEST_DIR / "pcap_inventory.csv",
+        help="Inventory for group labels",
+    )
+    char_ds_cmd.add_argument(
+        "--group-summary-output",
+        type=Path,
+        default=DEFAULT_GROUP_SUMMARY_CSV,
+        help=f"Per-group feature summary CSV (default: {DEFAULT_GROUP_SUMMARY_CSV})",
+    )
+    char_ds_cmd.add_argument(
+        "--pcap-diagnostics-output",
+        type=Path,
+        default=DEFAULT_PCAP_DIAGNOSTICS_CSV,
+        help=(
+            "Per-PCAP diagnostic CSV "
+            f"(default: {DEFAULT_PCAP_DIAGNOSTICS_CSV})"
+        ),
+    )
+    char_ds_cmd.add_argument(
+        "--summary-json-output",
+        type=Path,
+        default=DEFAULT_GROUP_CHARACTERIZATION_JSON,
+        help=(
+            "Compact diagnostic JSON "
+            f"(default: {DEFAULT_GROUP_CHARACTERIZATION_JSON})"
+        ),
+    )
+    char_ds_cmd.add_argument(
+        "--percentile-sample-cap",
+        type=int,
+        default=DEFAULT_PERCENTILE_SAMPLE_CAP,
+        help=(
+            "Bounded sample size for percentiles "
+            f"(default: {DEFAULT_PERCENTILE_SAMPLE_CAP:,})"
+        ),
+    )
     return parser
 
 
@@ -885,6 +952,26 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_validation_summary(result))
         return 0 if result.passed else 1
+
+    if args.command == "characterize-feature-dataset":
+        if args.split != "train":
+            print("Only --split train is supported", file=sys.stderr)
+            return 1
+        try:
+            result = characterize_train_feature_groups(
+                manifest_path=args.manifest,
+                inventory_path=args.inventory,
+                group_summary_output=args.group_summary_output,
+                pcap_diagnostics_output=args.pcap_diagnostics_output,
+                summary_json_output=args.summary_json_output,
+                percentile_sample_cap=args.percentile_sample_cap,
+                progress_file=sys.stderr,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_group_characterization_summary(result))
+        return 0
 
     parser.error(f"unknown command: {args.command}")
     return 2

@@ -1,8 +1,8 @@
 {
   "artifacts": {
-    "build_manifest": "/Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/build_manifest.csv",
-    "constant_features": "/Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/train_constant_features.csv",
-    "feature_summary": "/Users/lframba/cs_projects/iot-pcap-pipeline/data/features/v1/train_feature_summary.csv"
+    "build_manifest": "data/features/v1/build_manifest.csv",
+    "constant_features": "data/features/v1/train_constant_features.csv",
+    "feature_summary": "data/features/v1/train_feature_summary.csv"
   },
   "constant_feature_count": 0,
   "constant_features": [],

@@ -37,6 +37,7 @@ from iot_pcap_pipeline.paths import (
     FEATURE_STRATEGY_VERSION,
     PROJECT_ROOT,
     WINDOWING_STRATEGY_VERSION,
+    to_repo_relative,
 )
 from iot_pcap_pipeline.windowing.characterize import DEFAULT_CHARACTERIZATION_CSV
 from iot_pcap_pipeline.windowing.policy import (
@@ -547,9 +548,11 @@ def validate_feature_dataset(
                 "TEST must not be consulted."
             ),
             "artifacts": {
-                "build_manifest": str(man_path),
-                "feature_summary": str(summary_out),
-                "constant_features": str(constant_out),
+                "build_manifest": to_repo_relative(man_path, project_root=root),
+                "feature_summary": to_repo_relative(summary_out, project_root=root),
+                "constant_features": to_repo_relative(
+                    constant_out, project_root=root
+                ),
             },
         }
         complete_out.parent.mkdir(parents=True, exist_ok=True)
@@ -580,7 +583,18 @@ def validate_feature_dataset(
     )
 
 
-def format_validation_summary(result: FeatureDatasetValidationResult) -> str:
+def format_validation_summary(
+    result: FeatureDatasetValidationResult,
+    *,
+    project_root: Path | None = None,
+) -> str:
+    root = (project_root or PROJECT_ROOT).resolve()
+
+    def _rel(path: Path | None) -> str:
+        if path is None:
+            return ""
+        return to_repo_relative(path, project_root=root)
+
     lines = [
         "Phase 1C.3b — validate feature dataset (read-only)",
         f"split: {result.split}",
@@ -594,11 +608,11 @@ def format_validation_summary(result: FeatureDatasetValidationResult) -> str:
         f"feature_schema_sha256: {result.feature_schema_sha256}",
     ]
     if result.summary_path is not None:
-        lines.append(f"feature_summary: {result.summary_path}")
+        lines.append(f"feature_summary: {_rel(result.summary_path)}")
     if result.constant_path is not None:
-        lines.append(f"constant_features_csv: {result.constant_path}")
+        lines.append(f"constant_features_csv: {_rel(result.constant_path)}")
     if result.complete_path is not None:
-        lines.append(f"build_complete: {result.complete_path}")
+        lines.append(f"build_complete: {_rel(result.complete_path)}")
     if result.constant_rows:
         names = ", ".join(r["feature_name"] for r in result.constant_rows)
         lines.append(f"constant feature names: {names}")

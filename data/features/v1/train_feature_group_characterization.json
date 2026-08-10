@@ -1,0 +1,1585 @@
+{
+  "artifacts": {
+    "group_summary": "data/features/v1/train_feature_group_summary.csv",
+    "pcap_diagnostics": "data/features/v1/train_feature_pcap_diagnostics.csv"
+  },
+  "diagnostics": {
+    "frame_length_max_eq_8754_pcaps": [
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_active",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap",
+        "profiling_type": "active",
+        "row_count": 41622
+      }
+    ],
+    "icmpv6_ratio_nonzero_pcaps": [
+      {
+        "attack_family": "Spoofing",
+        "attack_type": "ARP_Spoofing",
+        "group": "Spoofing",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/ARP_Spoofing_train.pcap",
+        "profiling_type": "",
+        "row_count": 6423
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "publisher_benign",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Benign_train.pcap",
+        "profiling_type": "",
+        "row_count": 77427
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DDoS_Connect_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DDoS-Connect_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 691837
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DoS_Connect_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DoS-Connect_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 51077
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DoS_Publish_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DoS-Publish_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 177263
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "OS_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-OS_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 6736
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "Port_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-Port_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 33594
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "VulScan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-VulScan_train.pcap",
+        "profiling_type": "",
+        "row_count": 869
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 779446
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 779018
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 758549
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 770663
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP5_train.pcap",
+        "profiling_type": "",
+        "row_count": 779850
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP7_train.pcap",
+        "profiling_type": "",
+        "row_count": 743766
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP8_train.pcap",
+        "profiling_type": "",
+        "row_count": 773061
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN1_train.pcap",
+        "profiling_type": "",
+        "row_count": 797279
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 814389
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN3_train.pcap",
+        "profiling_type": "",
+        "row_count": 807785
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 787191
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 808944
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 788029
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 803640
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 824358
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 828890
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 826055
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 825057
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP5_train.pcap",
+        "profiling_type": "",
+        "row_count": 821720
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP7_train.pcap",
+        "profiling_type": "",
+        "row_count": 790422
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP8_train.pcap",
+        "profiling_type": "",
+        "row_count": 816104
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 417851
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 387752
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 434529
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 424302
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN1_train.pcap",
+        "profiling_type": "",
+        "row_count": 445545
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 446432
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN3_train.pcap",
+        "profiling_type": "",
+        "row_count": 432548
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 442398
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 381507
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 381940
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 383711
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 373802
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 547810
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 561724
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 584337
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 572994
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_active",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap",
+        "profiling_type": "active",
+        "row_count": 41622
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_active",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Broker/ActiveBroker.pcap",
+        "profiling_type": "active",
+        "row_count": 79238
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_idle",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Idle/Idle.pcap",
+        "profiling_type": "idle",
+        "row_count": 13149
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_interaction",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Ecobee_Camera/Ecobee_Camera_LAN_MIC.pcap",
+        "profiling_type": "interaction",
+        "row_count": 1547
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Ecobee_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 90
+      }
+    ],
+    "igmp_ratio_nonzero_pcaps": [
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "publisher_benign",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Benign_train.pcap",
+        "profiling_type": "",
+        "row_count": 77427
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DoS_Connect_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DoS-Connect_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 51077
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "OS_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-OS_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 6736
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "Port_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-Port_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 33594
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "VulScan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-VulScan_train.pcap",
+        "profiling_type": "",
+        "row_count": 869
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 779018
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP8_train.pcap",
+        "profiling_type": "",
+        "row_count": 773061
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 814389
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 787191
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 808944
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 788029
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 826055
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP7_train.pcap",
+        "profiling_type": "",
+        "row_count": 790422
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 417851
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 387752
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 424302
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN1_train.pcap",
+        "profiling_type": "",
+        "row_count": 445545
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 446432
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN3_train.pcap",
+        "profiling_type": "",
+        "row_count": 432548
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 442398
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 381507
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 373802
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 561724
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 584337
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 572994
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_active",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap",
+        "profiling_type": "active",
+        "row_count": 41622
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_idle",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Idle/Idle.pcap",
+        "profiling_type": "idle",
+        "row_count": 13149
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Ecobee_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 90
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/M1T_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 13
+      }
+    ],
+    "ipv6_ratio_nonzero_pcaps": [
+      {
+        "attack_family": "Spoofing",
+        "attack_type": "ARP_Spoofing",
+        "group": "Spoofing",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/ARP_Spoofing_train.pcap",
+        "profiling_type": "",
+        "row_count": 6423
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "publisher_benign",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Benign_train.pcap",
+        "profiling_type": "",
+        "row_count": 77427
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DDoS_Connect_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DDoS-Connect_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 691837
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DDoS_Publish_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DDoS-Publish_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 110171
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DoS_Connect_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DoS-Connect_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 51077
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DoS_Publish_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DoS-Publish_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 177263
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_Malformed_Data",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-Malformed_Data_train.pcap",
+        "profiling_type": "",
+        "row_count": 2053
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "OS_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-OS_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 6736
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "Ping_Sweep",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-Ping_Sweep_train.pcap",
+        "profiling_type": "",
+        "row_count": 296
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "Port_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-Port_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 33594
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "VulScan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-VulScan_train.pcap",
+        "profiling_type": "",
+        "row_count": 869
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 779446
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 779018
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 758549
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 770663
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP5_train.pcap",
+        "profiling_type": "",
+        "row_count": 779850
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP6_train.pcap",
+        "profiling_type": "",
+        "row_count": 763199
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP7_train.pcap",
+        "profiling_type": "",
+        "row_count": 743766
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP8_train.pcap",
+        "profiling_type": "",
+        "row_count": 773061
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN1_train.pcap",
+        "profiling_type": "",
+        "row_count": 797279
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 814389
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN3_train.pcap",
+        "profiling_type": "",
+        "row_count": 807785
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 787191
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 808944
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 788029
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 815984
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 803640
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 824358
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 828890
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 826055
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 825057
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP5_train.pcap",
+        "profiling_type": "",
+        "row_count": 821720
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP6_train.pcap",
+        "profiling_type": "",
+        "row_count": 808675
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP7_train.pcap",
+        "profiling_type": "",
+        "row_count": 790422
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP8_train.pcap",
+        "profiling_type": "",
+        "row_count": 816104
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 417851
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 387752
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 434529
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 424302
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN1_train.pcap",
+        "profiling_type": "",
+        "row_count": 445545
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 446432
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN3_train.pcap",
+        "profiling_type": "",
+        "row_count": 432548
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 442398
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 381507
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 381940
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 383711
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 373802
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 547810
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 561724
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 584337
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 572994
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_active",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap",
+        "profiling_type": "active",
+        "row_count": 41622
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_active",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Broker/ActiveBroker.pcap",
+        "profiling_type": "active",
+        "row_count": 79238
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_idle",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Idle/Idle.pcap",
+        "profiling_type": "idle",
+        "row_count": 13149
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_interaction",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Ecobee_Camera/Ecobee_Camera_LAN_MIC.pcap",
+        "profiling_type": "interaction",
+        "row_count": 1547
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Ecobee_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 90
+      }
+    ],
+    "llc_ratio_nonzero_pcaps": [
+      {
+        "attack_family": "Spoofing",
+        "attack_type": "ARP_Spoofing",
+        "group": "Spoofing",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/ARP_Spoofing_train.pcap",
+        "profiling_type": "",
+        "row_count": 6423
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "publisher_benign",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Benign_train.pcap",
+        "profiling_type": "",
+        "row_count": 77427
+      },
+      {
+        "attack_family": "MQTT",
+        "attack_type": "MQTT_DoS_Publish_Flood",
+        "group": "MQTT",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-DoS-Publish_Flood_train.pcap",
+        "profiling_type": "",
+        "row_count": 177263
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "OS_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-OS_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 6736
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "Port_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-Port_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 33594
+      },
+      {
+        "attack_family": "Recon",
+        "attack_type": "VulScan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-VulScan_train.pcap",
+        "profiling_type": "",
+        "row_count": 869
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 779446
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 779018
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 758549
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 770663
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP5_train.pcap",
+        "profiling_type": "",
+        "row_count": 779850
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP6_train.pcap",
+        "profiling_type": "",
+        "row_count": 763199
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP7_train.pcap",
+        "profiling_type": "",
+        "row_count": 743766
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_ICMP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-ICMP8_train.pcap",
+        "profiling_type": "",
+        "row_count": 773061
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN1_train.pcap",
+        "profiling_type": "",
+        "row_count": 797279
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 814389
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN3_train.pcap",
+        "profiling_type": "",
+        "row_count": 807785
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_SYN",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 787191
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 788029
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 815984
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_TCP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-TCP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 803640
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 826055
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 825057
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP5_train.pcap",
+        "profiling_type": "",
+        "row_count": 821720
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP6_train.pcap",
+        "profiling_type": "",
+        "row_count": 808675
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP7_train.pcap",
+        "profiling_type": "",
+        "row_count": 790422
+      },
+      {
+        "attack_family": "DDoS",
+        "attack_type": "DDoS_UDP",
+        "group": "DDoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DDoS-UDP8_train.pcap",
+        "profiling_type": "",
+        "row_count": 816104
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 417851
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 387752
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 434529
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_ICMP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-ICMP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 424302
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN2_train.pcap",
+        "profiling_type": "",
+        "row_count": 446432
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN3_train.pcap",
+        "profiling_type": "",
+        "row_count": 432548
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_SYN",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-SYN4_train.pcap",
+        "profiling_type": "",
+        "row_count": 442398
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 381507
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 381940
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_TCP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-TCP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 373802
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP1_train.pcap",
+        "profiling_type": "",
+        "row_count": 547810
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP2_train.pcap",
+        "profiling_type": "",
+        "row_count": 561724
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP3_train.pcap",
+        "profiling_type": "",
+        "row_count": 584337
+      },
+      {
+        "attack_family": "DoS",
+        "attack_type": "DoS_UDP",
+        "group": "DoS",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/TCP_IP-DoS-UDP4_train.pcap",
+        "profiling_type": "",
+        "row_count": 572994
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_active",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap",
+        "profiling_type": "active",
+        "row_count": 41622
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_idle",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Idle/Idle.pcap",
+        "profiling_type": "idle",
+        "row_count": 13149
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_interaction",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Owltron_Camera/Owltron_Camera_WAN_PHOTO.pcap",
+        "profiling_type": "interaction",
+        "row_count": 226
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_interaction",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Singcall/Singcall_LAN_PHYSICAL.pcap",
+        "profiling_type": "interaction",
+        "row_count": 16
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_interaction",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Singcall/Singcall_WAN_PHYSICAL.pcap",
+        "profiling_type": "interaction",
+        "row_count": 12
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Blink_Mini_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 15
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Ecobee_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 90
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/M1T_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 13
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Owltron_Camera_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 40
+      },
+      {
+        "attack_family": "",
+        "attack_type": "",
+        "group": "profiling_power",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Singcall_Power.pcap",
+        "profiling_type": "power",
+        "row_count": 16
+      }
+    ],
+    "tcp_urg_ratio_nonzero_pcaps": [
+      {
+        "attack_family": "Recon",
+        "attack_type": "OS_Scan",
+        "group": "Recon",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Recon-OS_Scan_train.pcap",
+        "profiling_type": "",
+        "row_count": 6736
+      }
+    ],
+    "temporal_group_means": {
+      "attack_family_DDoS": {
+        "iat_mean_seconds_mean": 2.9505910366165467e-05,
+        "row_count": 19112074,
+        "window_span_seconds_mean": 0.0007080993524999384
+      },
+      "attack_family_DoS": {
+        "iat_mean_seconds_mean": 8.907953963849646e-05,
+        "row_count": 7219182,
+        "window_span_seconds_mean": 0.0021378539986304864
+      },
+      "attack_family_MQTT": {
+        "iat_mean_seconds_mean": 9.536665147138946e-05,
+        "row_count": 1032401,
+        "window_span_seconds_mean": 0.0022885821841084073
+      },
+      "attack_family_Recon": {
+        "iat_mean_seconds_mean": 0.00235251659115869,
+        "row_count": 41495,
+        "window_span_seconds_mean": 0.05646037417070625
+      },
+      "attack_family_Spoofing": {
+        "iat_mean_seconds_mean": 0.012007417017610897,
+        "row_count": 6423,
+        "window_span_seconds_mean": 0.2881780084226615
+      },
+      "profiling_active": {
+        "iat_mean_seconds_mean": 0.06864075660335689,
+        "row_count": 120860,
+        "window_span_seconds_mean": 1.647378146928528
+      },
+      "profiling_idle": {
+        "iat_mean_seconds_mean": 0.28429401708932983,
+        "row_count": 13149,
+        "window_span_seconds_mean": 6.823056410071387
+      },
+      "profiling_interaction": {
+        "iat_mean_seconds_mean": 0.0105046191012093,
+        "row_count": 21964,
+        "window_span_seconds_mean": 0.25211085842902314
+      },
+      "profiling_power": {
+        "iat_mean_seconds_mean": 0.07007748556548152,
+        "row_count": 174,
+        "window_span_seconds_mean": 1.6818596535715562
+      },
+      "publisher_benign": {
+        "iat_mean_seconds_mean": 0.04100766771282007,
+        "row_count": 77427,
+        "window_span_seconds_mean": 0.9841826713962613
+      }
+    }
+  },
+  "feature_build_strategy_version": "phase1c3_v1",
+  "feature_strategy_version": "phase1c2_v1",
+  "group_count": 34,
+  "note": "TRAIN-only characterization for shortcut diagnostics. Do not drop features from this report alone.",
+  "pcap_count": 85,
+  "percentile_sample_cap": 200000,
+  "percentile_sample_seed": 42,
+  "split": "train",
+  "total_feature_rows": 27645149
+}

@@ -22,6 +22,7 @@ from iot_pcap_pipeline.windowing.policy import (
 from iot_pcap_pipeline.windowing.stream import (
     FeatureExtractionError,
     WindowStreamStats,
+    count_full_windows,
     iter_windows,
 )
 from iot_pcap_pipeline.windowing.window import PacketWindow
@@ -43,6 +44,7 @@ __all__ = [
     "characterize_pcap",
     "characterize_timestamps",
     "characterize_train_windowing",
+    "count_full_windows",
     "format_characterization_summary",
     "frozen_window_policy",
     "iter_windows",

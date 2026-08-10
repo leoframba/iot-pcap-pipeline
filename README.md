@@ -253,8 +253,8 @@ Smoke artifacts:
 - `data/features/v1/smoke/dataset/<pcap-id>.parquet`
 - `data/features/v1/.work/smoke/<pcap-id>.json`
 - `data/features/v1/smoke/build_manifest_smoke.csv`
-Not yet: TRAIN-wide feature statistics, constant-feature report, TEST
-extraction, class balancing, or model training.
+
+TRAIN validation / characterization / Gate C freeze are documented below.
 
 ## Phase 1C.3b — validate TRAIN build (read-only)
 
@@ -293,8 +293,58 @@ Artifacts:
 
 Do not drop features from this report alone.
 
-## Phase 1C.3b step 2 (next)
+## Gate C — TRAIN feature contract frozen
 
-TEST extraction after TRAIN validation / characterization review.
+After full TRAIN validation + per-group characterization review:
+
+| Keep | Decision |
+|------|----------|
+| Windowing 25 / 5s / 1s | KEEP |
+| All 27 V1 features | KEEP |
+| `tcp_urg_ratio` | KEEP |
+| Temporal features | KEEP |
+| Frame-length features | KEEP |
+| Rare protocol ratios | KEEP |
+
+No Phase 1C extractor changes. Artifact:
+`data/features/v1/train_feature_contract.json` (separate from
+`feature_schema.json` so the TRAIN-pinned schema hash is unchanged).
+
+## Phase 1C.3c — Held-out TEST feature build
+
+Uses the identical frozen transformation (`phase1c2_v1` features,
+`phase1c3_v1` storage, 25 / 5s / 1s). Requires
+`data/features/v1/train_build_complete.json` with
+`validation_status=passed` and `pcap_count=85`, matching the installed
+versions / schema hash / windowing.
+
+```bash
+# TEST orchestration smoke (3 PCAPs → canonical test/ + .work/test/)
+uv run iot-pcap-pipeline build-feature-dataset \
+  --split test \
+  --workers 4 \
+  --resume \
+  --smoke
+
+# Full TEST corpus (29 PCAPs; after smoke is green)
+uv run iot-pcap-pipeline build-feature-dataset \
+  --split test \
+  --workers 4 \
+  --resume
+
+# Structural validation only (no TEST feature characterization)
+uv run iot-pcap-pipeline validate-feature-dataset --split test
+```
+
+Artifacts:
+
+- `data/features/v1/test/<pcap-id>.parquet` (gitignored)
+- `data/features/v1/.work/test/<pcap-id>.json`
+- `data/features/v1/test_build_manifest.csv`
+- `data/features/v1/test_build_complete.json` — written only if all checks pass
+- smoke manifest: `data/features/v1/smoke/test_build_manifest_smoke.csv`
+
+TEST shards stay separate from TRAIN. No TEST behavioral characterization,
+feature selection, or model training in 1C.3c.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

@@ -21,6 +21,7 @@ from iot_pcap_pipeline.features.validate_dataset import (
 from iot_pcap_pipeline.paths import (
     FEATURE_BUILD_STRATEGY_VERSION,
     FEATURE_STRATEGY_VERSION,
+    PROJECT_ROOT,
 )
 from iot_pcap_pipeline.windowing.policy import (
     BACKWARD_RESET_SECONDS,
@@ -232,11 +233,25 @@ def test_validate_fails_on_packet_count_mismatch(tmp_path: Path) -> None:
     assert any(i.code == "packet_count_mismatch" for i in result.issues)
 
 
-def test_validate_rejects_non_train_split() -> None:
+def test_validate_rejects_unsupported_split() -> None:
     from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
 
-    with pytest.raises(FeatureExtractionError, match="train only"):
-        validate_feature_dataset(split="test")  # type: ignore[arg-type]
+    with pytest.raises(FeatureExtractionError, match="unsupported split"):
+        validate_feature_dataset(split="holdout")  # type: ignore[arg-type]
+
+
+def test_validate_test_requires_manifest() -> None:
+    from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
+
+    with pytest.raises(FeatureExtractionError, match="test_build_manifest"):
+        validate_feature_dataset(
+            split="test",
+            manifest_path=PROJECT_ROOT
+            / "data"
+            / "features"
+            / "v1"
+            / "missing_test_build_manifest.csv",
+        )
 
 
 def test_expected_train_count_constant() -> None:

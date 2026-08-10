@@ -1,7 +1,11 @@
-"""Read-only validation of a completed TRAIN feature Parquet build.
+"""Read-only validation of completed feature Parquet builds.
 
-Does not decode PCAPs or rewrite shards. Produces feature summaries and, when
-all checks pass, ``train_build_complete.json``.
+TRAIN (1C.3b): shard checks + audit/windowing joins + feature summaries →
+``train_build_complete.json``.
+
+TEST (1C.3c): structural checks only (no class/feature characterization) →
+``test_build_complete.json``. Window counts are recomputed under frozen
+25/5s/1s (Phase 1C.1 characterization was TRAIN-only).
 """
 
 from __future__ import annotations
@@ -18,7 +22,11 @@ import pyarrow.parquet as pq
 
 from iot_pcap_pipeline.features.dataset import (
     DEFAULT_BUILD_MANIFEST_PATH,
+    DEFAULT_TEST_BUILD_MANIFEST_PATH,
+    DEFAULT_TRAIN_BUILD_COMPLETE_JSON,
+    EXPECTED_TEST_PCAP_COUNT,
     EXPECTED_TRAIN_PCAP_COUNT,
+    require_train_build_complete,
 )
 from iot_pcap_pipeline.features.parquet import (
     feature_parquet_arrow_schema,
@@ -30,6 +38,7 @@ from iot_pcap_pipeline.features.schema import (
     DEFAULT_FEATURE_SCHEMA_PATH,
     V1_FEATURE_NAMES,
 )
+from iot_pcap_pipeline.features.validate import L3_SUM_TOLERANCE
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_FEATURES_DIR,
@@ -39,15 +48,17 @@ from iot_pcap_pipeline.paths import (
     WINDOWING_STRATEGY_VERSION,
     to_repo_relative,
 )
+from iot_pcap_pipeline.pcap.reader import iter_packets
 from iot_pcap_pipeline.windowing.characterize import DEFAULT_CHARACTERIZATION_CSV
 from iot_pcap_pipeline.windowing.policy import (
     BACKWARD_RESET_SECONDS,
     INACTIVITY_TIMEOUT_SECONDS,
     WINDOW_SIZE,
+    frozen_window_policy,
 )
-from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
+from iot_pcap_pipeline.windowing.stream import FeatureExtractionError, count_full_windows
 
-SplitName = Literal["train"]
+SplitName = Literal["train", "test"]
 
 DEFAULT_INTEGRITY_CSV = DEFAULT_AUDIT_DIR / "pcap_integrity.csv"
 DEFAULT_TRAIN_FEATURE_SUMMARY_CSV = (
@@ -56,8 +67,8 @@ DEFAULT_TRAIN_FEATURE_SUMMARY_CSV = (
 DEFAULT_TRAIN_CONSTANT_FEATURES_CSV = (
     DEFAULT_FEATURES_DIR / "v1" / "train_constant_features.csv"
 )
-DEFAULT_TRAIN_BUILD_COMPLETE_JSON = (
-    DEFAULT_FEATURES_DIR / "v1" / "train_build_complete.json"
+DEFAULT_TEST_BUILD_COMPLETE_JSON = (
+    DEFAULT_FEATURES_DIR / "v1" / "test_build_complete.json"
 )
 
 FEATURE_SUMMARY_COLUMNS: tuple[str, ...] = (
@@ -69,6 +80,25 @@ FEATURE_SUMMARY_COLUMNS: tuple[str, ...] = (
     "mean",
     "std",
     "is_constant",
+)
+
+_RATIO_FEATURES: tuple[str, ...] = (
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
 )
 
 
@@ -155,6 +185,7 @@ class FeatureDatasetValidationResult:
     feature_build_strategy_version: str = FEATURE_BUILD_STRATEGY_VERSION
     feature_schema_sha256: str = ""
     windowing_strategy_version: str = WINDOWING_STRATEGY_VERSION
+    train_contract_verified: bool = False
 
 
 def _load_csv_index(path: Path, key: str = "pcap_path") -> dict[str, dict[str, str]]:
@@ -214,9 +245,157 @@ def _accumulate_feature_stats(
             stats[name].update_many(table.column(name).to_pylist())
 
 
+def _check_feature_batch_invariants(table: pa.Table) -> str | None:
+    """Return an error message if any streamed row violates V1 invariants."""
+    cols = {name: table.column(name).to_pylist() for name in V1_FEATURE_NAMES}
+    n = table.num_rows
+    for i in range(n):
+        values = {name: cols[name][i] for name in V1_FEATURE_NAMES}
+        for name, raw in values.items():
+            if raw is None or not math.isfinite(float(raw)):
+                return f"row {i}: {name} is non-finite: {raw!r}"
+        span = float(values["window_span_seconds"])
+        if span < 0:
+            return f"row {i}: window_span_seconds < 0"
+        for name in (
+            "iat_mean_seconds",
+            "iat_std_seconds",
+            "iat_p50_seconds",
+            "iat_p95_seconds",
+        ):
+            if float(values[name]) < 0:
+                return f"row {i}: {name} < 0"
+        fl_min = float(values["frame_length_min"])
+        fl_max = float(values["frame_length_max"])
+        if fl_min <= 0:
+            return f"row {i}: frame_length_min must be > 0"
+        if fl_max < fl_min:
+            return f"row {i}: frame_length_max < frame_length_min"
+        if float(values["frame_length_std"]) < 0:
+            return f"row {i}: frame_length_std < 0"
+        for name in _RATIO_FEATURES:
+            value = float(values[name])
+            if value < 0.0 or value > 1.0:
+                return f"row {i}: {name} out of [0,1]: {value}"
+        l3_sum = (
+            float(values["ipv4_ratio"])
+            + float(values["ipv6_ratio"])
+            + float(values["arp_ratio"])
+            + float(values["llc_ratio"])
+            + float(values["other_protocol_ratio"])
+        )
+        if abs(l3_sum - 1.0) > L3_SUM_TOLERANCE:
+            return f"row {i}: L3 ratios sum to {l3_sum}, expected 1.0"
+        uip = int(values["unique_ip_count"])
+        uport = int(values["unique_port_count"])
+        if not (0 <= uip <= 50):
+            return f"row {i}: unique_ip_count out of bounds: {uip}"
+        if not (0 <= uport <= 50):
+            return f"row {i}: unique_port_count out of bounds: {uport}"
+    return None
+
+
+def _stream_feature_invariants(
+    parquet_path: Path,
+    *,
+    batch_size: int = 65_536,
+) -> str | None:
+    """Stream feature columns and enforce V1 invariants (no summary artifacts)."""
+    pf = pq.ParquetFile(parquet_path)
+    for batch in pf.iter_batches(batch_size=batch_size, columns=list(V1_FEATURE_NAMES)):
+        table = pa.Table.from_batches([batch])
+        err = _check_feature_batch_invariants(table)
+        if err is not None:
+            return err
+    return None
+
+
+def _check_manifest_versions(
+    row: dict[str, str],
+    *,
+    schema_hash: str,
+    issues: list[ValidationIssue],
+    pcap_path: str,
+) -> None:
+    if row.get("feature_strategy_version") != FEATURE_STRATEGY_VERSION:
+        issues.append(
+            ValidationIssue(
+                code="feature_strategy_version",
+                pcap_path=pcap_path,
+                message=(
+                    f"got {row.get('feature_strategy_version')!r}, "
+                    f"expected {FEATURE_STRATEGY_VERSION!r}"
+                ),
+            )
+        )
+    if row.get("feature_build_strategy_version") != FEATURE_BUILD_STRATEGY_VERSION:
+        issues.append(
+            ValidationIssue(
+                code="feature_build_strategy_version",
+                pcap_path=pcap_path,
+                message=(
+                    f"got {row.get('feature_build_strategy_version')!r}, "
+                    f"expected {FEATURE_BUILD_STRATEGY_VERSION!r}"
+                ),
+            )
+        )
+    if schema_hash and row.get("feature_schema_sha256") != schema_hash:
+        issues.append(
+            ValidationIssue(
+                code="feature_schema_sha256",
+                pcap_path=pcap_path,
+                message=(
+                    f"manifest hash {row.get('feature_schema_sha256')!r} "
+                    f"!= on-disk schema hash {schema_hash!r}"
+                ),
+            )
+        )
+
+
 def validate_feature_dataset(
     *,
     split: SplitName = "train",
+    manifest_path: Path | str | None = None,
+    integrity_path: Path | str | None = None,
+    characterization_path: Path | str | None = None,
+    schema_path: Path | str | None = None,
+    summary_output: Path | str | None = None,
+    constant_output: Path | str | None = None,
+    complete_output: Path | str | None = None,
+    train_complete_path: Path | str | None = None,
+    project_root: Path | None = None,
+    progress_file: TextIO | None = None,
+) -> FeatureDatasetValidationResult:
+    """Validate an existing Parquet build without rewriting shards."""
+    if split == "train":
+        return _validate_train_feature_dataset(
+            manifest_path=manifest_path,
+            integrity_path=integrity_path,
+            characterization_path=characterization_path,
+            schema_path=schema_path,
+            summary_output=summary_output,
+            constant_output=constant_output,
+            complete_output=complete_output,
+            project_root=project_root,
+            progress_file=progress_file,
+        )
+    if split == "test":
+        return _validate_test_feature_dataset(
+            manifest_path=manifest_path,
+            integrity_path=integrity_path,
+            schema_path=schema_path,
+            complete_output=complete_output,
+            train_complete_path=train_complete_path,
+            project_root=project_root,
+            progress_file=progress_file,
+        )
+    raise FeatureExtractionError(
+        f"validate-feature-dataset unsupported split {split!r}"
+    )
+
+
+def _validate_train_feature_dataset(
+    *,
     manifest_path: Path | str | None = None,
     integrity_path: Path | str | None = None,
     characterization_path: Path | str | None = None,
@@ -228,12 +407,6 @@ def validate_feature_dataset(
     progress_file: TextIO | None = None,
 ) -> FeatureDatasetValidationResult:
     """Validate an existing TRAIN Parquet build without re-extracting."""
-    if split != "train":
-        raise FeatureExtractionError(
-            "validate-feature-dataset currently supports --split train only "
-            f"(got {split!r})"
-        )
-
     root = (project_root or PROJECT_ROOT).resolve()
     man_path = Path(manifest_path or DEFAULT_BUILD_MANIFEST_PATH)
     if not man_path.is_absolute():
@@ -294,7 +467,6 @@ def validate_feature_dataset(
 
     stats = {name: _OnlineStats() for name in V1_FEATURE_NAMES}
     total_rows = 0
-    ok_shards = 0
 
     if progress_file is not None:
         progress_file.write(
@@ -316,39 +488,9 @@ def validate_feature_dataset(
             )
             continue
 
-        if row.get("feature_strategy_version") != FEATURE_STRATEGY_VERSION:
-            issues.append(
-                ValidationIssue(
-                    code="feature_strategy_version",
-                    pcap_path=pcap_path,
-                    message=(
-                        f"got {row.get('feature_strategy_version')!r}, "
-                        f"expected {FEATURE_STRATEGY_VERSION!r}"
-                    ),
-                )
-            )
-        if row.get("feature_build_strategy_version") != FEATURE_BUILD_STRATEGY_VERSION:
-            issues.append(
-                ValidationIssue(
-                    code="feature_build_strategy_version",
-                    pcap_path=pcap_path,
-                    message=(
-                        f"got {row.get('feature_build_strategy_version')!r}, "
-                        f"expected {FEATURE_BUILD_STRATEGY_VERSION!r}"
-                    ),
-                )
-            )
-        if schema_hash and row.get("feature_schema_sha256") != schema_hash:
-            issues.append(
-                ValidationIssue(
-                    code="feature_schema_sha256",
-                    pcap_path=pcap_path,
-                    message=(
-                        f"manifest hash {row.get('feature_schema_sha256')!r} "
-                        f"!= on-disk schema hash {schema_hash!r}"
-                    ),
-                )
-            )
+        _check_manifest_versions(
+            row, schema_hash=schema_hash, issues=issues, pcap_path=pcap_path
+        )
 
         out_rel = row.get("output_path") or ""
         shard = Path(out_rel)
@@ -492,7 +634,6 @@ def validate_feature_dataset(
             continue
 
         total_rows += actual_rows
-        ok_shards += 1
         if progress_file is not None and (
             i == 1 or i == len(manifest_rows) or i % 10 == 0
         ):
@@ -528,7 +669,7 @@ def validate_feature_dataset(
     if passed:
         payload = {
             "validation_status": "passed",
-            "split": split,
+            "split": "train",
             "pcap_count": len(manifest_rows),
             "total_feature_rows": total_rows,
             "feature_strategy_version": FEATURE_STRATEGY_VERSION,
@@ -562,11 +703,10 @@ def validate_feature_dataset(
         )
         complete_path = complete_out
     elif complete_out.is_file():
-        # Stale pass marker must not survive a failed re-validation.
         complete_out.unlink(missing_ok=True)
 
     return FeatureDatasetValidationResult(
-        split=split,
+        split="train",
         passed=passed,
         pcap_count=len(manifest_rows),
         total_feature_rows=total_rows,
@@ -580,6 +720,362 @@ def validate_feature_dataset(
         feature_build_strategy_version=FEATURE_BUILD_STRATEGY_VERSION,
         feature_schema_sha256=schema_hash,
         windowing_strategy_version=WINDOWING_STRATEGY_VERSION,
+        train_contract_verified=False,
+    )
+
+
+def _validate_test_feature_dataset(
+    *,
+    manifest_path: Path | str | None = None,
+    integrity_path: Path | str | None = None,
+    schema_path: Path | str | None = None,
+    complete_output: Path | str | None = None,
+    train_complete_path: Path | str | None = None,
+    project_root: Path | None = None,
+    progress_file: TextIO | None = None,
+) -> FeatureDatasetValidationResult:
+    """Structural-only TEST validation (no class/feature characterization)."""
+    root = (project_root or PROJECT_ROOT).resolve()
+    schema_file = Path(schema_path or DEFAULT_FEATURE_SCHEMA_PATH)
+    if not schema_file.is_absolute():
+        schema_file = root / schema_file
+
+    train_marker = require_train_build_complete(
+        train_complete_path,
+        project_root=root,
+        schema_path=schema_file,
+    )
+    train_schema_hash = str(train_marker.get("feature_schema_sha256") or "")
+
+    man_path = Path(manifest_path or DEFAULT_TEST_BUILD_MANIFEST_PATH)
+    if not man_path.is_absolute():
+        man_path = root / man_path
+    integ_path = Path(integrity_path or DEFAULT_INTEGRITY_CSV)
+    if not integ_path.is_absolute():
+        integ_path = root / integ_path
+    complete_out = Path(complete_output or DEFAULT_TEST_BUILD_COMPLETE_JSON)
+    if not complete_out.is_absolute():
+        complete_out = root / complete_out
+
+    if not man_path.is_file():
+        raise FeatureExtractionError(f"test_build_manifest.csv missing: {man_path}")
+
+    with man_path.open(newline="", encoding="utf-8") as handle:
+        manifest_rows = list(csv.DictReader(handle))
+
+    issues: list[ValidationIssue] = []
+    if len(manifest_rows) != EXPECTED_TEST_PCAP_COUNT:
+        issues.append(
+            ValidationIssue(
+                code="manifest_count",
+                pcap_path="",
+                message=(
+                    f"expected {EXPECTED_TEST_PCAP_COUNT} TEST manifest rows, "
+                    f"found {len(manifest_rows)}"
+                ),
+            )
+        )
+
+    try:
+        schema_hash = feature_schema_sha256(schema_file)
+    except (OSError, FileNotFoundError, ValueError) as exc:
+        issues.append(
+            ValidationIssue(
+                code="schema_file",
+                pcap_path="",
+                message=str(exc),
+            )
+        )
+        schema_hash = ""
+
+    if schema_hash and train_schema_hash and schema_hash != train_schema_hash:
+        issues.append(
+            ValidationIssue(
+                code="schema_hash_train_mismatch",
+                pcap_path="",
+                message=(
+                    f"on-disk schema hash {schema_hash!r} != TRAIN marker "
+                    f"hash {train_schema_hash!r}"
+                ),
+            )
+        )
+
+    expected_schema = feature_parquet_arrow_schema()
+    integrity = _load_csv_index(integ_path)
+    policy = frozen_window_policy()
+    total_rows = 0
+
+    if progress_file is not None:
+        progress_file.write(
+            f"Validating {len(manifest_rows)} TEST shards "
+            f"(structural only; recomputes 25/5/1 window counts)\n"
+        )
+        progress_file.flush()
+
+    for i, row in enumerate(manifest_rows, start=1):
+        pcap_path = row.get("pcap_path") or ""
+        status = (row.get("status") or "").strip()
+        if status != "ok":
+            issues.append(
+                ValidationIssue(
+                    code="manifest_status",
+                    pcap_path=pcap_path,
+                    message=f"manifest status={status!r}, expected 'ok'",
+                )
+            )
+            continue
+
+        _check_manifest_versions(
+            row, schema_hash=schema_hash, issues=issues, pcap_path=pcap_path
+        )
+        if (
+            train_schema_hash
+            and row.get("feature_schema_sha256")
+            and row.get("feature_schema_sha256") != train_schema_hash
+        ):
+            issues.append(
+                ValidationIssue(
+                    code="feature_schema_sha256_vs_train",
+                    pcap_path=pcap_path,
+                    message=(
+                        f"manifest hash {row.get('feature_schema_sha256')!r} "
+                        f"!= TRAIN hash {train_schema_hash!r}"
+                    ),
+                )
+            )
+
+        out_rel = row.get("output_path") or ""
+        shard = Path(out_rel)
+        if not shard.is_absolute():
+            shard = root / shard
+        if not shard.is_file():
+            issues.append(
+                ValidationIssue(
+                    code="shard_missing",
+                    pcap_path=pcap_path,
+                    message=f"Parquet shard missing: {shard}",
+                )
+            )
+            continue
+        # Guard: TEST shards must not live under the TRAIN tree.
+        try:
+            shard_rel = to_repo_relative(shard, project_root=root)
+        except ValueError:
+            shard_rel = str(shard)
+        if "/train/" in f"/{shard_rel.replace(chr(92), '/')}/":
+            issues.append(
+                ValidationIssue(
+                    code="test_shard_in_train_dir",
+                    pcap_path=pcap_path,
+                    message=f"TEST shard path mixes with TRAIN: {shard_rel}",
+                )
+            )
+
+        try:
+            expected_rows = int(row["output_row_count"])
+            packets_processed = int(row["packets_processed"])
+        except (KeyError, TypeError, ValueError) as exc:
+            issues.append(
+                ValidationIssue(
+                    code="manifest_parse",
+                    pcap_path=pcap_path,
+                    message=f"invalid row counts: {exc}",
+                )
+            )
+            continue
+
+        if not parquet_schema_matches(shard, expected_schema):
+            issues.append(
+                ValidationIssue(
+                    code="parquet_schema",
+                    pcap_path=pcap_path,
+                    message=f"Parquet schema mismatch: {shard}",
+                )
+            )
+            continue
+
+        actual_rows = parquet_row_count(shard)
+        if actual_rows is None:
+            issues.append(
+                ValidationIssue(
+                    code="parquet_unreadable",
+                    pcap_path=pcap_path,
+                    message=f"Parquet failed to open: {shard}",
+                )
+            )
+            continue
+        if actual_rows != expected_rows:
+            issues.append(
+                ValidationIssue(
+                    code="parquet_row_count",
+                    pcap_path=pcap_path,
+                    message=(
+                        f"Parquet rows {actual_rows} != "
+                        f"manifest output_row_count {expected_rows}"
+                    ),
+                )
+            )
+            continue
+
+        integ = integrity.get(pcap_path)
+        if integ is None:
+            issues.append(
+                ValidationIssue(
+                    code="integrity_missing",
+                    pcap_path=pcap_path,
+                    message=f"pcap_path missing from {integ_path}",
+                )
+            )
+        else:
+            try:
+                audit_packets = int(integ["packet_count"])
+            except (KeyError, TypeError, ValueError):
+                issues.append(
+                    ValidationIssue(
+                        code="integrity_parse",
+                        pcap_path=pcap_path,
+                        message="invalid packet_count in pcap_integrity.csv",
+                    )
+                )
+            else:
+                if packets_processed != audit_packets:
+                    issues.append(
+                        ValidationIssue(
+                            code="packet_count_mismatch",
+                            pcap_path=pcap_path,
+                            message=(
+                                f"packets_processed {packets_processed} != "
+                                f"integrity packet_count {audit_packets}"
+                            ),
+                        )
+                    )
+
+        # Independent frozen-window recount (no feature distributions).
+        abs_pcap = Path(pcap_path)
+        if not abs_pcap.is_absolute():
+            abs_pcap = root / abs_pcap
+        if not abs_pcap.is_file():
+            issues.append(
+                ValidationIssue(
+                    code="pcap_missing",
+                    pcap_path=pcap_path,
+                    message=f"PCAP missing for window recount: {abs_pcap}",
+                )
+            )
+        else:
+            try:
+                full_windows = count_full_windows(
+                    iter_packets(abs_pcap),
+                    policy=policy,
+                )
+            except (FeatureExtractionError, OSError) as exc:
+                issues.append(
+                    ValidationIssue(
+                        code="window_recount_error",
+                        pcap_path=pcap_path,
+                        message=f"failed recomputing full windows: {exc}",
+                    )
+                )
+            else:
+                if expected_rows != full_windows:
+                    issues.append(
+                        ValidationIssue(
+                            code="window_count_mismatch",
+                            pcap_path=pcap_path,
+                            message=(
+                                f"output_row_count {expected_rows} != "
+                                f"frozen 25/5/1 full_window_count {full_windows}"
+                            ),
+                        )
+                    )
+
+        try:
+            inv_err = _stream_feature_invariants(shard)
+        except (OSError, pa.ArrowInvalid, pa.ArrowIOError) as exc:
+            issues.append(
+                ValidationIssue(
+                    code="feature_stream",
+                    pcap_path=pcap_path,
+                    message=f"failed streaming features: {exc}",
+                )
+            )
+            continue
+        if inv_err is not None:
+            issues.append(
+                ValidationIssue(
+                    code="feature_invariant",
+                    pcap_path=pcap_path,
+                    message=inv_err,
+                )
+            )
+            continue
+
+        total_rows += actual_rows
+        if progress_file is not None:
+            progress_file.write(
+                f"[{i}/{len(manifest_rows)}] {Path(pcap_path).name}: "
+                f"rows={actual_rows}\n"
+            )
+            progress_file.flush()
+
+    passed = len(issues) == 0 and len(manifest_rows) == EXPECTED_TEST_PCAP_COUNT
+    complete_path: Path | None = None
+    train_marker_path = Path(train_complete_path or DEFAULT_TRAIN_BUILD_COMPLETE_JSON)
+    if not train_marker_path.is_absolute():
+        train_marker_path = root / train_marker_path
+    if passed:
+        payload = {
+            "validation_status": "passed",
+            "split": "test",
+            "pcap_count": len(manifest_rows),
+            "total_feature_rows": total_rows,
+            "feature_strategy_version": FEATURE_STRATEGY_VERSION,
+            "feature_build_strategy_version": FEATURE_BUILD_STRATEGY_VERSION,
+            "feature_schema_sha256": schema_hash,
+            "windowing_strategy_version": WINDOWING_STRATEGY_VERSION,
+            "windowing": {
+                "window_size": WINDOW_SIZE,
+                "inactivity_timeout_seconds": INACTIVITY_TIMEOUT_SECONDS,
+                "backward_reset_seconds": BACKWARD_RESET_SECONDS,
+            },
+            "train_contract_verified": True,
+            "note": (
+                "Structural TEST validation only. No TEST feature "
+                "characterization, constant-feature decisions, feature "
+                "selection, or model scoring."
+            ),
+            "artifacts": {
+                "build_manifest": to_repo_relative(man_path, project_root=root),
+                "train_build_complete": to_repo_relative(
+                    train_marker_path, project_root=root
+                ),
+            },
+        }
+        complete_out.parent.mkdir(parents=True, exist_ok=True)
+        complete_out.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        complete_path = complete_out
+    elif complete_out.is_file():
+        complete_out.unlink(missing_ok=True)
+
+    return FeatureDatasetValidationResult(
+        split="test",
+        passed=passed,
+        pcap_count=len(manifest_rows),
+        total_feature_rows=total_rows,
+        issues=issues,
+        summary_rows=[],
+        constant_rows=[],
+        summary_path=None,
+        constant_path=None,
+        complete_path=complete_path,
+        feature_strategy_version=FEATURE_STRATEGY_VERSION,
+        feature_build_strategy_version=FEATURE_BUILD_STRATEGY_VERSION,
+        feature_schema_sha256=schema_hash,
+        windowing_strategy_version=WINDOWING_STRATEGY_VERSION,
+        train_contract_verified=True,
     )
 
 
@@ -595,18 +1091,27 @@ def format_validation_summary(
             return ""
         return to_repo_relative(path, project_root=root)
 
+    phase = "1C.3b" if result.split == "train" else "1C.3c"
     lines = [
-        "Phase 1C.3b — validate feature dataset (read-only)",
+        f"Phase {phase} — validate feature dataset (read-only)",
         f"split: {result.split}",
         f"validation_status: {'passed' if result.passed else 'failed'}",
         f"pcap_count: {result.pcap_count}",
         f"total_feature_rows: {result.total_feature_rows:,}",
         f"issue_count: {len(result.issues)}",
-        f"constant_features: {len(result.constant_rows)}",
         f"feature_strategy_version: {result.feature_strategy_version}",
         f"feature_build_strategy_version: {result.feature_build_strategy_version}",
         f"feature_schema_sha256: {result.feature_schema_sha256}",
     ]
+    if result.split == "test":
+        lines.append(
+            f"train_contract_verified: {str(result.train_contract_verified).lower()}"
+        )
+        lines.append(
+            "note: structural checks only (no TEST feature characterization)"
+        )
+    else:
+        lines.append(f"constant_features: {len(result.constant_rows)}")
     if result.summary_path is not None:
         lines.append(f"feature_summary: {_rel(result.summary_path)}")
     if result.constant_path is not None:

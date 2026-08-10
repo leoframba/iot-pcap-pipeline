@@ -1,14 +1,16 @@
-"""Phase 1C.3b corpus orchestration for frozen V1 Parquet shards.
+"""Phase 1C.3 corpus orchestration for frozen V1 Parquet shards.
 
-Inventory → TRAIN selection → size check → largest-first → process pool →
-``build_pcap_parquet`` → deterministic ``build_manifest.csv``.
+Inventory → split selection → size check → largest-first → process pool →
+``build_pcap_parquet`` → deterministic build manifest CSV.
 
-No TRAIN-wide statistics, TEST extraction, or model logic.
+TEST requires a passed TRAIN completion marker and uses a separate shard
+tree / manifest. Extraction / windowing code paths are split-agnostic.
 """
 
 from __future__ import annotations
 
 import csv
+import json
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -20,29 +22,49 @@ from iot_pcap_pipeline.features.parquet import (
     DEFAULT_FEATURE_CHECKPOINT_DIR,
     BuildResult,
     build_pcap_parquet,
+    feature_schema_sha256,
     pcap_id_from_path,
 )
-from iot_pcap_pipeline.features.schema import write_feature_schema
+from iot_pcap_pipeline.features.schema import (
+    ensure_feature_schema,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_FEATURES_DIR,
     DEFAULT_MANIFEST_DIR,
     FEATURE_BUILD_STRATEGY_VERSION,
     FEATURE_STRATEGY_VERSION,
     PROJECT_ROOT,
+    WINDOWING_STRATEGY_VERSION,
     to_repo_relative,
 )
-from iot_pcap_pipeline.windowing.characterize import load_train_inventory_rows
+from iot_pcap_pipeline.windowing.policy import (
+    BACKWARD_RESET_SECONDS,
+    INACTIVITY_TIMEOUT_SECONDS,
+    WINDOW_SIZE,
+)
 from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
 
 EXPECTED_TRAIN_PCAP_COUNT = 85
+EXPECTED_TEST_PCAP_COUNT = 29
 DEFAULT_FEATURE_DATASET_WORKERS = 4
 DEFAULT_TRAIN_PARQUET_DIR = DEFAULT_FEATURES_DIR / "v1" / "train"
+DEFAULT_TEST_PARQUET_DIR = DEFAULT_FEATURES_DIR / "v1" / "test"
+DEFAULT_TEST_CHECKPOINT_DIR = DEFAULT_FEATURES_DIR / "v1" / ".work" / "test"
 DEFAULT_BUILD_MANIFEST_PATH = DEFAULT_FEATURES_DIR / "v1" / "build_manifest.csv"
+DEFAULT_TEST_BUILD_MANIFEST_PATH = (
+    DEFAULT_FEATURES_DIR / "v1" / "test_build_manifest.csv"
+)
+DEFAULT_TRAIN_BUILD_COMPLETE_JSON = (
+    DEFAULT_FEATURES_DIR / "v1" / "train_build_complete.json"
+)
 DEFAULT_SMOKE_DATASET_DIR = DEFAULT_FEATURES_DIR / "v1" / "smoke" / "dataset"
 DEFAULT_SMOKE_BUILD_MANIFEST_PATH = (
     DEFAULT_FEATURES_DIR / "v1" / "smoke" / "build_manifest_smoke.csv"
 )
 DEFAULT_SMOKE_CHECKPOINT_DIR = DEFAULT_FEATURES_DIR / "v1" / ".work" / "smoke"
+DEFAULT_SMOKE_TEST_BUILD_MANIFEST_PATH = (
+    DEFAULT_FEATURES_DIR / "v1" / "smoke" / "test_build_manifest_smoke.csv"
+)
 
 # Modest TRAIN set for orchestration smoke (not the giant flood files).
 ORCHESTRATION_SMOKE_PCAP_PATHS: tuple[str, ...] = (
@@ -54,7 +76,18 @@ ORCHESTRATION_SMOKE_PCAP_PATHS: tuple[str, ...] = (
     "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Blink_Mini_Camera_Power.pcap",
 )
 
-SplitName = Literal["train"]
+# Small TEST orchestration smoke: benign + publisher attack + held-out profiling.
+# Writes into the canonical TEST shard/checkpoint dirs so --resume can reuse.
+ORCHESTRATION_SMOKE_TEST_PCAP_PATHS: tuple[str, ...] = (
+    "data/raw/WiFI_and_MQTT/attacks/pcap/test/Benign_test.pcap",
+    "data/raw/WiFI_and_MQTT/attacks/pcap/test/MQTT-DoS-Publish_Flood_test.pcap",
+    (
+        "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/"
+        "SenseUBaby_Power.pcap"
+    ),
+)
+
+SplitName = Literal["train", "test"]
 JobStatus = Literal["ok", "size_mismatch", "error"]
 
 BUILD_MANIFEST_COLUMNS: tuple[str, ...] = (
@@ -153,6 +186,107 @@ class FeatureDatasetBuildResult:
     resumed_count: int = 0
     elapsed_seconds: float = 0.0
     results_by_path: dict[str, PcapJobResult] = field(default_factory=dict)
+
+
+def require_train_build_complete(
+    path: Path | str | None = None,
+    *,
+    project_root: Path | None = None,
+    schema_path: Path | str | None = None,
+) -> dict[str, Any]:
+    """Hard-fail unless TRAIN validation marker exists and matches this install."""
+    root = (project_root or PROJECT_ROOT).resolve()
+    if path is None:
+        marker = root / "data" / "features" / "v1" / "train_build_complete.json"
+    else:
+        marker = Path(path)
+        if not marker.is_absolute():
+            marker = root / marker
+    if not marker.is_file():
+        raise FeatureExtractionError(
+            "TEST feature build requires a passed TRAIN completion marker at "
+            f"{to_repo_relative(marker, project_root=root)}. "
+            "Run validate-feature-dataset --split train first."
+        )
+
+    try:
+        payload = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise FeatureExtractionError(
+            f"unreadable TRAIN completion marker {marker}: {exc}"
+        ) from exc
+
+    if payload.get("validation_status") != "passed":
+        raise FeatureExtractionError(
+            "TRAIN completion marker validation_status must be 'passed' "
+            f"(got {payload.get('validation_status')!r})"
+        )
+    if int(payload.get("pcap_count") or -1) != EXPECTED_TRAIN_PCAP_COUNT:
+        raise FeatureExtractionError(
+            f"TRAIN completion marker pcap_count must be "
+            f"{EXPECTED_TRAIN_PCAP_COUNT}, got {payload.get('pcap_count')!r}"
+        )
+    if payload.get("feature_strategy_version") != FEATURE_STRATEGY_VERSION:
+        raise FeatureExtractionError(
+            "TRAIN marker feature_strategy_version "
+            f"{payload.get('feature_strategy_version')!r} != installed "
+            f"{FEATURE_STRATEGY_VERSION!r}"
+        )
+    if payload.get("feature_build_strategy_version") != FEATURE_BUILD_STRATEGY_VERSION:
+        raise FeatureExtractionError(
+            "TRAIN marker feature_build_strategy_version "
+            f"{payload.get('feature_build_strategy_version')!r} != installed "
+            f"{FEATURE_BUILD_STRATEGY_VERSION!r}"
+        )
+    if (
+        payload.get("windowing_strategy_version")
+        and payload.get("windowing_strategy_version") != WINDOWING_STRATEGY_VERSION
+    ):
+        raise FeatureExtractionError(
+            "TRAIN marker windowing_strategy_version "
+            f"{payload.get('windowing_strategy_version')!r} != installed "
+            f"{WINDOWING_STRATEGY_VERSION!r}"
+        )
+
+    windowing = payload.get("windowing") or {}
+    try:
+        wsize = int(windowing["window_size"])
+        inactive = float(windowing["inactivity_timeout_seconds"])
+        backward = float(windowing["backward_reset_seconds"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise FeatureExtractionError(
+            f"TRAIN marker missing/invalid windowing config: {exc}"
+        ) from exc
+    if (
+        wsize != WINDOW_SIZE
+        or inactive != INACTIVITY_TIMEOUT_SECONDS
+        or backward != BACKWARD_RESET_SECONDS
+    ):
+        raise FeatureExtractionError(
+            "TRAIN marker windowing "
+            f"{wsize}/{inactive}/{backward} != installed "
+            f"{WINDOW_SIZE}/{INACTIVITY_TIMEOUT_SECONDS}/{BACKWARD_RESET_SECONDS}"
+        )
+
+    if schema_path is None:
+        schema_file = root / "data" / "features" / "v1" / "feature_schema.json"
+    else:
+        schema_file = Path(schema_path)
+        if not schema_file.is_absolute():
+            schema_file = root / schema_file
+    if not schema_file.is_file():
+        raise FeatureExtractionError(
+            f"frozen feature schema missing: {schema_file}"
+        )
+    on_disk_hash = feature_schema_sha256(schema_file)
+    marker_hash = payload.get("feature_schema_sha256")
+    if marker_hash != on_disk_hash:
+        raise FeatureExtractionError(
+            "TRAIN marker feature_schema_sha256 "
+            f"{marker_hash!r} != on-disk schema hash {on_disk_hash!r}"
+        )
+
+    return payload
 
 
 def _result_from_build(
@@ -268,6 +402,25 @@ def build_one_pcap_job(payload: dict[str, Any]) -> PcapJobResult:
     )
 
 
+def load_split_inventory_rows(
+    inventory_path: Path | str,
+    split: SplitName,
+) -> list[dict[str, str]]:
+    """Load inventory rows for one split (BENIGN/ATTACK only)."""
+    path = Path(inventory_path)
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    selected: list[dict[str, str]] = []
+    for row in rows:
+        if row.get("split") != split:
+            continue
+        if row.get("binary_label") not in {"BENIGN", "ATTACK"}:
+            continue
+        selected.append(row)
+    selected.sort(key=lambda r: r["pcap_path"])
+    return selected
+
+
 def select_train_rows(
     inventory_path: Path,
     *,
@@ -275,25 +428,51 @@ def select_train_rows(
     pcap_paths: list[str] | None = None,
 ) -> list[dict[str, str]]:
     """Load TRAIN inventory rows; optionally restrict to an explicit path list."""
-    train = load_train_inventory_rows(inventory_path)
+    return select_split_rows(
+        inventory_path,
+        split="train",
+        require_expected_count=require_expected_count,
+        pcap_paths=pcap_paths,
+    )
+
+
+def select_split_rows(
+    inventory_path: Path,
+    *,
+    split: SplitName,
+    require_expected_count: bool = True,
+    pcap_paths: list[str] | None = None,
+) -> list[dict[str, str]]:
+    """Load split inventory rows; optionally restrict to an explicit path list."""
+    rows = load_split_inventory_rows(inventory_path, split)
+    expected = (
+        EXPECTED_TRAIN_PCAP_COUNT if split == "train" else EXPECTED_TEST_PCAP_COUNT
+    )
     if pcap_paths is not None:
         wanted = set(pcap_paths)
-        by_path = {r["pcap_path"]: r for r in train}
+        by_path = {r["pcap_path"]: r for r in rows}
         missing = sorted(wanted - set(by_path))
         if missing:
             raise FeatureExtractionError(
-                "Requested TRAIN PCAPs missing from inventory: "
+                f"Requested {split.upper()} PCAPs missing from inventory: "
                 + ", ".join(missing)
             )
-        selected = [by_path[p] for p in pcap_paths]
-    else:
-        selected = list(train)
-        if require_expected_count and len(selected) != EXPECTED_TRAIN_PCAP_COUNT:
+        wrong_split = [
+            p for p in pcap_paths if by_path[p].get("split") != split
+        ]
+        if wrong_split:
             raise FeatureExtractionError(
-                f"Expected {EXPECTED_TRAIN_PCAP_COUNT} TRAIN PCAPs, "
-                f"found {len(selected)} in {inventory_path}"
+                f"Requested paths are not split={split!r}: "
+                + ", ".join(wrong_split)
             )
-    return selected
+        return [by_path[p] for p in pcap_paths]
+
+    if require_expected_count and len(rows) != expected:
+        raise FeatureExtractionError(
+            f"Expected {expected} {split.upper()} PCAPs, "
+            f"found {len(rows)} in {inventory_path}"
+        )
+    return list(rows)
 
 
 def schedule_largest_first(rows: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -352,6 +531,39 @@ def _job_payload(
     }
 
 
+def _default_paths_for_split(
+    split: SplitName,
+    *,
+    smoke: bool,
+) -> tuple[Path, Path, Path]:
+    """Return (output_dir, checkpoint_dir, manifest_path) defaults."""
+    if split == "train":
+        if smoke:
+            return (
+                DEFAULT_SMOKE_DATASET_DIR,
+                DEFAULT_SMOKE_CHECKPOINT_DIR,
+                DEFAULT_SMOKE_BUILD_MANIFEST_PATH,
+            )
+        return (
+            DEFAULT_TRAIN_PARQUET_DIR,
+            DEFAULT_FEATURE_CHECKPOINT_DIR,
+            DEFAULT_BUILD_MANIFEST_PATH,
+        )
+
+    # TEST: smoke still uses canonical shard/checkpoint dirs so --resume reuses.
+    if smoke:
+        return (
+            DEFAULT_TEST_PARQUET_DIR,
+            DEFAULT_TEST_CHECKPOINT_DIR,
+            DEFAULT_SMOKE_TEST_BUILD_MANIFEST_PATH,
+        )
+    return (
+        DEFAULT_TEST_PARQUET_DIR,
+        DEFAULT_TEST_CHECKPOINT_DIR,
+        DEFAULT_TEST_BUILD_MANIFEST_PATH,
+    )
+
+
 def build_feature_dataset(
     *,
     split: SplitName = "train",
@@ -360,6 +572,7 @@ def build_feature_dataset(
     checkpoint_dir: Path | str | None = None,
     manifest_path: Path | str | None = None,
     schema_path: Path | str | None = None,
+    train_complete_path: Path | str | None = None,
     project_root: Path | None = None,
     workers: int = DEFAULT_FEATURE_DATASET_WORKERS,
     resume: bool = True,
@@ -368,26 +581,29 @@ def build_feature_dataset(
     smoke: bool = False,
     progress_file: TextIO | None = None,
 ) -> FeatureDatasetBuildResult:
-    """Build per-PCAP Parquet shards for one split (TRAIN only in 1C.3b step 1)."""
-    if split != "train":
-        raise FeatureExtractionError(
-            "Phase 1C.3b step 1 only supports --split train "
-            f"(got {split!r})"
-        )
+    """Build per-PCAP Parquet shards for one split (train or test)."""
+    if split not in {"train", "test"}:
+        raise FeatureExtractionError(f"unsupported split {split!r}")
 
     root = (project_root or PROJECT_ROOT).resolve()
     inv = Path(inventory_path or (DEFAULT_MANIFEST_DIR / "pcap_inventory.csv"))
     if not inv.is_absolute():
         inv = root / inv
 
-    default_out = DEFAULT_SMOKE_DATASET_DIR if smoke else DEFAULT_TRAIN_PARQUET_DIR
-    default_ckpt = (
-        DEFAULT_SMOKE_CHECKPOINT_DIR if smoke else DEFAULT_FEATURE_CHECKPOINT_DIR
-    )
-    default_manifest = (
-        DEFAULT_SMOKE_BUILD_MANIFEST_PATH if smoke else DEFAULT_BUILD_MANIFEST_PATH
-    )
+    schema_file = Path(schema_path) if schema_path else None
+    if schema_file is not None and not schema_file.is_absolute():
+        schema_file = root / schema_file
 
+    if split == "test":
+        require_train_build_complete(
+            train_complete_path,
+            project_root=root,
+            schema_path=schema_file,
+        )
+
+    default_out, default_ckpt, default_manifest = _default_paths_for_split(
+        split, smoke=smoke
+    )
     out_dir = Path(output_dir or default_out)
     if not out_dir.is_absolute():
         out_dir = root / out_dir
@@ -397,18 +613,25 @@ def build_feature_dataset(
     man_path = Path(manifest_path or default_manifest)
     if not man_path.is_absolute():
         man_path = root / man_path
-    schema_file = Path(schema_path) if schema_path else None
-    if schema_file is not None and not schema_file.is_absolute():
-        schema_file = root / schema_file
-    schema_file = write_feature_schema(schema_file)
+
+    # Never rewrite a pinned schema; only create when missing (e.g. tmp tests).
+    schema_file = ensure_feature_schema(schema_file)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    paths_filter = list(ORCHESTRATION_SMOKE_PCAP_PATHS) if smoke else pcap_paths
+    if smoke:
+        paths_filter = list(
+            ORCHESTRATION_SMOKE_TEST_PCAP_PATHS
+            if split == "test"
+            else ORCHESTRATION_SMOKE_PCAP_PATHS
+        )
+    else:
+        paths_filter = pcap_paths
     require_count = paths_filter is None
-    selected = select_train_rows(
+    selected = select_split_rows(
         inv,
+        split=split,
         require_expected_count=require_count,
         pcap_paths=paths_filter,
     )
@@ -479,10 +702,6 @@ def build_feature_dataset(
                 _ingest(result)
 
     elapsed = time.perf_counter() - started
-    ordered_results = [results_by_path[r["pcap_path"]] for r in selected]
-    # selected is path-sorted from inventory order when filtered by pcap_paths list
-    # order; for full train, load_train_inventory_rows sorts by path. Prefer
-    # deterministic path sort for the manifest regardless of schedule order.
     ordered_results = sorted(results_by_path.values(), key=lambda r: r.pcap_path)
     write_build_manifest(man_path, ordered_results)
 
@@ -507,8 +726,9 @@ def build_feature_dataset(
 
 
 def format_feature_dataset_summary(result: FeatureDatasetBuildResult) -> str:
+    phase = "1C.3b" if result.split == "train" else "1C.3c"
     lines = [
-        "Phase 1C.3b — feature dataset build",
+        f"Phase {phase} — feature dataset build",
         f"split: {result.split}",
         f"feature_strategy_version: {FEATURE_STRATEGY_VERSION}",
         f"feature_build_strategy_version: {FEATURE_BUILD_STRATEGY_VERSION}",

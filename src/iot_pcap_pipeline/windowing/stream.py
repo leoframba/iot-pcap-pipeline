@@ -75,6 +75,17 @@ def iter_windows(
     acc.finalize()
 
 
+def count_full_windows(
+    packets: Iterable[PacketRecord],
+    policy: WindowPolicy | None = None,
+) -> int:
+    """Count full windows under the (frozen) policy without feature extraction."""
+    n = 0
+    for _ in iter_windows(packets, policy=policy):
+        n += 1
+    return n
+
+
 @dataclass
 class _WindowAccumulator:
     policy: WindowPolicy

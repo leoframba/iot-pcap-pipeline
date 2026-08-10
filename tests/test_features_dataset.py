@@ -254,10 +254,19 @@ def test_build_manifest_sorted(tmp_path: Path) -> None:
     assert [r["pcap_path"] for r in loaded] == ["a.pcap", "z.pcap"]
 
 
-def test_reject_non_train_split(tmp_path: Path) -> None:
-    with pytest.raises(FeatureExtractionError, match="only supports --split train"):
+def test_reject_unsupported_split(tmp_path: Path) -> None:
+    with pytest.raises(FeatureExtractionError, match="unsupported split"):
         build_feature_dataset(
-            split="test",  # type: ignore[arg-type]
+            split="holdout",  # type: ignore[arg-type]
+            inventory_path=tmp_path / "missing.csv",
+            project_root=tmp_path,
+        )
+
+
+def test_test_split_requires_train_marker(tmp_path: Path) -> None:
+    with pytest.raises(FeatureExtractionError, match="TRAIN completion marker"):
+        build_feature_dataset(
+            split="test",
             inventory_path=tmp_path / "missing.csv",
             project_root=tmp_path,
         )

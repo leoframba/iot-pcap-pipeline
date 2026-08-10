@@ -39,7 +39,13 @@ from iot_pcap_pipeline.features.dataset import (
     DEFAULT_SMOKE_BUILD_MANIFEST_PATH,
     DEFAULT_SMOKE_CHECKPOINT_DIR,
     DEFAULT_SMOKE_DATASET_DIR,
+    DEFAULT_SMOKE_TEST_BUILD_MANIFEST_PATH,
+    DEFAULT_TEST_BUILD_MANIFEST_PATH,
+    DEFAULT_TEST_CHECKPOINT_DIR,
+    DEFAULT_TEST_PARQUET_DIR,
+    DEFAULT_TRAIN_BUILD_COMPLETE_JSON,
     DEFAULT_TRAIN_PARQUET_DIR,
+    EXPECTED_TEST_PCAP_COUNT,
     EXPECTED_TRAIN_PCAP_COUNT,
     build_feature_dataset,
     format_feature_dataset_summary,
@@ -61,7 +67,7 @@ from iot_pcap_pipeline.features.schema import (
 from iot_pcap_pipeline.features.validate import FeatureInvariantError
 from iot_pcap_pipeline.features.validate_dataset import (
     DEFAULT_INTEGRITY_CSV,
-    DEFAULT_TRAIN_BUILD_COMPLETE_JSON,
+    DEFAULT_TEST_BUILD_COMPLETE_JSON,
     DEFAULT_TRAIN_CONSTANT_FEATURES_CSV,
     DEFAULT_TRAIN_FEATURE_SUMMARY_CSV,
     format_validation_summary,
@@ -470,15 +476,16 @@ def build_parser() -> argparse.ArgumentParser:
     ds_cmd = subparsers.add_parser(
         "build-feature-dataset",
         help=(
-            "Phase 1C.3b corpus orchestration: TRAIN inventory → "
-            "largest-first process pool → Parquet shards + build_manifest.csv"
+            "Phase 1C.3 corpus orchestration: inventory → largest-first "
+            "process pool → Parquet shards + build manifest "
+            "(TEST requires passed train_build_complete.json)"
         ),
     )
     ds_cmd.add_argument(
         "--split",
-        choices=["train"],
+        choices=["train", "test"],
         default="train",
-        help="Dataset split to build (only train in 1C.3b step 1)",
+        help="Dataset split to build (train or test)",
     )
     ds_cmd.add_argument(
         "--workers",
@@ -501,8 +508,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Per-PCAP Parquet shard directory "
-            f"(default: {DEFAULT_TRAIN_PARQUET_DIR}; "
-            f"smoke → {DEFAULT_SMOKE_DATASET_DIR})"
+            f"(train → {DEFAULT_TRAIN_PARQUET_DIR}; "
+            f"test → {DEFAULT_TEST_PARQUET_DIR}; "
+            f"train --smoke → {DEFAULT_SMOKE_DATASET_DIR})"
         ),
     )
     ds_cmd.add_argument(
@@ -511,8 +519,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Per-PCAP checkpoint directory "
-            f"(default: {DEFAULT_FEATURE_CHECKPOINT_DIR}; "
-            f"smoke → {DEFAULT_SMOKE_CHECKPOINT_DIR})"
+            f"(train → {DEFAULT_FEATURE_CHECKPOINT_DIR}; "
+            f"test → {DEFAULT_TEST_CHECKPOINT_DIR}; "
+            f"train --smoke → {DEFAULT_SMOKE_CHECKPOINT_DIR})"
         ),
     )
     ds_cmd.add_argument(
@@ -521,8 +530,10 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Build manifest CSV path "
-            f"(default: {DEFAULT_BUILD_MANIFEST_PATH}; "
-            f"smoke → {DEFAULT_SMOKE_BUILD_MANIFEST_PATH})"
+            f"(train → {DEFAULT_BUILD_MANIFEST_PATH}; "
+            f"test → {DEFAULT_TEST_BUILD_MANIFEST_PATH}; "
+            f"train --smoke → {DEFAULT_SMOKE_BUILD_MANIFEST_PATH}; "
+            f"test --smoke → {DEFAULT_SMOKE_TEST_BUILD_MANIFEST_PATH})"
         ),
     )
     ds_cmd.add_argument(
@@ -535,8 +546,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--smoke",
         action="store_true",
         help=(
-            "Orchestration smoke: 6 modest TRAIN PCAPs only "
-            f"(skips full {EXPECTED_TRAIN_PCAP_COUNT}-PCAP assertion)"
+            "Orchestration smoke: train → 6 modest TRAIN PCAPs; "
+            "test → Benign_test + MQTT-DoS-Publish_Flood_test + "
+            f"SenseUBaby_Power (skips full {EXPECTED_TRAIN_PCAP_COUNT}/"
+            f"{EXPECTED_TEST_PCAP_COUNT} count assertion). "
+            "TEST smoke writes canonical test/ + .work/test/ so --resume "
+            "can reuse shards."
         ),
     )
     resume_group = ds_cmd.add_mutually_exclusive_group()
@@ -557,21 +572,25 @@ def build_parser() -> argparse.ArgumentParser:
     val_cmd = subparsers.add_parser(
         "validate-feature-dataset",
         help=(
-            "Read-only TRAIN Parquet build validation "
-            "(shard schema/rows + audit/windowing joins + feature summaries)"
+            "Read-only Parquet build validation "
+            "(train: summaries + joins; test: structural only)"
         ),
     )
     val_cmd.add_argument(
         "--split",
-        choices=["train"],
+        choices=["train", "test"],
         default="train",
-        help="Dataset split to validate (only train for now)",
+        help="Dataset split to validate",
     )
     val_cmd.add_argument(
         "--manifest",
         type=Path,
-        default=DEFAULT_BUILD_MANIFEST_PATH,
-        help=f"Build manifest CSV (default: {DEFAULT_BUILD_MANIFEST_PATH})",
+        default=None,
+        help=(
+            "Build manifest CSV "
+            f"(train default: {DEFAULT_BUILD_MANIFEST_PATH}; "
+            f"test default: {DEFAULT_TEST_BUILD_MANIFEST_PATH})"
+        ),
     )
     val_cmd.add_argument(
         "--integrity",
@@ -584,32 +603,36 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_CHARACTERIZATION_CSV,
         help=(
-            "Windowing characterization CSV "
-            f"(default: {DEFAULT_CHARACTERIZATION_CSV})"
+            "TRAIN windowing characterization CSV "
+            f"(default: {DEFAULT_CHARACTERIZATION_CSV}; ignored for --split test)"
         ),
     )
     val_cmd.add_argument(
         "--summary-output",
         type=Path,
         default=DEFAULT_TRAIN_FEATURE_SUMMARY_CSV,
-        help=f"Feature summary CSV (default: {DEFAULT_TRAIN_FEATURE_SUMMARY_CSV})",
+        help=(
+            "TRAIN feature summary CSV "
+            f"(default: {DEFAULT_TRAIN_FEATURE_SUMMARY_CSV}; ignored for test)"
+        ),
     )
     val_cmd.add_argument(
         "--constant-output",
         type=Path,
         default=DEFAULT_TRAIN_CONSTANT_FEATURES_CSV,
         help=(
-            "Constant-feature report CSV "
-            f"(default: {DEFAULT_TRAIN_CONSTANT_FEATURES_CSV})"
+            "TRAIN constant-feature report CSV "
+            f"(default: {DEFAULT_TRAIN_CONSTANT_FEATURES_CSV}; ignored for test)"
         ),
     )
     val_cmd.add_argument(
         "--complete-output",
         type=Path,
-        default=DEFAULT_TRAIN_BUILD_COMPLETE_JSON,
+        default=None,
         help=(
             "Pass marker JSON written only when all checks pass "
-            f"(default: {DEFAULT_TRAIN_BUILD_COMPLETE_JSON})"
+            f"(train default: {DEFAULT_TRAIN_BUILD_COMPLETE_JSON}; "
+            f"test default: {DEFAULT_TEST_BUILD_COMPLETE_JSON})"
         ),
     )
 

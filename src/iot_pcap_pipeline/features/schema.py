@@ -26,6 +26,21 @@ GATE_B_DECISION = (
     "decision (TEST must not be consulted)."
 )
 
+# Gate C — full TRAIN build + validation + per-group characterization review.
+GATE_C_STATUS = "passed"
+GATE_C_DECISION = (
+    "Freeze the TRAIN-side feature engineering contract for the full pipeline: "
+    "keep WINDOW_SIZE=25 / INACTIVITY=5s / BACKWARD_RESET=1s; keep all 27 V1 "
+    "features including tcp_urg_ratio, temporal features, frame-length features, "
+    "and rare protocol ratios. No Phase 1C extractor changes. No feature drops "
+    "from the TRAIN constant/group reports. Next: identical TEST extraction "
+    "under the same frozen contract (TEST must not revise features)."
+)
+
+DEFAULT_TRAIN_FEATURE_CONTRACT_PATH = (
+    PROJECT_ROOT / "data" / "features" / "v1" / "train_feature_contract.json"
+)
+
 V1_FEATURE_NAMES: tuple[str, ...] = (
     "window_span_seconds",
     "iat_mean_seconds",
@@ -281,8 +296,8 @@ V1_FEATURE_SPECS: tuple[FeatureSpec, ...] = (
         "ratio",
         (
             "TCP packets with URG / tcp_packet_count (0 if no TCP). "
-            "Retained in phase1c2_v1 even if smoke-constant; defer drop "
-            "decision until full TRAIN constant-feature report"
+            "Kept in the frozen TRAIN feature contract (Gate C): nonzero only "
+            "in Recon-OS_Scan on full TRAIN; not dropped"
         ),
         "tcp_packet_count",
     ),
@@ -311,6 +326,8 @@ def build_feature_schema_document() -> dict[str, Any]:
         "feature_strategy_version": FEATURE_STRATEGY_VERSION,
         "gate_b_status": GATE_B_STATUS,
         "gate_b_decision": GATE_B_DECISION,
+        "gate_c_status": GATE_C_STATUS,
+        "gate_c_decision": GATE_C_DECISION,
         "windowing": {
             "window_size": WINDOW_SIZE,
             "inactivity_timeout_seconds": INACTIVITY_TIMEOUT_SECONDS,
@@ -329,16 +346,17 @@ def build_feature_schema_document() -> dict[str, Any]:
             "partial_windows": "dropped at boundaries and EOF",
             "feature_count": len(V1_FEATURE_NAMES),
             "constant_feature_policy": (
-                "After full TRAIN feature build, report globally constant "
-                "features. Exclusion from model input is allowed only before "
-                "model training via an explicit schema/model-contract decision. "
-                "TEST must not be consulted for that decision. Extraction still "
-                "emits all 27 V1 columns unless/until the contract is revised."
+                "Full TRAIN reported zero globally constant features. "
+                "All 27 V1 columns remain in the frozen contract (Gate C). "
+                "Future exclusion from model input still requires an explicit "
+                "pre-training schema/model-contract decision; TEST must not "
+                "decide."
             ),
             "full_build_note": (
-                "Phase 1C.3 must stream windows to Parquet; do not accumulate "
-                "all FeatureVector rows in memory via the smoke list wrapper."
+                "TRAIN Parquet build + validation passed; stream to Parquet "
+                "only. Do not accumulate all FeatureVector rows in memory."
             ),
+            "train_feature_contract": "frozen",
         },
         "features": [asdict(spec) for spec in V1_FEATURE_SPECS],
         "metadata_columns_not_features": list(METADATA_COLUMN_NAMES),
@@ -351,6 +369,77 @@ def write_feature_schema(path: Path | str | None = None) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     doc = build_feature_schema_document()
     encoded = json.dumps(doc, indent=2) + "\n"
+    tmp = out.with_suffix(out.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as handle:
+        handle.write(encoded)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, out)
+    return out
+
+
+def ensure_feature_schema(path: Path | str | None = None) -> Path:
+    """Return an existing schema file without rewriting; write only if missing.
+
+    The completed TRAIN build pins ``feature_schema.json`` by SHA-256. Corpus
+    builders must not rewrite that file or resume / Gate-C verification breaks.
+    """
+    out = Path(path or DEFAULT_FEATURE_SCHEMA_PATH)
+    if out.is_file():
+        return out
+    return write_feature_schema(out)
+
+
+def write_train_feature_contract(
+    path: Path | str | None = None,
+    *,
+    feature_schema_sha256: str | None = None,
+) -> Path:
+    """Write the Gate-C TRAIN feature-contract freeze marker (repo-relative).
+
+    Kept separate from ``feature_schema.json`` so documenting the freeze does
+    not change the schema hash pinned by the completed TRAIN Parquet build.
+    """
+    out = Path(path or DEFAULT_TRAIN_FEATURE_CONTRACT_PATH)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "gate_c_status": GATE_C_STATUS,
+        "gate_c_decision": GATE_C_DECISION,
+        "train_feature_contract": "frozen",
+        "feature_strategy_version": FEATURE_STRATEGY_VERSION,
+        "windowing": {
+            "window_size": WINDOW_SIZE,
+            "inactivity_timeout_seconds": INACTIVITY_TIMEOUT_SECONDS,
+            "backward_reset_seconds": BACKWARD_RESET_SECONDS,
+        },
+        "keep": {
+            "windowing_25_5_1": True,
+            "v1_feature_count": len(V1_FEATURE_NAMES),
+            "tcp_urg_ratio": True,
+            "temporal_features": True,
+            "frame_length_features": True,
+            "rare_protocol_ratios": True,
+        },
+        "extractor_changes": "none",
+        "feature_schema_sha256_pinned_to_train_build": feature_schema_sha256,
+        "next": (
+            "Extract TEST with the identical frozen windowing + 27-feature "
+            "contract. TEST must not revise or drop features."
+        ),
+        "artifacts": {
+            "feature_schema": "data/features/v1/feature_schema.json",
+            "build_manifest": "data/features/v1/build_manifest.csv",
+            "train_build_complete": "data/features/v1/train_build_complete.json",
+            "train_feature_summary": "data/features/v1/train_feature_summary.csv",
+            "train_feature_group_summary": (
+                "data/features/v1/train_feature_group_summary.csv"
+            ),
+            "train_feature_group_characterization": (
+                "data/features/v1/train_feature_group_characterization.json"
+            ),
+        },
+    }
+    encoded = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     tmp = out.with_suffix(out.suffix + ".tmp")
     with tmp.open("w", encoding="utf-8") as handle:
         handle.write(encoded)

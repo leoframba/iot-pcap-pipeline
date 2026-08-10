@@ -9,8 +9,11 @@ from iot_pcap_pipeline.features.parquet import (
 from iot_pcap_pipeline.features.schema import (
     GATE_B_DECISION,
     GATE_B_STATUS,
+    GATE_C_DECISION,
+    GATE_C_STATUS,
     V1_FEATURE_NAMES,
     write_feature_schema,
+    write_train_feature_contract,
 )
 from iot_pcap_pipeline.features.validate import (
     FeatureInvariantError,
@@ -21,6 +24,8 @@ from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
 __all__ = [
     "GATE_B_DECISION",
     "GATE_B_STATUS",
+    "GATE_C_DECISION",
+    "GATE_C_STATUS",
     "V1_FEATURE_NAMES",
     "BuildResult",
     "FeatureExtractionError",
@@ -31,4 +36,5 @@ __all__ = [
     "feature_parquet_arrow_schema",
     "validate_window_and_features",
     "write_feature_schema",
+    "write_train_feature_contract",
 ]

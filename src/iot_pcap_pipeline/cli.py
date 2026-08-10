@@ -73,9 +73,18 @@ from iot_pcap_pipeline.features.validate_dataset import (
     format_validation_summary,
     validate_feature_dataset,
 )
+from iot_pcap_pipeline.modeling.characterize import (
+    DEFAULT_MODELING_V1_DIR,
+    DEFAULT_SAMPLING_PLAN_PATH,
+    DEFAULT_SAMPLING_SUMMARY_PATH,
+    DEFAULT_SPLIT_MANIFEST_PATH,
+    characterize_modeling_split,
+    format_modeling_characterization_summary,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
+    DEFAULT_MODELING_SEED,
     DEFAULT_RAW_ROOT,
     DEFAULT_SPLIT_SEED,
     PROJECT_ROOT,
@@ -694,6 +703,56 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default: {DEFAULT_PERCENTILE_SAMPLE_CAP:,})"
         ),
     )
+
+    model_cmd = subparsers.add_parser(
+        "characterize-modeling-split",
+        help=(
+            "Phase 2A: TRAIN-only modeling_group fit/validation split + "
+            "FIT sampling-cap characterization (no model training)"
+        ),
+    )
+    model_cmd.add_argument(
+        "--inventory",
+        type=Path,
+        default=DEFAULT_MANIFEST_DIR / "pcap_inventory.csv",
+        help="PCAP inventory CSV",
+    )
+    model_cmd.add_argument(
+        "--build-manifest",
+        type=Path,
+        default=DEFAULT_BUILD_MANIFEST_PATH,
+        help=f"TRAIN feature build manifest (default: {DEFAULT_BUILD_MANIFEST_PATH})",
+    )
+    model_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_MODELING_V1_DIR,
+        help=f"Modeling artifact directory (default: {DEFAULT_MODELING_V1_DIR})",
+    )
+    model_cmd.add_argument(
+        "--split-manifest-output",
+        type=Path,
+        default=None,
+        help=f"Canonical 85-row split CSV (default: {DEFAULT_SPLIT_MANIFEST_PATH})",
+    )
+    model_cmd.add_argument(
+        "--sampling-plan-output",
+        type=Path,
+        default=None,
+        help=f"Sampling plan JSON (default: {DEFAULT_SAMPLING_PLAN_PATH})",
+    )
+    model_cmd.add_argument(
+        "--sampling-summary-output",
+        type=Path,
+        default=None,
+        help=f"Sampling summary CSV (default: {DEFAULT_SAMPLING_SUMMARY_PATH})",
+    )
+    model_cmd.add_argument(
+        "--seed",
+        type=int,
+        default=DEFAULT_MODELING_SEED,
+        help=f"Base seed for SHA-256-derived RNG (default: {DEFAULT_MODELING_SEED})",
+    )
     return parser
 
 
@@ -995,6 +1054,24 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_group_characterization_summary(result))
         return 0
+
+    if args.command == "characterize-modeling-split":
+        try:
+            result = characterize_modeling_split(
+                inventory_path=args.inventory,
+                build_manifest_path=args.build_manifest,
+                output_dir=args.output_dir,
+                split_manifest_path=args.split_manifest_output,
+                sampling_plan_path=args.sampling_plan_output,
+                sampling_summary_path=args.sampling_summary_output,
+                base_seed=args.seed,
+                progress_file=sys.stderr,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_modeling_characterization_summary(result))
+        return 0 if result.passed else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

@@ -1,0 +1,239 @@
+{
+  "artifacts": {
+    "modeling_split_manifest": "data/modeling/v1/modeling_split_manifest.csv",
+    "sampling_plan": "data/modeling/v1/sampling_plan.json",
+    "sampling_summary": "data/modeling/v1/sampling_summary.csv"
+  },
+  "base_seed": 42,
+  "candidate_plans": [
+    {
+      "caps": {
+        "BENIGN": null,
+        "DDoS": 50000,
+        "DoS": 50000,
+        "MQTT": 50000,
+        "Recon": null,
+        "Spoofing": null
+      },
+      "description": "High per-PCAP caps on floods; MQTT moderate; rare/BENIGN uncapped",
+      "plan_id": "fullish"
+    },
+    {
+      "caps": {
+        "BENIGN": null,
+        "DDoS": 15000,
+        "DoS": 15000,
+        "MQTT": 30000,
+        "Recon": null,
+        "Spoofing": null
+      },
+      "description": "Tighter flood caps so DDoS/DoS/MQTT are similar order of magnitude",
+      "plan_id": "family_balanced"
+    },
+    {
+      "caps": {
+        "BENIGN": null,
+        "DDoS": 8000,
+        "DoS": 8000,
+        "MQTT": 15000,
+        "Recon": null,
+        "Spoofing": null
+      },
+      "description": "Lower flood caps for a smaller FIT training view",
+      "plan_id": "aggressive"
+    }
+  ],
+  "limitations": [
+    "Spoofing: single TRAIN capture assigned entirely to fit; TRAIN-validation has no Spoofing family coverage.",
+    "Publisher benign (Benign_train): fit only; TRAIN-validation has no independent publisher-benign coverage. Validation FPR primarily measures held-out profiling benign."
+  ],
+  "modeling_split_strategy_version": "phase2a_v1",
+  "next": "Review split + sampling_summary ratios, then freeze chosen plan_id / caps before Phase 2B. Do not train models or consult TEST.",
+  "reservoir_contract": {
+    "algorithm": "deterministic_reservoir_sample_without_replacement",
+    "note": "Phase 2A simulates counts via min(N, cap) only. Phase 2B must execute this reservoir algorithm when materializing views. TRAIN-validation is never sampled.",
+    "scope": "independently within each FIT PCAP",
+    "seed_formula": "int(sha256('phase2a_v1|{base_seed}|{pcap_id}').hexdigest()[:16], 16)",
+    "unit": "window"
+  },
+  "seed_formula": "int(sha256('phase2a_v1|{base_seed}|{salt}').hexdigest()[:16], 16)",
+  "selection_notes": [
+    {
+      "actual_fraction": 0.16830182846717734,
+      "family": "DDoS",
+      "family_total_windows": 19112074,
+      "held_out_group": "DDoS|DDoS_TCP",
+      "reason": "closest_group_to_target_validation_fraction|target=0.20|actual=0.168302|windows=3216597",
+      "target_fraction": 0.2
+    },
+    {
+      "actual_fraction": 0.2106831494205299,
+      "family": "DoS",
+      "family_total_windows": 7219182,
+      "held_out_group": "DoS|DoS_TCP",
+      "reason": "closest_group_to_target_validation_fraction|target=0.20|actual=0.210683|windows=1520960",
+      "target_fraction": 0.2
+    },
+    {
+      "actual_fraction": 0.17169975619938377,
+      "family": "MQTT",
+      "family_total_windows": 1032401,
+      "held_out_group": "MQTT|MQTT_DoS_Publish_Flood",
+      "reason": "closest_group_to_target_validation_fraction|target=0.20|actual=0.171700|windows=177263",
+      "target_fraction": 0.2
+    },
+    {
+      "actual_fraction": 0.16233281118207013,
+      "family": "Recon",
+      "family_total_windows": 41495,
+      "held_out_group": "Recon|OS_Scan",
+      "reason": "closest_group_to_target_validation_fraction|target=0.20|actual=0.162333|windows=6736",
+      "target_fraction": 0.2
+    },
+    {
+      "family": "Spoofing",
+      "held_out_group": null,
+      "reason": "spoofing_fit_only"
+    },
+    {
+      "device_fraction_of_profiling": 0.05991149365661844,
+      "family": "BENIGN_profiling",
+      "held_out_device_group": "benign|device|Owltron_Camera",
+      "held_out_singleton": null,
+      "note": "Device groups are small vs 15\u201325% target; selection is closest capable device with min window floor.",
+      "profiling_total_windows": 156147,
+      "target_fraction": 0.2,
+      "validation_profiling_states": [
+        "interaction",
+        "power"
+      ]
+    }
+  ],
+  "split_summary": {
+    "fit": {
+      "attack_by_family": {
+        "DDoS": {
+          "groups": 3,
+          "pcaps": 20,
+          "windows": 15895477
+        },
+        "DoS": {
+          "groups": 3,
+          "pcaps": 12,
+          "windows": 5698222
+        },
+        "MQTT": {
+          "groups": 4,
+          "pcaps": 4,
+          "windows": 855138
+        },
+        "Recon": {
+          "groups": 3,
+          "pcaps": 3,
+          "windows": 34759
+        },
+        "Spoofing": {
+          "groups": 1,
+          "pcaps": 1,
+          "windows": 6423
+        }
+      },
+      "benign_by_category": {
+        "profiling_active": {
+          "pcaps": 2,
+          "windows": 120860
+        },
+        "profiling_idle": {
+          "pcaps": 1,
+          "windows": 13149
+        },
+        "profiling_interaction": {
+          "pcaps": 18,
+          "windows": 12649
+        },
+        "profiling_power": {
+          "pcaps": 4,
+          "windows": 134
+        },
+        "publisher_benign": {
+          "pcaps": 1,
+          "windows": 77427
+        }
+      },
+      "modeling_group_count": 22,
+      "modeling_groups": [
+        "DDoS|DDoS_ICMP",
+        "DDoS|DDoS_SYN",
+        "DDoS|DDoS_UDP",
+        "DoS|DoS_ICMP",
+        "DoS|DoS_SYN",
+        "DoS|DoS_UDP",
+        "MQTT|MQTT_DDoS_Connect_Flood",
+        "MQTT|MQTT_DDoS_Publish_Flood",
+        "MQTT|MQTT_DoS_Connect_Flood",
+        "MQTT|MQTT_Malformed_Data",
+        "Recon|Ping_Sweep",
+        "Recon|Port_Scan",
+        "Recon|VulScan",
+        "Spoofing|ARP_Spoofing",
+        "benign|device|Blink_Camera",
+        "benign|device|Ecobee_Camera",
+        "benign|device|M1T_Camera",
+        "benign|device|Singcall",
+        "benign|publisher|Benign_train",
+        "benign|singleton|Active",
+        "benign|singleton|ActiveBroker",
+        "benign|singleton|Idle"
+      ],
+      "pcap_count": 66,
+      "windows_total": 22714238
+    },
+    "validation": {
+      "attack_by_family": {
+        "DDoS": {
+          "groups": 1,
+          "pcaps": 4,
+          "windows": 3216597
+        },
+        "DoS": {
+          "groups": 1,
+          "pcaps": 4,
+          "windows": 1520960
+        },
+        "MQTT": {
+          "groups": 1,
+          "pcaps": 1,
+          "windows": 177263
+        },
+        "Recon": {
+          "groups": 1,
+          "pcaps": 1,
+          "windows": 6736
+        }
+      },
+      "benign_by_category": {
+        "profiling_interaction": {
+          "pcaps": 8,
+          "windows": 9315
+        },
+        "profiling_power": {
+          "pcaps": 1,
+          "windows": 40
+        }
+      },
+      "modeling_group_count": 5,
+      "modeling_groups": [
+        "DDoS|DDoS_TCP",
+        "DoS|DoS_TCP",
+        "MQTT|MQTT_DoS_Publish_Flood",
+        "Recon|OS_Scan",
+        "benign|device|Owltron_Camera"
+      ],
+      "pcap_count": 19,
+      "windows_total": 4930911
+    },
+    "validation_sampling": "none_all_windows_retained"
+  },
+  "status": "characterization_only",
+  "validation_sampling": "never"
+}

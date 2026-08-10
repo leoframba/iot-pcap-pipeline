@@ -54,5 +54,13 @@ data/features/**
 data/features/v1/**/*.parquet
 data/features/v1/**/*.parquet.tmp
 data/features/v1/.work/
-data/features/v1/train/
-data/features/v1/test/
+# Modeling manifests (CSV/JSON) are trackable; ignore future heavy sample views
+data/modeling/**
+!data/modeling/
+!data/modeling/v1/
+!data/modeling/v1/**
+!data/modeling/v1/**/*.json
+!data/modeling/v1/**/*.csv
+data/modeling/v1/**/*.parquet
+data/modeling/v1/**/*.parquet.tmp
+data/modeling/v1/.work/

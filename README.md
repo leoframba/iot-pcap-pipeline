@@ -370,8 +370,37 @@ Completion markers:
 - `data/features/v1/test_build_complete.json`
 - `data/features/v1/train_feature_contract.json`
 
-**Out of Phase 1C / next work:** model training, class balancing, feature
-drops for model input (explicit pre-training contract only; not from TEST),
-thresholds, and inference packaging.
+**Out of Phase 1C / next work:** Phase 2 binary IDS modeling (see below),
+class balancing for training views, thresholds, and inference packaging.
+
+## Phase 2A — TRAIN modeling split + sampling characterization
+
+PCAP / logical-group design for model fitting. Does **not** train models and
+does **not** consult TEST.
+
+```text
+TRAIN 85 PCAPs
+  → modeling_group_key (attack family|type lineages; benign device groups)
+  → TRAIN-fit vs TRAIN-validation (whole groups)
+  → simulate FIT-only per-PCAP caps (reservoir contract; val never sampled)
+  → human review / Gate 2A
+```
+
+Flood PCAPs that are sequential chunks of one attack type are held out
+**together** (not PCAP-by-PCAP). Spoofing and publisher benign stay fit-only
+(documented TRAIN-val limitations).
+
+```bash
+uv run iot-pcap-pipeline characterize-modeling-split
+```
+
+Artifacts:
+
+- `data/modeling/v1/modeling_split_manifest.csv` — all 85 TRAIN PCAPs
+- `data/modeling/v1/sampling_plan.json` — `characterization_only` until freeze
+- `data/modeling/v1/sampling_summary.csv` — candidate cap plans
+
+**Stop for review** before Phase 2B: freeze chosen sampling caps, then train.
+Do not tune on TEST.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

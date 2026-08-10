@@ -21,6 +21,9 @@ TIMESTAMP_PROBE_STRATEGY_VERSION = "phase1b3_v2"
 WINDOWING_STRATEGY_VERSION = "phase1c1_v2"
 FEATURE_STRATEGY_VERSION = "phase1c2_v1"
 FEATURE_BUILD_STRATEGY_VERSION = "phase1c3_v1"
+MODELING_SPLIT_STRATEGY_VERSION = "phase2a_v1"
+DEFAULT_MODELING_DIR = PROJECT_ROOT / "data" / "modeling"
+DEFAULT_MODELING_SEED = 42
 
 
 def to_repo_relative(path: Path, project_root: Path | None = None) -> str:

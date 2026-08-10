@@ -81,6 +81,11 @@ from iot_pcap_pipeline.modeling.characterize import (
     characterize_modeling_split,
     format_modeling_characterization_summary,
 )
+from iot_pcap_pipeline.modeling.freeze import (
+    FROZEN_SAMPLING_PLAN_ID,
+    format_gate_2a_freeze_summary,
+    freeze_gate_2a,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -753,6 +758,31 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_MODELING_SEED,
         help=f"Base seed for SHA-256-derived RNG (default: {DEFAULT_MODELING_SEED})",
     )
+
+    freeze_cmd = subparsers.add_parser(
+        "freeze-modeling-split",
+        help=(
+            "Gate 2A: freeze TRAIN modeling split + chosen sampling plan "
+            f"(default plan_id={FROZEN_SAMPLING_PLAN_ID})"
+        ),
+    )
+    freeze_cmd.add_argument(
+        "--plan-id",
+        default=FROZEN_SAMPLING_PLAN_ID,
+        help=f"Sampling plan to freeze (default: {FROZEN_SAMPLING_PLAN_ID})",
+    )
+    freeze_cmd.add_argument(
+        "--sampling-plan",
+        type=Path,
+        default=DEFAULT_SAMPLING_PLAN_PATH,
+        help=f"sampling_plan.json to update (default: {DEFAULT_SAMPLING_PLAN_PATH})",
+    )
+    freeze_cmd.add_argument(
+        "--split-manifest",
+        type=Path,
+        default=DEFAULT_SPLIT_MANIFEST_PATH,
+        help=f"modeling_split_manifest.csv (default: {DEFAULT_SPLIT_MANIFEST_PATH})",
+    )
     return parser
 
 
@@ -1072,6 +1102,19 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_modeling_characterization_summary(result))
         return 0 if result.passed else 1
+
+    if args.command == "freeze-modeling-split":
+        try:
+            payload = freeze_gate_2a(
+                plan_id=args.plan_id,
+                sampling_plan_path=args.sampling_plan,
+                split_manifest_path=args.split_manifest,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_gate_2a_freeze_summary(payload))
+        return 0
 
     parser.error(f"unknown command: {args.command}")
     return 2

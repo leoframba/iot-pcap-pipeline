@@ -382,8 +382,8 @@ does **not** consult TEST.
 TRAIN 85 PCAPs
   → modeling_group_key (attack family|type lineages; benign device groups)
   → TRAIN-fit vs TRAIN-validation (whole groups)
-  → simulate FIT-only per-PCAP caps (reservoir contract; val never sampled)
-  → human review / Gate 2A
+  → simulate FIT-only caps (per-PCAP + group_balanced)
+  → Gate 2A FROZEN (group_balanced)
 ```
 
 Flood PCAPs that are sequential chunks of one attack type are held out
@@ -400,10 +400,19 @@ uv run iot-pcap-pipeline characterize-modeling-split
 Artifacts:
 
 - `data/modeling/v1/modeling_split_manifest.csv` — all 85 TRAIN PCAPs
-- `data/modeling/v1/sampling_plan.json` — `characterization_only` until freeze
+- `data/modeling/v1/sampling_plan.json` — characterization then Gate 2A freeze
 - `data/modeling/v1/sampling_summary.csv` — candidate cap plans
+- `data/modeling/v1/gate_2a_complete.json` — written when Gate 2A is frozen
 
-**Stop for review** before Phase 2B: freeze chosen sampling caps, then train.
-Do not tune on TEST.
+**Gate 2A (frozen):** modeling split locked; V1 FIT sampling policy =
+`group_balanced` (per-`modeling_group_key` budgets: DDoS/DoS 60k, MQTT 30k,
+Recon/Spoofing/BENIGN uncapped). TRAIN-validation remains unsampled.
+
+```bash
+uv run iot-pcap-pipeline freeze-modeling-split --plan-id group_balanced
+```
+
+**Next (Phase 2B):** materialize the frozen FIT training view and train
+baselines. Do not tune on TEST.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

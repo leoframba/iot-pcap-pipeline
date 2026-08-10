@@ -1,0 +1,31 @@
+{
+  "artifacts": {
+    "gate_2a_complete": "data/modeling/v1/gate_2a_complete.json",
+    "modeling_split_manifest": "data/modeling/v1/modeling_split_manifest.csv",
+    "sampling_plan": "data/modeling/v1/sampling_plan.json",
+    "sampling_summary": "data/modeling/v1/sampling_summary.csv"
+  },
+  "frozen_sampling_plan": {
+    "cap_mode": "per_modeling_group",
+    "caps": {
+      "BENIGN": null,
+      "DDoS": 60000,
+      "DoS": 60000,
+      "MQTT": 30000,
+      "Recon": null,
+      "Spoofing": null
+    },
+    "description": "Budget per attack-type lineage (modeling_group_key), allocated across member PCAPs \u2014 avoids TCPDUMP chunk-count dominating weight",
+    "plan_id": "group_balanced"
+  },
+  "frozen_sampling_plan_id": "group_balanced",
+  "gate_2a_decision": "Freeze the Phase 2A TRAIN modeling split (modeling_group_key lineages; Owltron_Camera + Idle benign validation; Spoofing and publisher benign fit-only with documented limitations) and select group_balanced as the V1 FIT sampling policy: per-modeling_group budgets DDoS/DoS=60k, MQTT=30k, Recon/Spoofing/BENIGN uncapped; TRAIN-validation never sampled; TEST sealed until model freeze.",
+  "gate_2a_status": "passed",
+  "modeling_split_strategy_version": "phase2a_v1",
+  "next": "Phase 2B: materialize FIT training view under frozen group_balanced reservoir sampling; train baselines on TRAIN-fit; evaluate/threshold on unsampled TRAIN-validation only. Do not consult TEST.",
+  "split": {
+    "fit_pcaps": 65,
+    "validation_pcaps": 20
+  },
+  "validation_sampling": "never"
+}

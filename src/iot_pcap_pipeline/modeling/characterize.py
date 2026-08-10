@@ -8,6 +8,10 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from iot_pcap_pipeline.features.dataset import require_train_build_complete
+from iot_pcap_pipeline.modeling.freeze import (
+    DEFAULT_GATE_2A_COMPLETE_PATH,
+    apply_gate_2a_freeze_to_plan,
+)
 from iot_pcap_pipeline.modeling.sampling import (
     CANDIDATE_PLANS,
     ReservoirContract,
@@ -158,6 +162,24 @@ def characterize_modeling_split(
             "/ caps before Phase 2B. Do not train models or consult TEST."
         ),
     }
+    # Preserve Gate 2A freeze if already recorded.
+    gate_marker = root / "data" / "modeling" / "v1" / "gate_2a_complete.json"
+    if not gate_marker.is_file():
+        gate_marker = Path(DEFAULT_GATE_2A_COMPLETE_PATH)
+        if not gate_marker.is_absolute():
+            gate_marker = root / gate_marker
+    if gate_marker.is_file():
+        try:
+            frozen = json.loads(gate_marker.read_text(encoding="utf-8"))
+            plan_id = str(
+                frozen.get("frozen_sampling_plan_id") or "group_balanced"
+            )
+            plan_payload = apply_gate_2a_freeze_to_plan(
+                plan_payload, plan_id=plan_id
+            )
+        except (OSError, json.JSONDecodeError, FeatureExtractionError):
+            pass
+
     plan_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = plan_path.with_suffix(plan_path.suffix + ".tmp")
     tmp.write_text(
@@ -214,8 +236,13 @@ def format_modeling_characterization_summary(
         f"sampling_plan: {_rel(result.sampling_plan_path)}",
         f"sampling_summary: {_rel(result.sampling_summary_path)}",
         "validation_sampling: never (all val windows retained)",
-        "sampling status: characterization_only (caps not frozen)",
+        f"sampling status: {result.plan_payload.get('status', 'unknown')}",
     ]
+    if result.plan_payload.get("frozen_sampling_plan_id"):
+        lines.append(
+            f"frozen_sampling_plan_id: "
+            f"{result.plan_payload.get('frozen_sampling_plan_id')}"
+        )
     if result.limitations:
         lines.append("limitations:")
         for lim in result.limitations:
@@ -237,7 +264,10 @@ def format_modeling_characterization_summary(
                     f"frac={note.get('actual_fraction')}"
                 )
     lines.append(
-        "Next: review artifacts and freeze sampling plan before Phase 2B. "
-        "Do not train models or use TEST."
+        "Next: "
+        + str(
+            result.plan_payload.get("next")
+            or "review artifacts before Phase 2B"
+        )
     )
     return "\n".join(lines) + "\n"

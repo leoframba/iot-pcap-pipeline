@@ -141,6 +141,54 @@ def _write_train_complete(path: Path, schema_hash: str) -> None:
     )
 
 
+def test_freeze_gate_2a_marks_plan_frozen(tmp_path: Path) -> None:
+    from iot_pcap_pipeline.modeling.freeze import (
+        FROZEN_SAMPLING_PLAN_ID,
+        apply_gate_2a_freeze_to_plan,
+        freeze_gate_2a,
+    )
+
+    plan_path = tmp_path / "sampling_plan.json"
+    split_path = tmp_path / "modeling_split_manifest.csv"
+    marker_path = tmp_path / "gate_2a_complete.json"
+    plan_path.write_text(
+        json.dumps(
+            {
+                "status": "characterization_only",
+                "validation_sampling": "never",
+                "candidate_plans": [],
+                "split_summary": {
+                    "fit": {"pcap_count": 65},
+                    "validation": {"pcap_count": 20},
+                },
+                "artifacts": {"sampling_summary": "data/modeling/v1/sampling_summary.csv"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    split_path.write_text("pcap_path\n", encoding="utf-8")
+
+    patched = apply_gate_2a_freeze_to_plan(
+        {"status": "characterization_only"},
+        plan_id=FROZEN_SAMPLING_PLAN_ID,
+    )
+    assert patched["status"] == "frozen"
+    assert patched["frozen_sampling_plan_id"] == "group_balanced"
+
+    complete = freeze_gate_2a(
+        plan_id=FROZEN_SAMPLING_PLAN_ID,
+        sampling_plan_path=plan_path,
+        complete_path=marker_path,
+        split_manifest_path=split_path,
+        project_root=tmp_path,
+    )
+    assert complete["gate_2a_status"] == "passed"
+    assert complete["frozen_sampling_plan_id"] == "group_balanced"
+    written = json.loads(plan_path.read_text(encoding="utf-8"))
+    assert written["status"] == "frozen"
+    assert marker_path.is_file()
+
+
 def test_allocate_group_budget_proportional() -> None:
     from iot_pcap_pipeline.modeling.sampling import allocate_group_budget
 
@@ -219,11 +267,18 @@ def test_full_corpus_characterization_smoke() -> None:
     assert owl and all(r["modeling_split"] == "validation" for r in owl)
 
     plan = json.loads(result.sampling_plan_path.read_text(encoding="utf-8"))
-    assert plan["status"] == "characterization_only"
+    assert plan["status"] == "frozen"
+    assert plan["frozen_sampling_plan_id"] == "group_balanced"
     assert plan["validation_sampling"] == "never"
     assert "reservoir" in plan["reservoir_contract"]["algorithm"]
     plan_ids = {p["plan_id"] for p in plan["candidate_plans"]}
     assert "group_balanced" in plan_ids
+
+    gate = PROJECT_ROOT / "data" / "modeling" / "v1" / "gate_2a_complete.json"
+    assert gate.is_file()
+    complete = json.loads(gate.read_text(encoding="utf-8"))
+    assert complete["gate_2a_status"] == "passed"
+    assert complete["frozen_sampling_plan_id"] == "group_balanced"
 
     with result.sampling_summary_path.open(newline="", encoding="utf-8") as handle:
         summary = list(csv.DictReader(handle))

@@ -59,12 +59,28 @@
       "plan_id": "group_balanced"
     }
   ],
+  "frozen_sampling_plan": {
+    "cap_mode": "per_modeling_group",
+    "caps": {
+      "BENIGN": null,
+      "DDoS": 60000,
+      "DoS": 60000,
+      "MQTT": 30000,
+      "Recon": null,
+      "Spoofing": null
+    },
+    "description": "Budget per attack-type lineage (modeling_group_key), allocated across member PCAPs \u2014 avoids TCPDUMP chunk-count dominating weight",
+    "plan_id": "group_balanced"
+  },
+  "frozen_sampling_plan_id": "group_balanced",
+  "gate_2a_decision": "Freeze the Phase 2A TRAIN modeling split (modeling_group_key lineages; Owltron_Camera + Idle benign validation; Spoofing and publisher benign fit-only with documented limitations) and select group_balanced as the V1 FIT sampling policy: per-modeling_group budgets DDoS/DoS=60k, MQTT=30k, Recon/Spoofing/BENIGN uncapped; TRAIN-validation never sampled; TEST sealed until model freeze.",
+  "gate_2a_status": "passed",
   "limitations": [
     "Spoofing: single TRAIN capture assigned entirely to fit; TRAIN-validation has no Spoofing family coverage.",
     "Publisher benign (Benign_train): fit only; TRAIN-validation has no independent publisher-benign coverage. Validation FPR primarily measures held-out profiling benign."
   ],
   "modeling_split_strategy_version": "phase2a_v1",
-  "next": "Review split + sampling_summary ratios, then freeze chosen plan_id / caps before Phase 2B. Do not train models or consult TEST.",
+  "next": "Phase 2B: materialize FIT training view under frozen group_balanced reservoir sampling; train baselines on TRAIN-fit; evaluate/threshold on unsampled TRAIN-validation only. Do not consult TEST.",
   "reservoir_contract": {
     "algorithm": "deterministic_reservoir_sample_without_replacement",
     "note": "Phase 2A simulates counts via caps / group budgets only. Phase 2B must execute this reservoir algorithm when materializing views, respecting per-PCAP k after group-budget allocation. TRAIN-validation is never sampled.",
@@ -256,6 +272,6 @@
     },
     "validation_sampling": "none_all_windows_retained"
   },
-  "status": "characterization_only",
+  "status": "frozen",
   "validation_sampling": "never"
 }

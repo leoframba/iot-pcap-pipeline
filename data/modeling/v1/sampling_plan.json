@@ -7,6 +7,7 @@
   "base_seed": 42,
   "candidate_plans": [
     {
+      "cap_mode": "per_pcap",
       "caps": {
         "BENIGN": null,
         "DDoS": 50000,
@@ -19,6 +20,7 @@
       "plan_id": "fullish"
     },
     {
+      "cap_mode": "per_pcap",
       "caps": {
         "BENIGN": null,
         "DDoS": 15000,
@@ -27,10 +29,11 @@
         "Recon": null,
         "Spoofing": null
       },
-      "description": "Tighter flood caps so DDoS/DoS/MQTT are similar order of magnitude",
+      "description": "Tighter per-PCAP flood caps so DDoS/DoS/MQTT are similar order of magnitude (chunk-count sensitive)",
       "plan_id": "family_balanced"
     },
     {
+      "cap_mode": "per_pcap",
       "caps": {
         "BENIGN": null,
         "DDoS": 8000,
@@ -39,8 +42,21 @@
         "Recon": null,
         "Spoofing": null
       },
-      "description": "Lower flood caps for a smaller FIT training view",
+      "description": "Lower per-PCAP flood caps for a smaller FIT training view",
       "plan_id": "aggressive"
+    },
+    {
+      "cap_mode": "per_modeling_group",
+      "caps": {
+        "BENIGN": null,
+        "DDoS": 60000,
+        "DoS": 60000,
+        "MQTT": 30000,
+        "Recon": null,
+        "Spoofing": null
+      },
+      "description": "Budget per attack-type lineage (modeling_group_key), allocated across member PCAPs \u2014 avoids TCPDUMP chunk-count dominating weight",
+      "plan_id": "group_balanced"
     }
   ],
   "limitations": [
@@ -51,7 +67,7 @@
   "next": "Review split + sampling_summary ratios, then freeze chosen plan_id / caps before Phase 2B. Do not train models or consult TEST.",
   "reservoir_contract": {
     "algorithm": "deterministic_reservoir_sample_without_replacement",
-    "note": "Phase 2A simulates counts via min(N, cap) only. Phase 2B must execute this reservoir algorithm when materializing views. TRAIN-validation is never sampled.",
+    "note": "Phase 2A simulates counts via caps / group budgets only. Phase 2B must execute this reservoir algorithm when materializing views, respecting per-PCAP k after group-budget allocation. TRAIN-validation is never sampled.",
     "scope": "independently within each FIT PCAP",
     "seed_formula": "int(sha256('phase2a_v1|{base_seed}|{pcap_id}').hexdigest()[:16], 16)",
     "unit": "window"
@@ -96,14 +112,20 @@
       "reason": "spoofing_fit_only"
     },
     {
+      "combined_validation_fraction_of_profiling": 0.14412060430235613,
+      "combined_validation_windows": 22504,
       "device_fraction_of_profiling": 0.05991149365661844,
       "family": "BENIGN_profiling",
       "held_out_device_group": "benign|device|Owltron_Camera",
-      "held_out_singleton": null,
-      "note": "Device groups are small vs 15\u201325% target; selection is closest capable device with min window floor.",
+      "held_out_singleton": "benign|singleton|Idle",
+      "min_profiling_val_fraction": 0.15,
+      "note": "Device groups are small vs 15\u201325% target; add Idle/Active/ActiveBroker when device alone is below 15% or has <2 states.",
       "profiling_total_windows": 156147,
+      "singleton_added_for_size": true,
+      "singleton_added_for_states": false,
       "target_fraction": 0.2,
       "validation_profiling_states": [
+        "idle",
         "interaction",
         "power"
       ]
@@ -143,10 +165,6 @@
           "pcaps": 2,
           "windows": 120860
         },
-        "profiling_idle": {
-          "pcaps": 1,
-          "windows": 13149
-        },
         "profiling_interaction": {
           "pcaps": 18,
           "windows": 12649
@@ -160,7 +178,7 @@
           "windows": 77427
         }
       },
-      "modeling_group_count": 22,
+      "modeling_group_count": 21,
       "modeling_groups": [
         "DDoS|DDoS_ICMP",
         "DDoS|DDoS_SYN",
@@ -182,11 +200,10 @@
         "benign|device|Singcall",
         "benign|publisher|Benign_train",
         "benign|singleton|Active",
-        "benign|singleton|ActiveBroker",
-        "benign|singleton|Idle"
+        "benign|singleton|ActiveBroker"
       ],
-      "pcap_count": 66,
-      "windows_total": 22714238
+      "pcap_count": 65,
+      "windows_total": 22701089
     },
     "validation": {
       "attack_by_family": {
@@ -212,6 +229,10 @@
         }
       },
       "benign_by_category": {
+        "profiling_idle": {
+          "pcaps": 1,
+          "windows": 13149
+        },
         "profiling_interaction": {
           "pcaps": 8,
           "windows": 9315
@@ -221,16 +242,17 @@
           "windows": 40
         }
       },
-      "modeling_group_count": 5,
+      "modeling_group_count": 6,
       "modeling_groups": [
         "DDoS|DDoS_TCP",
         "DoS|DoS_TCP",
         "MQTT|MQTT_DoS_Publish_Flood",
         "Recon|OS_Scan",
-        "benign|device|Owltron_Camera"
+        "benign|device|Owltron_Camera",
+        "benign|singleton|Idle"
       ],
-      "pcap_count": 19,
-      "windows_total": 4930911
+      "pcap_count": 20,
+      "windows_total": 4944060
     },
     "validation_sampling": "none_all_windows_retained"
   },

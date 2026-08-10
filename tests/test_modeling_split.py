@@ -141,6 +141,22 @@ def _write_train_complete(path: Path, schema_hash: str) -> None:
     )
 
 
+def test_allocate_group_budget_proportional() -> None:
+    from iot_pcap_pipeline.modeling.sampling import allocate_group_budget
+
+    members = [
+        {"pcap_path": "b.pcap", "window_count": 100},
+        {"pcap_path": "a.pcap", "window_count": 300},
+    ]
+    out = allocate_group_budget(members, 200)
+    assert sum(out.values()) == 200
+    assert out["a.pcap"] == 150
+    assert out["b.pcap"] == 50
+    # Uncapped / under budget keeps all.
+    assert allocate_group_budget(members, None) == {"a.pcap": 300, "b.pcap": 100}
+    assert allocate_group_budget(members, 10_000) == {"a.pcap": 300, "b.pcap": 100}
+
+
 def test_full_corpus_characterization_smoke() -> None:
     """Run against the real frozen TRAIN corpus when present."""
     inv = PROJECT_ROOT / "data" / "manifests" / "pcap_inventory.csv"
@@ -188,10 +204,26 @@ def test_full_corpus_characterization_smoke() -> None:
     ]
     assert pub and all(r["modeling_split"] == "fit" for r in pub)
 
+    # Undersized device holdout should pull Idle into validation.
+    idle = [
+        r
+        for r in result.split_rows
+        if r["modeling_group_key"] == "benign|singleton|Idle"
+    ]
+    assert len(idle) == 1 and idle[0]["modeling_split"] == "validation"
+    owl = [
+        r
+        for r in result.split_rows
+        if r["modeling_group_key"] == "benign|device|Owltron_Camera"
+    ]
+    assert owl and all(r["modeling_split"] == "validation" for r in owl)
+
     plan = json.loads(result.sampling_plan_path.read_text(encoding="utf-8"))
     assert plan["status"] == "characterization_only"
     assert plan["validation_sampling"] == "never"
     assert "reservoir" in plan["reservoir_contract"]["algorithm"]
+    plan_ids = {p["plan_id"] for p in plan["candidate_plans"]}
+    assert "group_balanced" in plan_ids
 
     with result.sampling_summary_path.open(newline="", encoding="utf-8") as handle:
         summary = list(csv.DictReader(handle))
@@ -200,4 +232,7 @@ def test_full_corpus_characterization_smoke() -> None:
         "fullish",
         "family_balanced",
         "aggressive",
+        "group_balanced",
     }
+    gb = [r for r in summary if r["plan_id"] == "group_balanced"]
+    assert gb and all(r["cap_mode"] == "per_modeling_group" for r in gb)

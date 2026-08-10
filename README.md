@@ -388,7 +388,10 @@ TRAIN 85 PCAPs
 
 Flood PCAPs that are sequential chunks of one attack type are held out
 **together** (not PCAP-by-PCAP). Spoofing and publisher benign stay fit-only
-(documented TRAIN-val limitations).
+(documented TRAIN-val limitations). When the held profiling device alone is
+below ~15% of profiling-benign windows, Idle (or another singleton) is added
+to validation. Sampling candidates include per-PCAP caps and a
+**group_balanced** plan with budgets per `modeling_group_key`.
 
 ```bash
 uv run iot-pcap-pipeline characterize-modeling-split

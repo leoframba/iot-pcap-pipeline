@@ -142,6 +142,7 @@ def characterize_modeling_split(
         "candidate_plans": [
             {
                 "plan_id": p["plan_id"],
+                "cap_mode": p.get("cap_mode", "per_pcap"),
                 "description": p["description"],
                 "caps": p["caps"],
             }
@@ -227,7 +228,8 @@ def format_modeling_characterization_summary(
                 lines.append(
                     f"  - BENIGN device={note.get('held_out_device_group')} "
                     f"singleton={note.get('held_out_singleton')} "
-                    f"share={note.get('device_fraction_of_profiling')}"
+                    f"device_share={note.get('device_fraction_of_profiling')} "
+                    f"combined_share={note.get('combined_validation_fraction_of_profiling')}"
                 )
             else:
                 lines.append(

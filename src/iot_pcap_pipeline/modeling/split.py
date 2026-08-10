@@ -31,6 +31,8 @@ ModelingSplit = Literal["fit", "validation"]
 
 TARGET_ATTACK_VAL_FRACTION = 0.20
 TARGET_PROFILING_VAL_FRACTION = 0.20
+# Floor for "device alone is large enough" — below this, add a singleton.
+MIN_PROFILING_VAL_FRACTION = 0.15
 # Reject tiny device-only holdouts (e.g. Singcall ~44 windows).
 MIN_DEVICE_VAL_WINDOWS = 1_000
 
@@ -116,6 +118,7 @@ def assign_modeling_split(
     base_seed: int = DEFAULT_MODELING_SEED,
     target_attack_val_fraction: float = TARGET_ATTACK_VAL_FRACTION,
     target_profiling_val_fraction: float = TARGET_PROFILING_VAL_FRACTION,
+    min_profiling_val_fraction: float = MIN_PROFILING_VAL_FRACTION,
     min_device_val_windows: int = MIN_DEVICE_VAL_WINDOWS,
 ) -> SplitAssignmentResult:
     """Assign each TRAIN PCAP to fit or validation via atomic modeling groups."""
@@ -326,25 +329,42 @@ def assign_modeling_split(
         (m.get("profiling_type") or "").strip().lower()
         for m in group_members[held_device]
     }
-    # Add a singleton only if we need broader state coverage (<2 states).
+    # Add a singleton if state coverage is thin OR device alone is undersized.
+    need_singleton_for_states = len(val_states) < 2
+    need_singleton_for_size = device_frac < min_profiling_val_fraction
     held_singleton: str | None = None
-    if len(val_states) < 2 and profiling_singleton_keys:
-        # Prefer Idle, then Active, then ActiveBroker by seeded order among those
-        # present — but only to improve state coverage.
+    singleton_reason = ""
+    if (need_singleton_for_states or need_singleton_for_size) and profiling_singleton_keys:
         preferred = ["Idle", "Active", "ActiveBroker"]
         present = {
             Path(group_members[k][0]["pcap_path"]).stem: k
             for k in profiling_singleton_keys
         }
-        for stem in preferred:
-            if stem in present:
-                key = present[stem]
-                ptype = (group_members[key][0].get("profiling_type") or "").lower()
-                if ptype and ptype not in val_states:
-                    held_singleton = key
+        if need_singleton_for_size:
+            # Prefer Idle for slow/idle benign behavior when size is short.
+            for stem in preferred:
+                if stem in present:
+                    held_singleton = present[stem]
+                    singleton_reason = (
+                        "profiling_singleton_added_for_min_validation_fraction"
+                        f"|device_share={device_frac:.6f}"
+                        f"|min={min_profiling_val_fraction:.2f}"
+                        f"|singleton={stem}"
+                    )
                     break
+        elif need_singleton_for_states:
+            for stem in preferred:
+                if stem in present:
+                    key = present[stem]
+                    ptype = (group_members[key][0].get("profiling_type") or "").lower()
+                    if ptype and ptype not in val_states:
+                        held_singleton = key
+                        singleton_reason = (
+                            "profiling_singleton_added_for_state_coverage"
+                            f"|singleton={stem}"
+                        )
+                        break
         if held_singleton is None:
-            # Fall back: closest singleton by windows to fill states.
             cands = [(k, group_windows[k]) for k in profiling_singleton_keys]
             held_singleton, _, _ = _select_closest_group(
                 cands,
@@ -353,16 +373,26 @@ def assign_modeling_split(
                 seed_salt="benign_profiling_singleton",
                 base_seed=base_seed,
             )
+            singleton_reason = (
+                "profiling_singleton_added_fallback_closest"
+                f"|need_states={need_singleton_for_states}"
+                f"|need_size={need_singleton_for_size}"
+            )
 
     if held_singleton is not None:
         val_groups.add(held_singleton)
-        group_reasons[held_singleton] = (
-            "profiling_singleton_added_for_state_coverage"
-        )
+        group_reasons[held_singleton] = singleton_reason
         val_states |= {
             (m.get("profiling_type") or "").strip().lower()
             for m in group_members[held_singleton]
         }
+
+    combined_val_windows = group_windows[held_device] + (
+        group_windows[held_singleton] if held_singleton else 0
+    )
+    combined_frac = (
+        combined_val_windows / profiling_total if profiling_total else 0.0
+    )
 
     for key in profiling_device_keys + profiling_singleton_keys:
         if key not in group_reasons:
@@ -374,12 +404,19 @@ def assign_modeling_split(
             "held_out_device_group": held_device,
             "held_out_singleton": held_singleton,
             "device_fraction_of_profiling": device_frac,
+            "combined_validation_fraction_of_profiling": combined_frac,
+            "combined_validation_windows": combined_val_windows,
             "target_fraction": target_profiling_val_fraction,
+            "min_profiling_val_fraction": min_profiling_val_fraction,
+            "singleton_added_for_states": need_singleton_for_states,
+            "singleton_added_for_size": need_singleton_for_size
+            and held_singleton is not None,
             "validation_profiling_states": sorted(s for s in val_states if s),
             "profiling_total_windows": profiling_total,
             "note": (
-                "Device groups are small vs 15–25% target; selection is "
-                "closest capable device with min window floor."
+                "Device groups are small vs 15–25% target; add Idle/Active/"
+                "ActiveBroker when device alone is below "
+                f"{min_profiling_val_fraction:.0%} or has <2 states."
             ),
         }
     )

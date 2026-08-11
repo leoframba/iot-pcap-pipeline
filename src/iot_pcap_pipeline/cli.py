@@ -119,6 +119,12 @@ from iot_pcap_pipeline.modeling.baselines.model_family import (
     prepare_model_family_bakeoff,
     run_model_family_bakeoff,
 )
+from iot_pcap_pipeline.modeling.baselines.extratrees import (
+    format_extratrees_summary,
+    format_prepare_extratrees_summary,
+    prepare_extratrees_challenger,
+    run_extratrees_challenger,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -938,6 +944,27 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force rescoring even if predictions/*.npz caches exist",
     )
+
+    prep_et_cmd = subparsers.add_parser(
+        "prepare-extratrees-challenger",
+        help=(
+            "Phase 2B.4B: freeze extratrees_contract.json before fitting "
+            "(reuses 2B.4 pins; feature selection deferred; no TEST)"
+        ),
+    )
+
+    et_cmd = subparsers.add_parser(
+        "run-extratrees-challenger",
+        help=(
+            "Phase 2B.4B: ExtraTrees final challenger vs HGB/AdaBoost/RF "
+            "(full TRAIN-validation; no TEST; no auto-advance)"
+        ),
+    )
+    et_cmd.add_argument(
+        "--no-cache-scores",
+        action="store_true",
+        help="Force rescoring even if predictions/*.npz caches exist",
+    )
     return parser
 
 
@@ -1359,6 +1386,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAILED: {exc}", file=sys.stderr)
             return 1
         print(format_model_family_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "prepare-extratrees-challenger":
+        try:
+            payload = prepare_extratrees_challenger()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_prepare_extratrees_summary(payload))
+        return 0
+
+    if args.command == "run-extratrees-challenger":
+        try:
+            payload = run_extratrees_challenger(
+                progress_file=sys.stderr,
+                cache_scores=not args.no_cache_scores,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_extratrees_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")

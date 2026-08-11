@@ -6,6 +6,7 @@ from typing import Any
 
 from sklearn.ensemble import (
     AdaBoostClassifier,
+    ExtraTreesClassifier,
     HistGradientBoostingClassifier,
     RandomForestClassifier,
 )
@@ -75,6 +76,20 @@ RANDOM_FOREST_PARAMS: dict[str, Any] = {
     "n_jobs": -1,
 }
 
+# Phase 2B.4B final sklearn challenger (standard ExtraTrees, not a tuned grid).
+EXTRA_TREES_PARAMS: dict[str, Any] = {
+    "n_estimators": 100,
+    "criterion": "gini",
+    "max_depth": None,
+    "min_samples_split": 2,
+    "min_samples_leaf": 1,
+    "max_features": "sqrt",
+    "bootstrap": False,
+    "class_weight": None,
+    "random_state": RANDOM_SEED,
+    "n_jobs": -1,
+}
+
 
 def build_logistic_regression() -> Pipeline:
     return Pipeline(
@@ -95,6 +110,10 @@ def build_adaboost() -> AdaBoostClassifier:
 
 def build_random_forest() -> RandomForestClassifier:
     return RandomForestClassifier(**RANDOM_FOREST_PARAMS)
+
+
+def build_extra_trees() -> ExtraTreesClassifier:
+    return ExtraTreesClassifier(**EXTRA_TREES_PARAMS)
 
 
 def attack_score_from_estimator(estimator: Any, X) -> Any:

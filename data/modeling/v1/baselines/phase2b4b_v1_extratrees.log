@@ -1,0 +1,28 @@
+Loading FIT arrays (27 features)...
+Fitting ExtraTreesClassifier...
+Scoring TRAIN-validation for extratrees...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+Phase 2B.4B — ExtraTrees final challenger
+status: passed
+strategy_version: phase2b4b_v1
+parent_strategy: phase2b4_v1
+feature_selection_status: deferred
+auto_advance_extratrees: False
+winner: None
+model: ExtraTreesClassifier n_estimators=100 bootstrap=False sha=c9f0f2d60122… fit_s=9.6 score_s=6.9
+  FPR≤1.0000%: UNREACHABLE actual=2.0396% thr=1.000000
+  FPR≤0.5000%: UNREACHABLE actual=2.0396% thr=1.000000
+  FPR≤0.2500%: UNREACHABLE actual=2.0396% thr=1.000000
+  FPR≤0.1000%: UNREACHABLE actual=2.0396% thr=1.000000
+  FPR≤0.0500%: UNREACHABLE actual=2.0396% thr=1.000000
+four_family: data/modeling/v1/baselines/phase2b4b_v1/comparison_low_fpr.csv
+next: Review comparison_low_fpr.csv (HGB/AdaBoost/RF/ExtraTrees). Advance ExtraTrees only if it materially beats HGB at ≤0.5% / ≤0.1% FPR on Recon without MQTT regression; otherwise keep HGB. Feature selection remains deferred. Do not touch TEST.
+

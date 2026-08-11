@@ -359,6 +359,19 @@ def threshold_for_benign_fpr(
     Uses the (1 - target) quantile of benign attack-scores as the operating
     point, then nudges upward if needed so exact FPR is <= target.
     """
+    thr, _reached = threshold_for_benign_fpr_with_reachability(tape, fpr_target)
+    return thr
+
+
+def threshold_for_benign_fpr_with_reachability(
+    tape: ValidationScoreTape,
+    fpr_target: float,
+) -> tuple[float, bool]:
+    """Return (threshold, target_reached).
+
+    If discrete scores prevent FPR <= target even at threshold=1.0,
+    returns (1.0, False) — callers must not pretend the target was met.
+    """
     if not (0.0 < fpr_target < 1.0):
         raise FeatureExtractionError(f"invalid fpr_target: {fpr_target}")
     benign_scores = tape.scores[tape.y_true == 0]
@@ -369,12 +382,16 @@ def threshold_for_benign_fpr(
     # Ensure FPR <= target (ties / discrete scores).
     fpr = float(np.mean(benign_scores >= t))
     if fpr <= fpr_target + 1e-15:
-        return t
+        return t, True
     # Raise to next distinct score above t among benign.
     above = benign_scores[benign_scores > t]
     if above.size == 0:
-        return 1.0
-    return float(np.min(above))
+        # No higher threshold exists; report best effort at 1.0.
+        fpr_at_one = float(np.mean(benign_scores >= 1.0))
+        return 1.0, bool(fpr_at_one <= fpr_target + 1e-15)
+    thr = float(np.min(above))
+    fpr2 = float(np.mean(benign_scores >= thr))
+    return thr, bool(fpr2 <= fpr_target + 1e-15)
 
 
 def sweep_model(

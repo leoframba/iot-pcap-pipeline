@@ -1,0 +1,109 @@
+{
+  "artifacts": {
+    "comparison_fixed_thresholds": "data/modeling/v1/baselines/phase2b4b_v1/comparison_fixed_thresholds.csv",
+    "comparison_low_fpr": "data/modeling/v1/baselines/phase2b4b_v1/comparison_low_fpr.csv",
+    "comparison_ranking_metrics": "data/modeling/v1/baselines/phase2b4b_v1/comparison_ranking_metrics.csv",
+    "extratrees_attack_group_metrics": "data/modeling/v1/baselines/phase2b4b_v1/extratrees/attack_group_metrics.csv",
+    "extratrees_benign_group_metrics": "data/modeling/v1/baselines/phase2b4b_v1/extratrees/benign_group_metrics.csv",
+    "extratrees_contract": "data/modeling/v1/baselines/phase2b4b_v1/extratrees_contract.json",
+    "extratrees_metrics": "data/modeling/v1/baselines/phase2b4b_v1/extratrees/metrics.json",
+    "extratrees_pcap_metrics": "data/modeling/v1/baselines/phase2b4b_v1/extratrees/pcap_metrics.csv",
+    "output_dir": "data/modeling/v1/baselines/phase2b4b_v1"
+  },
+  "auto_advance_extratrees": false,
+  "auto_declare_winner": false,
+  "class_weights": "none",
+  "decision_rule": [
+    "ExtraTrees advances only if it materially improves the HGB frontier.",
+    "Primary ranking: (1) min attack-group recall, (2) Recon, (3) MQTT, (4) macro attack-group recall, (5) Owltron interaction FPR, (6) DDoS/DoS.",
+    "Practical comparison band: \u22640.5% and \u22640.1% benign FPR.",
+    "Do not replace HGB for trivial flood-recall gains.",
+    "Useful challenger: same/lower benign FPR AND meaningfully higher Recon AND no meaningful MQTT regression; ties prefer HGB."
+  ],
+  "extratrees_target_reachability": [
+    {
+      "benign_fpr": 0.020396373977959473,
+      "fpr_target": 0.01,
+      "target_reached": false,
+      "threshold": 1.0
+    },
+    {
+      "benign_fpr": 0.020396373977959473,
+      "fpr_target": 0.005,
+      "target_reached": false,
+      "threshold": 1.0
+    },
+    {
+      "benign_fpr": 0.020396373977959473,
+      "fpr_target": 0.0025,
+      "target_reached": false,
+      "threshold": 1.0
+    },
+    {
+      "benign_fpr": 0.020396373977959473,
+      "fpr_target": 0.001,
+      "target_reached": false,
+      "threshold": 1.0
+    },
+    {
+      "benign_fpr": 0.020396373977959473,
+      "fpr_target": 0.0005,
+      "target_reached": false,
+      "threshold": 1.0
+    }
+  ],
+  "feature_count": 27,
+  "feature_selection_status": "deferred",
+  "final_feature_count": "unresolved",
+  "fit": {
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "pcaps": 65,
+    "rows": 704305
+  },
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "model": {
+    "bootstrap": false,
+    "class_weight": null,
+    "family": "ExtraTreesClassifier",
+    "fit_seconds": 9.58396879164502,
+    "model_artifact_sha256": "c9f0f2d60122002551b28bee4000438ee9b8ff45de5df7f323a1b42380f76324",
+    "model_id": "extratrees",
+    "n_estimators": 100,
+    "n_jobs": -1,
+    "random_state": 42,
+    "score_seconds": 6.876732165925205,
+    "versions": {
+      "numpy": "2.4.6",
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "pyarrow": "25.0.0",
+      "python": "3.11.15",
+      "scikit_learn": "1.9.0"
+    }
+  },
+  "next": "Review comparison_low_fpr.csv (HGB/AdaBoost/RF/ExtraTrees). Advance ExtraTrees only if it materially beats HGB at \u22640.5% / \u22640.1% FPR on Recon without MQTT regression; otherwise keep HGB. Feature selection remains deferred. Do not touch TEST.",
+  "parent_strategy": "phase2b4_v1",
+  "purpose": "final_sklearn_model_family_challenger",
+  "status": "passed",
+  "strategy_version": "phase2b4b_v1",
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  },
+  "threshold_selection": false,
+  "validation": {
+    "pcaps": 20,
+    "pcaps_inventory": 20,
+    "pcaps_scored": 20,
+    "rows": 4944060,
+    "rows_scored": 4944060,
+    "sampling": "never"
+  },
+  "winner": null
+}

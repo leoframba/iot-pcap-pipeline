@@ -517,4 +517,19 @@ uv run iot-pcap-pipeline run-model-family-bakeoff
 Primary comparison: `comparison_low_fpr.csv` at 1% / 0.5% / 0.25% / 0.1% /
 0.05% benign FPR. No automatic winner — stop for review.
 
+## Phase 2B.4B — ExtraTrees final challenger
+
+Single ExtraTreesClassifier (100 trees, `bootstrap=False`, seed 42) on the same
+2B.4 contract (27 features, deferred feature selection). Reuses HGB / AdaBoost /
+RF low-FPR rows from 2B.4; does not rescore them. Unreachable FPR targets are
+marked `target_reached=false`.
+
+```bash
+uv run iot-pcap-pipeline prepare-extratrees-challenger
+uv run iot-pcap-pipeline run-extratrees-challenger
+```
+
+Advance ExtraTrees only if it materially beats HGB at ≤0.5% / ≤0.1% FPR on
+Recon without MQTT regression; otherwise keep HGB. No automatic advance.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

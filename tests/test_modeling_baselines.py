@@ -560,3 +560,101 @@ def test_model_family_bakeoff_contract_shape() -> None:
     assert rf.n_estimators == RANDOM_FOREST_PARAMS["n_estimators"]
     assert rf.max_features == "sqrt"
     assert rf.class_weight is None
+
+
+def test_extra_trees_params_and_predict_proba_column() -> None:
+    from iot_pcap_pipeline.modeling.baselines.models import (
+        EXTRA_TREES_PARAMS,
+        RANDOM_SEED,
+        attack_score_from_estimator,
+        build_extra_trees,
+    )
+    from sklearn.ensemble import ExtraTreesClassifier
+
+    et = build_extra_trees()
+    assert isinstance(et, ExtraTreesClassifier)
+    assert et.n_estimators == 100
+    assert et.bootstrap is False
+    assert et.class_weight is None
+    assert et.random_state == RANDOM_SEED
+    assert et.max_features == "sqrt"
+    assert EXTRA_TREES_PARAMS["n_jobs"] == -1
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(200, 4)).astype(np.float32)
+    y = np.array([0] * 100 + [1] * 100, dtype=np.uint8)
+    et.fit(X, y)
+    scores = attack_score_from_estimator(et, X[:10])
+    assert scores.shape == (10,)
+    assert scores.dtype == np.float32
+    # Classes are [0,1]; attack column is index 1.
+    assert list(et.classes_) == [0, 1]
+
+
+def test_unreachable_fpr_target_marked_false() -> None:
+    from iot_pcap_pipeline.modeling.baselines.threshold_sweep import (
+        ValidationScoreTape,
+        threshold_for_benign_fpr_with_reachability,
+    )
+
+    # 5% of benign scores are exactly 1.0 → cannot reach FPR ≤ 1%.
+    benign = np.array([0.1] * 95 + [1.0] * 5, dtype=np.float32)
+    attack = np.array([0.9] * 100, dtype=np.float32)
+    y = np.array([0] * 100 + [1] * 100, dtype=np.uint8)
+    scores = np.concatenate([benign, attack])
+    g = np.zeros(200, dtype=np.uint8)
+    tape = ValidationScoreTape(y_true=y, scores=scores, group_code=g)
+
+    thr, reached = threshold_for_benign_fpr_with_reachability(tape, 0.01)
+    assert thr == 1.0
+    assert reached is False
+    # A looser target that is achievable.
+    thr2, reached2 = threshold_for_benign_fpr_with_reachability(tape, 0.10)
+    assert reached2 is True
+    assert float(np.mean(benign >= thr2)) <= 0.10 + 1e-12
+
+
+def test_extratrees_complete_gate_rejects_bad_payloads() -> None:
+    from iot_pcap_pipeline.modeling.baselines.extratrees import _assert_complete_gate
+
+    good = {
+        "fit": {"rows": 704_305, "pcaps": 65},
+        "validation": {
+            "rows_scored": 4_944_060,
+            "pcaps_scored": 20,
+            "sampling": "never",
+        },
+        "test": {"access": False, "pcaps_read": 0},
+        "feature_count": 27,
+        "model": {
+            "family": "ExtraTreesClassifier",
+            "n_estimators": 100,
+            "class_weight": None,
+            "random_state": 42,
+            "model_artifact_sha256": "a" * 64,
+        },
+        "artifacts": {
+            "comparison_low_fpr": "x",
+            "comparison_fixed_thresholds": "x",
+            "comparison_ranking_metrics": "x",
+            "extratrees_metrics": "x",
+            "extratrees_pcap_metrics": "x",
+        },
+    }
+    _assert_complete_gate(good)
+
+    bad_fit = dict(good)
+    bad_fit["fit"] = {"rows": 1, "pcaps": 65}
+    with pytest.raises(FeatureExtractionError, match="FIT"):
+        _assert_complete_gate(bad_fit)
+
+    bad_test = dict(good)
+    bad_test["test"] = {"access": True, "pcaps_read": 1}
+    with pytest.raises(FeatureExtractionError, match="TEST"):
+        _assert_complete_gate(bad_test)
+
+    bad_hash = dict(good)
+    bad_hash["model"] = dict(good["model"])
+    bad_hash["model"]["model_artifact_sha256"] = ""
+    with pytest.raises(FeatureExtractionError, match="hash"):
+        _assert_complete_gate(bad_hash)

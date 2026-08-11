@@ -642,12 +642,13 @@ def _write_family_artifacts(
     project_root: Path,
     extra_metadata: dict[str, Any] | None = None,
     reused: bool = False,
+    strategy_version: str | None = None,
 ) -> dict[str, Any]:
     eval_payload = eval_tables_at_threshold(tape, threshold=DECISION_THRESHOLD)
     metadata: dict[str, Any] = {
         "model_id": model_id,
         "display_name": display_name,
-        "strategy_version": MODEL_FAMILY_VERSION,
+        "strategy_version": strategy_version or MODEL_FAMILY_VERSION,
         "hyperparameters": hyperparameters,
         "feature_names": list(V1_FEATURE_NAMES),
         "feature_count": len(V1_FEATURE_NAMES),

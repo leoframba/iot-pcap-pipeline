@@ -713,6 +713,21 @@ def test_v1_candidate_freeze_ranking_shape() -> None:
     assert "Close Phase 2B" in GATE_2B5_DECISION
 
 
+def test_phase2c_freeze_constants() -> None:
+    from iot_pcap_pipeline.modeling.baselines.phase2c_freeze import (
+        FROZEN_H0_PARAMS,
+        FROZEN_V1_THRESHOLD,
+        GATE_2C_DECISION,
+    )
+
+    assert FROZEN_V1_THRESHOLD == 0.9490790963172913
+    assert FROZEN_H0_PARAMS["early_stopping"] is False
+    assert FROZEN_H0_PARAMS["class_weight"] is None
+    assert FROZEN_H0_PARAMS["learning_rate"] == 0.1
+    assert FROZEN_H0_PARAMS["max_iter"] == 200
+    assert "Close Phase 2C" in GATE_2C_DECISION
+
+
 def test_hgb_sensitivity_configs_and_fold_assignment() -> None:
     from iot_pcap_pipeline.modeling.baselines.hgb_sensitivity import (
         SENSITIVITY_CONFIGS,

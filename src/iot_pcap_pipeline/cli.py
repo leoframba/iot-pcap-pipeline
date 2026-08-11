@@ -147,6 +147,10 @@ from iot_pcap_pipeline.modeling.baselines.hgb_sensitivity import (
     prepare_hgb_sensitivity,
     run_hgb_sensitivity,
 )
+from iot_pcap_pipeline.modeling.baselines.phase2c_freeze import (
+    format_phase2c_freeze_summary,
+    freeze_phase2c,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -1053,6 +1057,14 @@ def build_parser() -> argparse.ArgumentParser:
             "one baseline-vs-winner TRAIN-validation compare (no TEST)"
         ),
     )
+
+    freeze_2c_cmd = subparsers.add_parser(
+        "freeze-phase2c",
+        help=(
+            "Phase 2C close: freeze V1 model package (HGB-22 H0 + threshold); "
+            "close hyperparameter and threshold tuning (TEST sealed)"
+        ),
+    )
     return parser
 
 
@@ -1565,6 +1577,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_hgb_sensitivity_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "freeze-phase2c":
+        try:
+            payload = freeze_phase2c()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_phase2c_freeze_summary(payload))
+        return 0 if payload.get("status") == "frozen" else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

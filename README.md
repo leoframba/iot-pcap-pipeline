@@ -588,4 +588,26 @@ uv run iot-pcap-pipeline prepare-hgb-sensitivity
 uv run iot-pcap-pipeline run-hgb-sensitivity
 ```
 
+## Phase 2C close — freeze V1 model package
+
+Locks the final V1 candidate before any TEST access:
+
+| Layer | Freeze |
+|-------|--------|
+| Model family | HistGradientBoostingClassifier |
+| Features | 22 nontemporal (`v1_hgb22_nontemporal`) |
+| Hyperparameters | **H0** |
+| Class weighting | none |
+| Training view | `group_balanced` |
+| Threshold | `0.9490790963172913` |
+| Decision rule | ATTACK if `score >= threshold` |
+
+Hyperparameter exploration and threshold tuning are **closed**. TEST remains sealed.
+
+```bash
+uv run iot-pcap-pipeline freeze-phase2c
+```
+
+Writes `data/modeling/v1/v1_model_package.json`.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

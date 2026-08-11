@@ -283,6 +283,12 @@ def test_smoke_train_baselines_synthetic(tmp_path: Path) -> None:
     complete_payload = json.loads(result.run_complete_path.read_text(encoding="utf-8"))
     assert complete_payload["smoke_only"] is True
     assert complete_payload["status"] == "passed"
+    val_meta = complete_payload["validation"]
+    assert val_meta["full_run_sampling"] == "never"
+    assert val_meta["smoke_selection"] == "stratified_fixed_slice"
+    assert val_meta["smoke_rows_per_group"] == 750
+    assert val_meta["owltron_power"] == "all_available"
+    assert "sampling" not in val_meta or val_meta.get("sampling") != "never"
     assert (out / "comparison.csv").is_file()
     assert (out / "logistic_regression" / "metrics.json").is_file()
     assert (out / "hist_gradient_boosting" / "metrics.json").is_file()

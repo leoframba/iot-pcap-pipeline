@@ -1,0 +1,71 @@
+{
+  "artifacts": {
+    "baseline_contract": "data/modeling/v1/baselines/phase2b2_v1/baseline_contract.json",
+    "comparison": "data/modeling/v1/baselines/phase2b2_v1/comparison.csv",
+    "output_dir": "data/modeling/v1/baselines/phase2b2_v1"
+  },
+  "class_weights": "none",
+  "decision_threshold": 0.5,
+  "fit": {
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "pcaps": 65,
+    "rows": 704305,
+    "smoke_groups_loaded": []
+  },
+  "issues": [],
+  "label_mapping": {
+    "ATTACK": 1,
+    "BENIGN": 0
+  },
+  "models": [
+    "logistic_regression",
+    "hist_gradient_boosting"
+  ],
+  "next": "Review benign FP/FPR, Recon/MQTT/DDoS/DoS holdout recall, and LR vs HGB gap. Do not pick a winner, tune thresholds, add weights, or consult TEST.",
+  "smoke_only": false,
+  "status": "passed",
+  "strategy_version": "phase2b2_v1",
+  "test_access": false,
+  "test_pcaps_read": 0,
+  "threshold_tuning": false,
+  "validation": {
+    "full_run_sampling": "never",
+    "rows_scored": 4944060,
+    "sampling": "never",
+    "validation_groups_scored": [
+      "DDoS|DDoS_TCP",
+      "DoS|DoS_TCP",
+      "MQTT|MQTT_DoS_Publish_Flood",
+      "Recon|OS_Scan",
+      "owltron_interaction",
+      "owltron_power",
+      "profiling_idle"
+    ],
+    "validation_pcaps_inventory": 20,
+    "validation_pcaps_scored": [
+      "Idle-d722d61af6fa2e4f",
+      "MQTT-DoS-Publish_Flood_train-710a8c2e0fd3ccf2",
+      "Owltron_Camera_LAN_MIC-513871f21444e330",
+      "Owltron_Camera_LAN_PHOTO-69a017e92848fbf2",
+      "Owltron_Camera_LAN_RECORDING-ca11ebd976e95b7a",
+      "Owltron_Camera_LAN_WATCH-cda5a932525e6361",
+      "Owltron_Camera_Power-e29ebcb4aba84f5c",
+      "Owltron_Camera_WAN_MIC-7fcce3ac94583d03",
+      "Owltron_Camera_WAN_PHOTO-5c62c1a67a91c873",
+      "Owltron_Camera_WAN_RECORDING-3648d530c3ad1085",
+      "Owltron_Camera_WAN_WATCH-e3699111318bff69",
+      "Recon-OS_Scan_train-374d28e87069ff50",
+      "TCP_IP-DDoS-TCP1_train-4bd6e516680531ed",
+      "TCP_IP-DDoS-TCP2_train-eb9fb6bc59c007af",
+      "TCP_IP-DDoS-TCP3_train-168296df72c3c541",
+      "TCP_IP-DDoS-TCP4_train-c56180c095ed3093",
+      "TCP_IP-DoS-TCP1_train-6a08fbf1e5b3072a",
+      "TCP_IP-DoS-TCP2_train-8853e4b749af42d2",
+      "TCP_IP-DoS-TCP3_train-d43deb6bda91d593",
+      "TCP_IP-DoS-TCP4_train-ee50fb6ee9902745"
+    ],
+    "validation_pcaps_scored_count": 20,
+    "validation_rows_inventory": 4944060
+  }
+}

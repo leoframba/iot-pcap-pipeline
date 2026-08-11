@@ -25,6 +25,7 @@ from iot_pcap_pipeline.modeling.baselines.constants import (
     EXPECTED_VAL_PCAPS,
     EXPECTED_VAL_ROWS,
     LABEL_MAPPING,
+    SMOKE_ROWS_PER_GROUP,
 )
 from iot_pcap_pipeline.modeling.baselines.contract import (
     DEFAULT_BASELINE_CONTRACT_PATH,
@@ -716,7 +717,17 @@ def train_baselines(
             "rows_scored": (
                 model_results[0]["eval"]["n_rows"] if model_results else 0
             ),
-            "sampling": "never",
+            # Full-run policy is never to sample TRAIN-validation.
+            "full_run_sampling": "never",
+            **(
+                {
+                    "smoke_selection": "stratified_fixed_slice",
+                    "smoke_rows_per_group": SMOKE_ROWS_PER_GROUP,
+                    "owltron_power": "all_available",
+                }
+                if smoke_only
+                else {"sampling": "never"}
+            ),
         },
         "models": [r["metadata"]["model_id"] for r in model_results],
         "issues": issues,

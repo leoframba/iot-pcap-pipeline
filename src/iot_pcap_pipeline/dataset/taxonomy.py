@@ -39,7 +39,7 @@ _ATTACK_LABELS: dict[str, tuple[str, str]] = {
     "MQTT-Malformed_Data": ("MQTT", "MQTT_Malformed_Data"),
     "TCP_IP-DDoS-ICMP": ("DDoS", "DDoS_ICMP"),
     "TCP_IP-DDoS-SYN": ("DDoS", "DDoS_SYN"),
-    "TCP_IP-DDoS-TCP": ("DDoS", "DDoS_TCP"),
+    "TCP_IP-DDoS-TCP": ("DDoS", "DDoS_TCP"),  
     "TCP_IP-DDoS-UDP": ("DDoS", "DDoS_UDP"),
     "TCP_IP-DoS-ICMP": ("DoS", "DoS_ICMP"),
     "TCP_IP-DoS-SYN": ("DoS", "DoS_SYN"),

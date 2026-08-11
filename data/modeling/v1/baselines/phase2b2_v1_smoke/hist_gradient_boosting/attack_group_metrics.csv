@@ -1,0 +1,5 @@
+modeling_group_key,pcap_count,row_count,tp,fn,recall,attack_score_mean,attack_score_p05,attack_score_p50,attack_score_p95
+DDoS|DDoS_TCP,0,0,0,0,,,,,
+DoS|DoS_TCP,0,0,0,0,,,,,
+MQTT|MQTT_DoS_Publish_Flood,0,0,0,0,,,,,
+Recon|OS_Scan,0,0,0,0,,,,,

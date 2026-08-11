@@ -1,0 +1,34 @@
+{
+  "decision_threshold": 0.5,
+  "global": {
+    "accuracy": 0.974,
+    "attack_recall": null,
+    "balanced_accuracy": null,
+    "benign_fp_count": 104,
+    "benign_fpr": 0.026,
+    "benign_support": 4000,
+    "confusion_matrix": {
+      "fn": 0,
+      "fp": 104,
+      "tn": 3896,
+      "tp": 0
+    },
+    "f1": null,
+    "false_positives_per_10k_benign": 260.0,
+    "pr_auc": null,
+    "precision": 0.0,
+    "roc_auc": null,
+    "specificity": 0.974,
+    "threshold": 0.5
+  },
+  "macros": {
+    "macro_attack_group_recall": null,
+    "macro_benign_pcap_fpr": 0.026,
+    "macro_pcap_attack_recall": null
+  },
+  "model_id": "hist_gradient_boosting",
+  "smoke_only": true,
+  "validation_attack_rows": 0,
+  "validation_benign_rows": 4000,
+  "validation_rows": 4000
+}

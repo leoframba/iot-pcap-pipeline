@@ -1,0 +1,3 @@
+model_id,smoke_only,roc_auc,pr_auc,precision,attack_recall,f1,specificity,benign_fpr,benign_fp_count,benign_support,false_positives_per_10k_benign,balanced_accuracy,accuracy,macro_attack_group_recall,macro_pcap_attack_recall,macro_benign_pcap_fpr,fit_duration_seconds,validation_duration_seconds,convergence_warning
+logistic_regression,true,,,0.0,,,0.89775,0.10225,409,4000,1022.4999999999999,,0.89775,,,0.10225,0.06882175011560321,0.013048083055764437,
+hist_gradient_boosting,true,,,0.0,,,0.974,0.026,104,4000,260.0,,0.974,,,0.026,2.5235793329775333,0.049063750077039,

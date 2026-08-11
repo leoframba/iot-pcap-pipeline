@@ -1,0 +1,37 @@
+{
+  "artifacts": {
+    "baseline_contract": "data/modeling/v1/baselines/phase2b2_v1_smoke/baseline_contract.json",
+    "comparison": "data/modeling/v1/baselines/phase2b2_v1_smoke/comparison.csv",
+    "output_dir": "data/modeling/v1/baselines/phase2b2_v1_smoke"
+  },
+  "class_weights": "none",
+  "decision_threshold": 0.5,
+  "fit": {
+    "attack_rows": 6423,
+    "benign_rows": 1577,
+    "pcaps": 2,
+    "rows": 8000
+  },
+  "issues": [],
+  "label_mapping": {
+    "ATTACK": 1,
+    "BENIGN": 0
+  },
+  "models": [
+    "logistic_regression",
+    "hist_gradient_boosting"
+  ],
+  "next": "Review benign FP/FPR, Recon/MQTT/DDoS/DoS holdout recall, and LR vs HGB gap. Do not pick a winner, tune thresholds, add weights, or consult TEST.",
+  "smoke_only": true,
+  "status": "passed",
+  "strategy_version": "phase2b2_v1",
+  "test_access": false,
+  "test_pcaps_read": 0,
+  "threshold_tuning": false,
+  "validation": {
+    "pcaps": 20,
+    "rows_inventory": 4944060,
+    "rows_scored": 4000,
+    "sampling": "never"
+  }
+}

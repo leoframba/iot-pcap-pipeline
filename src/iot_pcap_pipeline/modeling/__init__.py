@@ -1,5 +1,9 @@
-"""Phase 2 modeling dataset design (split + sampling + fit views)."""
+"""Phase 2 modeling dataset design (split + sampling + fit views + baselines)."""
 
+from iot_pcap_pipeline.modeling.baselines import (
+    format_baselines_summary,
+    train_baselines,
+)
 from iot_pcap_pipeline.modeling.characterize import (
     characterize_modeling_split,
     format_modeling_characterization_summary,
@@ -24,8 +28,10 @@ __all__ = [
     "MODELING_SPLIT_STRATEGY_VERSION",
     "build_modeling_fit_view",
     "characterize_modeling_split",
+    "format_baselines_summary",
     "format_fit_view_summary",
     "format_modeling_characterization_summary",
     "freeze_gate_2a",
     "stable_seed_u64",
+    "train_baselines",
 ]

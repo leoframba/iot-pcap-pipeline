@@ -1,0 +1,2 @@
+pcap_id,modeling_group_key,binary_label,benign_category,row_count,tp,fp,tn,fn,recall,fpr,specificity,attack_score_mean,attack_score_p95,attack_score_p99,max_attack_score
+Idle-d722d61af6fa2e4f,benign|singleton|Idle,BENIGN,profiling_idle,4000,0,104,3896,0,,0.026,0.974,0.03614471953604516,0.19329547807574224,0.8904736799001682,0.9992284774780273

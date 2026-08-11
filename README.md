@@ -439,4 +439,20 @@ Row selection uses `deterministic_reservoir_sample_without_replacement` with
 `seed = SHA256("phase2a_v1|42|{pcap_id}")` after group-budget allocation.
 Inspect the view before Phase 2B.2 model training. Do not consult TEST.
 
+## Phase 2B.2 — Unweighted binary baselines
+
+Train two fixed models on the frozen FIT view only; evaluate on the entire
+unsampled TRAIN-validation split (20 PCAPs / 4,944,060 windows). Threshold
+fixed at 0.5. No class weights, no search, no TEST.
+
+```bash
+uv run iot-pcap-pipeline train-baselines
+# implementation smoke only (capped rows; smoke_only=true):
+uv run iot-pcap-pipeline train-baselines --smoke
+```
+
+Artifacts under `data/modeling/v1/baselines/phase2b2_v1/` (JSON/CSV tracked;
+`.joblib` models gitignored). Stop after review of benign FP/FPR and holdout
+group recall — do not pick a winner or tune.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

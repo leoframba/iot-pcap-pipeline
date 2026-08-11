@@ -92,6 +92,10 @@ from iot_pcap_pipeline.modeling.view import (
     build_modeling_fit_view,
     format_fit_view_summary,
 )
+from iot_pcap_pipeline.modeling.baselines import (
+    format_baselines_summary,
+    train_baselines,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -824,6 +828,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_FIT_VIEW_ROOT,
         help=f"View root directory (default: {DEFAULT_FIT_VIEW_ROOT})",
     )
+
+    baselines_cmd = subparsers.add_parser(
+        "train-baselines",
+        help=(
+            "Phase 2B.2: train unweighted LR + HistGradientBoosting on FIT view; "
+            "evaluate on unsampled TRAIN-validation (TEST sealed)"
+        ),
+    )
+    baselines_cmd.add_argument(
+        "--smoke",
+        action="store_true",
+        help=(
+            "Tiny capped FIT/VAL run for implementation verification only "
+            "(marks smoke_only=true; not real baseline results)"
+        ),
+    )
     return parser
 
 
@@ -1170,6 +1190,18 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAILED: {exc}", file=sys.stderr)
             return 1
         print(format_fit_view_summary(result))
+        return 0 if result.passed else 1
+
+    if args.command == "train-baselines":
+        try:
+            result = train_baselines(
+                smoke=args.smoke,
+                progress_file=sys.stderr,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_baselines_summary(result))
         return 0 if result.passed else 1
 
     parser.error(f"unknown command: {args.command}")

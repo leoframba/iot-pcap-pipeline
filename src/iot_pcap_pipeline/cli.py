@@ -141,6 +141,12 @@ from iot_pcap_pipeline.modeling.baselines.v1_candidate_freeze import (
     format_v1_candidate_freeze_summary,
     freeze_v1_candidate,
 )
+from iot_pcap_pipeline.modeling.baselines.hgb_sensitivity import (
+    format_hgb_sensitivity_summary,
+    format_prepare_hgb_sensitivity_summary,
+    prepare_hgb_sensitivity,
+    run_hgb_sensitivity,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -1031,6 +1037,22 @@ def build_parser() -> argparse.ArgumentParser:
             "and resolve 22-feature model input (threshold still unfrozen; no TEST)"
         ),
     )
+
+    prep_sens_cmd = subparsers.add_parser(
+        "prepare-hgb-sensitivity",
+        help=(
+            "Phase 2C.1: freeze HGB sensitivity contract + group-aware FIT CV folds "
+            "(no fitting; no main VAL; no TEST)"
+        ),
+    )
+
+    sens_cmd = subparsers.add_parser(
+        "run-hgb-sensitivity",
+        help=(
+            "Phase 2C.1: FIT-only HGB sensitivity (12 configs × 3 folds), then "
+            "one baseline-vs-winner TRAIN-validation compare (no TEST)"
+        ),
+    )
     return parser
 
 
@@ -1525,6 +1547,24 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_v1_candidate_freeze_summary(payload))
         return 0 if payload.get("status") == "frozen" else 1
+
+    if args.command == "prepare-hgb-sensitivity":
+        try:
+            payload = prepare_hgb_sensitivity()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_prepare_hgb_sensitivity_summary(payload))
+        return 0
+
+    if args.command == "run-hgb-sensitivity":
+        try:
+            payload = run_hgb_sensitivity(progress_file=sys.stderr)
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_hgb_sensitivity_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

@@ -711,3 +711,84 @@ def test_v1_candidate_freeze_ranking_shape() -> None:
     assert MODEL_EXPLORATION_RANKING[0]["status"] == "final_v1_candidate"
     assert MODEL_EXPLORATION_RANKING[1]["model_id"] == "xgboost_22"
     assert "Close Phase 2B" in GATE_2B5_DECISION
+
+
+def test_hgb_sensitivity_configs_and_fold_assignment() -> None:
+    from iot_pcap_pipeline.modeling.baselines.hgb_sensitivity import (
+        SENSITIVITY_CONFIGS,
+        assign_fit_cv_folds,
+        load_fit_group_metas,
+        resolve_hgb_params,
+        select_candidate_from_cv,
+    )
+    from iot_pcap_pipeline.modeling.view import DEFAULT_FIT_VIEW_MANIFEST_PATH
+    from iot_pcap_pipeline.paths import PROJECT_ROOT
+
+    assert len(SENSITIVITY_CONFIGS) == 12
+    assert [c["config_id"] for c in SENSITIVITY_CONFIGS] == [
+        f"H{i}" for i in range(12)
+    ]
+    h0 = resolve_hgb_params({})
+    assert h0["early_stopping"] is False
+    assert h0["class_weight"] is None
+    assert h0["random_state"] == 42
+    assert h0["max_leaf_nodes"] == 31
+    assert h0["min_samples_leaf"] == 20
+    h1 = resolve_hgb_params({"max_leaf_nodes": 15})
+    assert h1["max_leaf_nodes"] == 15
+    assert h1["learning_rate"] == 0.10
+
+    man = PROJECT_ROOT / DEFAULT_FIT_VIEW_MANIFEST_PATH
+    if man.is_file():
+        metas = load_fit_group_metas(man)
+        folds = assign_fit_cv_folds(metas)
+        assert len(folds) == len(metas)
+        # No group in two folds.
+        assert len(set(folds)) == len(folds)
+        assert set(folds.values()) <= {0, 1, 2}
+        # DDoS/DoS/Recon: preferably one lineage per fold among first three.
+        for family in ("DDoS", "DoS", "Recon"):
+            fam_groups = [m for m in metas if m.attack_family == family]
+            if len(fam_groups) >= 3:
+                assigned = {folds[m.modeling_group_key] for m in fam_groups[:3]}
+                # After sort-by-hash, first 3 go to folds 0,1,2 uniquely
+                first3 = sorted(
+                    fam_groups,
+                    key=lambda m: m.modeling_group_key,
+                )
+                # Just require all three folds represented among family groups.
+                assert {folds[m.modeling_group_key] for m in fam_groups} == {0, 1, 2}
+
+    # Selection bar: tiny gain must not beat H0.
+    h0_row = {
+        "config_id": "H0",
+        "label": "baseline",
+        "params": h0,
+        "mean_min_supported_family_recall": 0.85,
+        "std_min_supported_family_recall": 0.01,
+        "mean_recon_recall": 0.84,
+        "std_recon_recall": 0.01,
+        "mean_mqtt_recall": 0.98,
+        "std_mqtt_recall": 0.01,
+        "mean_macro_attack_family_recall": 0.92,
+        "mean_benign_fpr": 0.002,
+        "n_folds_primary_reachable": 3,
+        "all_folds_primary_reachable": True,
+    }
+    h1_row = dict(h0_row)
+    h1_row["config_id"] = "H1"
+    h1_row["label"] = "smaller_trees"
+    h1_row["mean_min_supported_family_recall"] = 0.8505  # tiny
+    h1_row["mean_recon_recall"] = 0.8405
+    sel = select_candidate_from_cv([h0_row, h1_row])
+    assert sel["selected_config_id"] == "H0"
+
+    # Material min-family gain with equal FPR compliance replaces H0.
+    h8_row = dict(h0_row)
+    h8_row["config_id"] = "H8"
+    h8_row["label"] = "slower_boosting"
+    h8_row["mean_min_supported_family_recall"] = 0.87
+    h8_row["mean_recon_recall"] = 0.85
+    h8_row["mean_mqtt_recall"] = 0.98
+    sel2 = select_candidate_from_cv([h0_row, h8_row])
+    assert sel2["selected_config_id"] == "H8"

@@ -369,29 +369,34 @@ def threshold_for_benign_fpr_with_reachability(
 ) -> tuple[float, bool]:
     """Return (threshold, target_reached).
 
+    Decision rule: ATTACK iff score >= threshold. Among thresholds with
+    empirical benign FPR <= target, choose the lowest threshold (highest
+    recall). Never return a threshold that violates the FPR constraint.
+
     If discrete scores prevent FPR <= target even at threshold=1.0,
     returns (1.0, False) — callers must not pretend the target was met.
     """
     if not (0.0 < fpr_target < 1.0):
         raise FeatureExtractionError(f"invalid fpr_target: {fpr_target}")
-    benign_scores = tape.scores[tape.y_true == 0]
+    benign_scores = tape.scores[tape.y_true == 0].astype(np.float64, copy=False)
     if benign_scores.size == 0:
         raise FeatureExtractionError("no benign scores for FPR targeting")
-    # Quantile: fraction of benign scores >= t should be ≈ fpr_target
-    t = float(np.quantile(benign_scores.astype(np.float64), 1.0 - fpr_target))
-    # Ensure FPR <= target (ties / discrete scores).
-    fpr = float(np.mean(benign_scores >= t))
-    if fpr <= fpr_target + 1e-15:
-        return t, True
-    # Raise to next distinct score above t among benign.
-    above = benign_scores[benign_scores > t]
-    if above.size == 0:
-        # No higher threshold exists; report best effort at 1.0.
-        fpr_at_one = float(np.mean(benign_scores >= 1.0))
-        return 1.0, bool(fpr_at_one <= fpr_target + 1e-15)
-    thr = float(np.min(above))
-    fpr2 = float(np.mean(benign_scores >= thr))
-    return thr, bool(fpr2 <= fpr_target + 1e-15)
+
+    unique = np.unique(benign_scores)
+    # Binary search: leftmost unique score with FPR <= target.
+    lo, hi = 0, int(unique.size)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        fpr = float(np.mean(benign_scores >= unique[mid]))
+        if fpr <= fpr_target + 1e-15:
+            hi = mid
+        else:
+            lo = mid + 1
+    if lo < int(unique.size):
+        return float(unique[lo]), True
+
+    fpr_at_one = float(np.mean(benign_scores >= 1.0))
+    return 1.0, bool(fpr_at_one <= fpr_target + 1e-15)
 
 
 def sweep_model(

@@ -1,0 +1,108 @@
+Loading FIT arrays (27→22 features)...
+
+=== H0 (baseline) ===
+  fold 0: train=505391 val=198914
+/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py:131: UserWarning: Could not find the number of physical cores for the following reason:
+invalid literal for int() with base 10: ''
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 249, in _count_physical_cores
+    cpu_count_physical = _count_physical_cores_darwin()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 318, in _count_physical_cores_darwin
+    return int(cpu_info)
+           ^^^^^^^^^^^^^
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H1 (smaller_trees) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H2 (larger_trees) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H3 (larger_leaves) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H4 (strongly_larger_leaves) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H5 (no_l2) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H6 (more_l2) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H7 (strong_l2) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H8 (slower_boosting) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H9 (faster_boosting) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H10 (feature_subsampling) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+=== H11 (regularized_combination) ===
+  fold 0: train=505391 val=198914
+  fold 1: train=465521 val=238784
+  fold 2: train=437698 val=266607
+
+FIT-CV selection written: H8 — H8 materially improves on H0 under the predeclared FIT-CV ranking and improvement bar.
+Unlocking main TRAIN-validation for single baseline-vs-winner compare...
+  fitting full-FIT H0_full_fit...
+  fitting full-FIT selected_full_fit...
+  scoring TRAIN-validation (baseline H0)...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+  scoring TRAIN-validation (selected)...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+Phase 2C.1 — FIT-only HGB sensitivity
+status: passed
+strategy_version: phase2c1_v1
+fit_cv_selected: H8
+frozen_config: H0
+freeze_reason: FIT-CV selected H8 but main TRAIN-validation did not confirm a material gain; freeze H0.
+hyperparameter_exploration_status: closed
+test_access: False
+selected_before_val: data/modeling/v1/hgb_sensitivity/phase2c1_v1/selected_candidate.json
+val_compare: data/modeling/v1/hgb_sensitivity/phase2c1_v1/final_validation_comparison.csv
+next: Hyperparameter exploration is closed. Record frozen_params into the V1 candidate package; proceed to threshold freeze. Do not open another sensitivity round. TEST remains sealed.
+

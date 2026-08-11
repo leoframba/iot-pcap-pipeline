@@ -1,0 +1,305 @@
+{
+  "adaptive_second_round": false,
+  "artifacts": {
+    "feature_schema": "data/features/v1/feature_schema.json",
+    "fit_view_manifest": "data/modeling/v1/views/group_balanced/fit_view_manifest.csv",
+    "model_input_contract": "data/modeling/v1/model_input/v1_hgb22_nontemporal.json",
+    "v1_candidate_freeze": "data/modeling/v1/v1_candidate_freeze.json"
+  },
+  "base_seed": 42,
+  "configs": [
+    {
+      "config_id": "H0",
+      "label": "baseline",
+      "overrides": {},
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H1",
+      "label": "smaller_trees",
+      "overrides": {
+        "max_leaf_nodes": 15
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 15,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H2",
+      "label": "larger_trees",
+      "overrides": {
+        "max_leaf_nodes": 63
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 63,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H3",
+      "label": "larger_leaves",
+      "overrides": {
+        "min_samples_leaf": 50
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 50,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H4",
+      "label": "strongly_larger_leaves",
+      "overrides": {
+        "min_samples_leaf": 100
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 100,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H5",
+      "label": "no_l2",
+      "overrides": {
+        "l2_regularization": 0.0
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 0.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H6",
+      "label": "more_l2",
+      "overrides": {
+        "l2_regularization": 5.0
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 5.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H7",
+      "label": "strong_l2",
+      "overrides": {
+        "l2_regularization": 10.0
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 10.0,
+        "learning_rate": 0.1,
+        "max_features": 1.0,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H8",
+      "label": "slower_boosting",
+      "overrides": {
+        "learning_rate": 0.05,
+        "max_iter": 400
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.05,
+        "max_features": 1.0,
+        "max_iter": 400,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H9",
+      "label": "faster_boosting",
+      "overrides": {
+        "learning_rate": 0.15,
+        "max_iter": 150
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.15,
+        "max_features": 1.0,
+        "max_iter": 150,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H10",
+      "label": "feature_subsampling",
+      "overrides": {
+        "max_features": 0.8
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_features": 0.8,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "random_state": 42
+      }
+    },
+    {
+      "config_id": "H11",
+      "label": "regularized_combination",
+      "overrides": {
+        "l2_regularization": 5.0,
+        "max_features": 0.8,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 50
+      },
+      "params": {
+        "class_weight": null,
+        "early_stopping": false,
+        "l2_regularization": 5.0,
+        "learning_rate": 0.1,
+        "max_features": 0.8,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 50,
+        "random_state": 42
+      }
+    }
+  ],
+  "excluded_temporal_features": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds"
+  ],
+  "feature_count": 22,
+  "feature_names": [
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "fit_attack_rows": 493235,
+  "fit_benign_rows": 211070,
+  "fit_pcaps": 65,
+  "fit_rows": 704305,
+  "fixed_for_all_candidates": {
+    "class_weight": null,
+    "early_stopping": false,
+    "random_state": 42
+  },
+  "hyperparameter_search": "controlled_predeclared_sensitivity",
+  "main_validation_access_during_search": false,
+  "material_improvement_bar": {
+    "min_family_or_recon_gain": 0.01,
+    "mqtt_max_drop": 0.01,
+    "note": "Replace H0 only for ~1pp+ min-family/Recon gain or clear stability improvement without material MQTT degradation."
+  },
+  "model_family": "HistGradientBoostingClassifier",
+  "model_input_version": "v1_hgb22_nontemporal",
+  "n_configs": 12,
+  "n_folds": 3,
+  "pins": {
+    "configuration_list_sha256": "2009136fc2ccf1c1544565331942d9ce30df64dad7886ca32557bf1566cbd0b2",
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "fit_view_manifest_sha256": "a8dc0f791c05381ccecef2604873ad08970b2f11b3f22121725b82a7057ad23f",
+    "model_input_contract_sha256": "12bfd89d37440a93b1ead2bef8f5a2c5d204c16e4a057b09fb1e0e50fe51674d",
+    "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+    "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552",
+    "v1_candidate_freeze_sha256": "0c9491d6159e05d6b72c6a1cf10c7724e72f89d49154b68c80faff0ba29bae2c"
+  },
+  "primary_operating_fpr": 0.0025,
+  "scope_limits": [
+    "Exactly 12 predeclared HGB configs; no Cartesian grid.",
+    "No adaptive second round.",
+    "Main TRAIN-validation forbidden during search.",
+    "TEST forbidden.",
+    "Stop hyperparameter exploration permanently after this phase."
+  ],
+  "secondary_operating_fpr": 0.001,
+  "selection_data": "FIT_only",
+  "status": "frozen",
+  "strategy_version": "phase2c1_v1",
+  "test_access": false
+}

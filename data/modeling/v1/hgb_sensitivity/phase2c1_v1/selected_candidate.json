@@ -1,0 +1,44 @@
+{
+  "baseline_config_id": "H0",
+  "main_validation_used_for_selection": false,
+  "material_improvement_bar": {
+    "min_family_or_recon_gain": 0.01,
+    "mqtt_max_drop": 0.01
+  },
+  "ranking_top3": [
+    {
+      "config_id": "H8",
+      "mean_min_supported_family_recall": 0.5501908268452572,
+      "mean_mqtt_recall": 0.7785637659154804,
+      "mean_recon_recall": 0.7276043590236224
+    },
+    {
+      "config_id": "H5",
+      "mean_min_supported_family_recall": 0.5478208568752873,
+      "mean_mqtt_recall": 0.7739008180894836,
+      "mean_recon_recall": 0.7278522851065191
+    },
+    {
+      "config_id": "H3",
+      "mean_min_supported_family_recall": 0.5394613974158278,
+      "mean_mqtt_recall": 0.7659318559191893,
+      "mean_recon_recall": 0.7284625801667158
+    }
+  ],
+  "selected_config_id": "H8",
+  "selected_label": "slower_boosting",
+  "selected_params": {
+    "class_weight": null,
+    "early_stopping": false,
+    "l2_regularization": 1.0,
+    "learning_rate": 0.05,
+    "max_features": 1.0,
+    "max_iter": 400,
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 20,
+    "random_state": 42
+  },
+  "selection_data": "FIT_only",
+  "selection_reason": "H8 materially improves on H0 under the predeclared FIT-CV ranking and improvement bar.",
+  "strategy_version": "phase2c1_v1"
+}

@@ -1,0 +1,60 @@
+{
+  "base_seed": 42,
+  "fold_group_counts": {
+    "fold_0": 6,
+    "fold_1": 8,
+    "fold_2": 7
+  },
+  "fold_groups": {
+    "fold_0": [
+      "DDoS|DDoS_UDP",
+      "DoS|DoS_UDP",
+      "MQTT|MQTT_DDoS_Connect_Flood",
+      "Recon|VulScan",
+      "Spoofing|ARP_Spoofing",
+      "benign|singleton|Active"
+    ],
+    "fold_1": [
+      "DDoS|DDoS_ICMP",
+      "DoS|DoS_SYN",
+      "MQTT|MQTT_DoS_Connect_Flood",
+      "MQTT|MQTT_Malformed_Data",
+      "Recon|Ping_Sweep",
+      "benign|device|Blink_Camera",
+      "benign|device|Ecobee_Camera",
+      "benign|publisher|Benign_train"
+    ],
+    "fold_2": [
+      "DDoS|DDoS_SYN",
+      "DoS|DoS_ICMP",
+      "MQTT|MQTT_DDoS_Publish_Flood",
+      "Recon|Port_Scan",
+      "benign|device|M1T_Camera",
+      "benign|device|Singcall",
+      "benign|singleton|ActiveBroker"
+    ]
+  },
+  "fold_row_totals": {
+    "fold_0": 198914,
+    "fold_1": 238784,
+    "fold_2": 266607
+  },
+  "group_overlap": 0,
+  "main_train_validation_rows": 0,
+  "n_folds": 3,
+  "spoofing_limitation": {
+    "assigned_folds": [
+      0
+    ],
+    "note": "Spoofing has only one FIT lineage (ARP_Spoofing); it cannot provide three-fold lineage validation. Spoofing is excluded from primary min-family ranking to avoid dominating selection."
+  },
+  "strategy_version": "phase2c1_v1",
+  "supported_attack_families_for_ranking": [
+    "DDoS",
+    "DoS",
+    "MQTT",
+    "Recon"
+  ],
+  "test_pcaps": 0,
+  "total_validation_row_assignments": 704305
+}

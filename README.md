@@ -576,4 +576,16 @@ uv run iot-pcap-pipeline freeze-v1-candidate
 Writes `data/modeling/v1/v1_candidate_freeze.json` and updates
 `data/modeling/v1/model_input/v1_hgb22_nontemporal.json`.
 
+## Phase 2C.1 — FIT-only HGB sensitivity
+
+Predeclared 12-config HGB sensitivity on **FIT-only** group-aware 3-fold CV
+(22 features). Main TRAIN-validation is locked during search; after
+`selected_candidate.json` is written, exactly one baseline-vs-winner VAL
+comparison runs. No adaptive second round. TEST sealed.
+
+```bash
+uv run iot-pcap-pipeline prepare-hgb-sensitivity
+uv run iot-pcap-pipeline run-hgb-sensitivity
+```
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

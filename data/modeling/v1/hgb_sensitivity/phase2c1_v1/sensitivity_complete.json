@@ -1,0 +1,66 @@
+{
+  "adaptive_second_round": false,
+  "artifacts": {
+    "cv_candidate_summary": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/cv_candidate_summary.csv",
+    "cv_results": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/cv_results.csv",
+    "final_validation_comparison": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/final_validation_comparison.csv",
+    "fit_cv_fold_manifest": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/fit_cv_fold_manifest.csv",
+    "fit_cv_summary": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/fit_cv_summary.json",
+    "output_dir": "data/modeling/v1/hgb_sensitivity/phase2c1_v1",
+    "selected_candidate": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/selected_candidate.json",
+    "sensitivity_contract": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/sensitivity_contract.json"
+  },
+  "baseline_fit_seconds": 9.238557416014373,
+  "baseline_full_fit_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
+  "class_weight": null,
+  "contract_pins": {
+    "configuration_list_sha256": "2009136fc2ccf1c1544565331942d9ce30df64dad7886ca32557bf1566cbd0b2",
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "fit_view_manifest_sha256": "a8dc0f791c05381ccecef2604873ad08970b2f11b3f22121725b82a7057ad23f",
+    "model_input_contract_sha256": "12bfd89d37440a93b1ead2bef8f5a2c5d204c16e4a057b09fb1e0e50fe51674d",
+    "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+    "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552",
+    "v1_candidate_freeze_sha256": "0c9491d6159e05d6b72c6a1cf10c7724e72f89d49154b68c80faff0ba29bae2c"
+  },
+  "early_stopping": false,
+  "feature_count": 22,
+  "fit_cv_selected_config_id": "H8",
+  "fit_pcaps": 65,
+  "fit_rows": 704305,
+  "freeze_reason": "FIT-CV selected H8 but main TRAIN-validation did not confirm a material gain; freeze H0.",
+  "frozen_config_id": "H0",
+  "frozen_params": {
+    "class_weight": null,
+    "early_stopping": false,
+    "l2_regularization": 1.0,
+    "learning_rate": 0.1,
+    "max_features": 1.0,
+    "max_iter": 200,
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 20,
+    "random_state": 42
+  },
+  "hyperparameter_exploration_status": "closed",
+  "main_validation_access_during_search": false,
+  "main_validation_comparison": {
+    "models_compared": [
+      "H0_baseline",
+      "selected"
+    ],
+    "pcaps_scored": 20,
+    "rows_scored": 4944060
+  },
+  "n_configs": 12,
+  "n_folds": 3,
+  "next": "Hyperparameter exploration is closed. Record frozen_params into the V1 candidate package; proceed to threshold freeze. Do not open another sensitivity round. TEST remains sealed.",
+  "selected_candidate_path": "data/modeling/v1/hgb_sensitivity/phase2c1_v1/selected_candidate.json",
+  "selected_fit_seconds": 19.361653875093907,
+  "selected_full_fit_sha256": "3aeb4da912dae1a9799a858440ff8f172810fc5d3e26bcc9a5bf6d96ceaf3d6c",
+  "selection_data": "FIT_only",
+  "status": "passed",
+  "strategy_version": "phase2c1_v1",
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  }
+}

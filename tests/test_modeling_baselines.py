@@ -831,12 +831,20 @@ def test_final_test_evaluator_synthetic_path(tmp_path: Path) -> None:
             binary_label="ATTACK",
             feature_parquet_path=f"data/features/v1/test/{atk_id}.parquet",
             expected_row_count=12,
+            pcap_path=f"data/raw/attacks/pcap/test/TCP_IP-DDoS-SYN_test.pcap",
+            attack_family="DDoS",
+            attack_type="DDoS_SYN",
+            benign_category="",
         ),
         TestPcapSpec(
             pcap_id=ben_id,
             binary_label="BENIGN",
             feature_parquet_path=f"data/features/v1/test/{ben_id}.parquet",
             expected_row_count=8,
+            pcap_path=f"data/raw/attacks/pcap/test/Benign_test.pcap",
+            attack_family="",
+            attack_type="",
+            benign_category="publisher",
         ),
     ]
     assert_test_inventory_integrity(
@@ -855,9 +863,11 @@ def test_final_test_evaluator_synthetic_path(tmp_path: Path) -> None:
 
     man = tmp_path / "dup_manifest.csv"
     man.write_text(
-        "pcap_id,binary_label,status,output_path,output_row_count\n"
-        f"{atk_id},ATTACK,ok,data/features/v1/test/{atk_id}.parquet,12\n"
-        f"{atk_id},ATTACK,ok,data/features/v1/test/{atk_id}.parquet,12\n",
+        "pcap_id,pcap_path,binary_label,status,output_path,output_row_count\n"
+        f"{atk_id},data/raw/attacks/pcap/test/TCP_IP-DDoS-SYN_test.pcap,ATTACK,ok,"
+        f"data/features/v1/test/{atk_id}.parquet,12\n"
+        f"{atk_id},data/raw/attacks/pcap/test/TCP_IP-DDoS-SYN_test.pcap,ATTACK,ok,"
+        f"data/features/v1/test/{atk_id}.parquet,12\n",
         encoding="utf-8",
     )
     with pytest.raises(FeatureExtractionError, match="more than once"):
@@ -878,9 +888,22 @@ def test_final_test_evaluator_synthetic_path(tmp_path: Path) -> None:
     assert result["model_feature_count"] == 22
     assert result["feature_names"] == FEATURES_22
     assert len(result["per_pcap"]) == 2
-    assert sum(p["rows_scored"] for p in result["per_pcap"]) == 20
+    assert sum(p["rows"] for p in result["per_pcap"]) == 20
+    assert "global_metrics" in result
+    assert result["global_metrics"]["tp"] + result["global_metrics"]["fn"] == 12
+    assert any(r["attack_family"] == "DDoS" and r["present"] for r in result["attack_family_rows"])
+    assert any(r["benign_group"] == "publisher_benign" for r in result["benign_group_rows"])
     assert len(FEATURES_22) == 22
     assert all(name in V1_FEATURE_NAMES for name in FEATURES_22)
+
+    from iot_pcap_pipeline.modeling.baselines.final_test import derive_test_pcap_metadata
+
+    meta = derive_test_pcap_metadata(
+        pcap_path="data/raw/WiFI_and_MQTT/attacks/pcap/test/Recon-OS_Scan_test.pcap",
+        binary_label="ATTACK",
+    )
+    assert meta["attack_family"] == "Recon"
+    assert meta["attack_type"] == "OS_Scan"
 
 
 def test_hgb_sensitivity_configs_and_fold_assignment() -> None:

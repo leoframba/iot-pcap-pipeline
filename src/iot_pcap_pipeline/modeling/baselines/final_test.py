@@ -17,6 +17,10 @@ import joblib
 import numpy as np
 import pyarrow.parquet as pq
 
+from iot_pcap_pipeline.dataset.taxonomy import (
+    classify_attack_stem,
+    is_publisher_benign_stem,
+)
 from iot_pcap_pipeline.features.parquet import feature_schema_sha256
 from iot_pcap_pipeline.features.schema import (
     DEFAULT_FEATURE_SCHEMA_PATH,
@@ -34,6 +38,14 @@ from iot_pcap_pipeline.modeling.baselines.constants import (
 from iot_pcap_pipeline.modeling.baselines.data import (
     assert_feature_columns,
     encode_labels,
+)
+from iot_pcap_pipeline.modeling.baselines.metrics import (
+    ConfusionCounts,
+    GroupAccumulator,
+    RunningScoreStats,
+    global_ranking_metrics,
+    macro_mean,
+    metrics_from_confusion,
 )
 from iot_pcap_pipeline.modeling.baselines.model_input import (
     V1_MODEL_INPUT_CONTRACT_PATH,
@@ -72,6 +84,14 @@ EXPECTED_TEST_BENIGN_PCAPS = 9
 EXPECTED_MODEL_FAMILY = "HistGradientBoostingClassifier"
 EXPECTED_MODEL_FEATURE_COUNT = 22
 EXPECTED_EXTRACTOR_FEATURE_COUNT = 27
+
+ATTACK_FAMILIES_REPORT_ORDER: tuple[str, ...] = (
+    "DDoS",
+    "DoS",
+    "MQTT",
+    "Recon",
+    "Spoofing",
+)
 
 
 def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
@@ -575,6 +595,10 @@ class TestPcapSpec:
     binary_label: str
     feature_parquet_path: str
     expected_row_count: int
+    pcap_path: str = ""
+    attack_family: str = ""
+    attack_type: str = ""
+    benign_category: str = ""
 
 
 @dataclass(frozen=True)
@@ -584,6 +608,59 @@ class TestScoreBatch:
     scores: np.ndarray
     y_pred: np.ndarray
     n_rows: int
+
+
+def derive_test_pcap_metadata(
+    *,
+    pcap_path: str,
+    binary_label: str,
+) -> dict[str, str]:
+    """Derive attack/benign grouping metadata from the TEST PCAP path."""
+    path = Path(pcap_path)
+    stem = path.stem
+    label = binary_label.strip().upper()
+    if label == "ATTACK":
+        tax = classify_attack_stem(stem)
+        if tax is None:
+            raise FeatureExtractionError(
+                f"unrecognized ATTACK stem for TEST metadata: {stem!r} ({pcap_path})"
+            )
+        return {
+            "attack_family": tax.family,
+            "attack_type": tax.attack_type,
+            "benign_category": "",
+        }
+    if label != "BENIGN":
+        raise FeatureExtractionError(f"unknown binary_label for metadata: {label!r}")
+
+    parts_lower = [p.lower() for p in path.parts]
+    if is_publisher_benign_stem(stem) or stem.lower().startswith("benign"):
+        return {
+            "attack_family": "",
+            "attack_type": "",
+            "benign_category": "publisher",
+        }
+    if "power" in parts_lower:
+        return {
+            "attack_family": "",
+            "attack_type": "",
+            "benign_category": "profiling_power",
+        }
+    if "idle" in parts_lower:
+        return {
+            "attack_family": "",
+            "attack_type": "",
+            "benign_category": "profiling_idle",
+        }
+    if "interactions" in parts_lower or "interaction" in parts_lower:
+        return {
+            "attack_family": "",
+            "attack_type": "",
+            "benign_category": "profiling_interaction",
+        }
+    raise FeatureExtractionError(
+        f"unable to derive benign_category for TEST PCAP: {pcap_path}"
+    )
 
 
 def reject_final_test_overrides(**kwargs: Any) -> None:
@@ -813,12 +890,18 @@ def load_test_pcap_specs(
             raise FeatureExtractionError(
                 f"TEST manifest status not ok for {pcap_id}: {status!r}"
             )
+        pcap_path = str(row.get("pcap_path") or "").strip()
+        meta = derive_test_pcap_metadata(pcap_path=pcap_path, binary_label=label)
         specs.append(
             TestPcapSpec(
                 pcap_id=pcap_id,
                 binary_label=label,
                 feature_parquet_path=out_rel,
                 expected_row_count=n_rows,
+                pcap_path=pcap_path,
+                attack_family=meta["attack_family"],
+                attack_type=meta["attack_type"],
+                benign_category=meta["benign_category"],
             )
         )
     return specs
@@ -976,7 +1059,11 @@ def evaluate_sealed_test_inventory(
     modeling_split_pcap_ids: set[str],
     progress_file: TextIO | None = None,
 ) -> dict[str, Any]:
-    """Run the sealed scoring path over an inventory (production or synthetic)."""
+    """Run the sealed scoring path over an inventory (production or synthetic).
+
+    Accumulates everything needed for global / family / benign / per-PCAP
+    reporting in a single pass. Scoring path is unchanged.
+    """
     assert_test_inventory_integrity(
         specs,
         expected_pcaps=expected_pcaps,
@@ -988,97 +1075,372 @@ def evaluate_sealed_test_inventory(
             f"threshold override rejected: {threshold!r} != {FROZEN_V1_THRESHOLD!r}"
         )
 
-    tp = fp = tn = fn = 0
+    global_counts = ConfusionCounts()
+    global_scores = RunningScoreStats()
+    y_chunks: list[np.ndarray] = []
+    score_chunks: list[np.ndarray] = []
+
+    family_acc: dict[str, GroupAccumulator] = {}
+    benign_acc: dict[str, GroupAccumulator] = {}
+    pcap_acc: dict[str, GroupAccumulator] = {}
+
     rows_scored = 0
-    pcaps_scored = 0
-    per_pcap: list[dict[str, Any]] = []
-
-    current_id: str | None = None
-    cur_tp = cur_fp = cur_tn = cur_fn = cur_rows = 0
-
-    def _flush_pcap() -> None:
-        nonlocal pcaps_scored
-        if current_id is None:
-            return
-        per_pcap.append(
-            {
-                "pcap_id": current_id,
-                "rows_scored": cur_rows,
-                "tp": cur_tp,
-                "fp": cur_fp,
-                "tn": cur_tn,
-                "fn": cur_fn,
-            }
-        )
-        pcaps_scored += 1
-
     for batch in iter_test_score_batches(
         specs,
         estimator,
         project_root=project_root,
         threshold=threshold,
     ):
-        if current_id is None:
-            current_id = batch.spec.pcap_id
-        elif batch.spec.pcap_id != current_id:
-            _flush_pcap()
-            current_id = batch.spec.pcap_id
-            cur_tp = cur_fp = cur_tn = cur_fn = cur_rows = 0
-
+        spec = batch.spec
         y_t = batch.y_true
         y_p = batch.y_pred
-        b_tp = int(np.sum((y_t == 1) & (y_p == 1)))
-        b_fn = int(np.sum((y_t == 1) & (y_p == 0)))
-        b_tn = int(np.sum((y_t == 0) & (y_p == 0)))
-        b_fp = int(np.sum((y_t == 0) & (y_p == 1)))
-        tp += b_tp
-        fn += b_fn
-        tn += b_tn
-        fp += b_fp
-        cur_tp += b_tp
-        cur_fn += b_fn
-        cur_tn += b_tn
-        cur_fp += b_fp
-        cur_rows += batch.n_rows
+        scores = batch.scores
+
+        global_counts.update(y_t, y_p)
+        global_scores.update(scores)
+        y_chunks.append(np.asarray(y_t, dtype=np.uint8))
+        score_chunks.append(np.asarray(scores, dtype=np.float32))
+
+        pid = spec.pcap_id
+        if pid not in pcap_acc:
+            pcap_acc[pid] = GroupAccumulator(
+                key=pid, kind="pcap", binary_label=spec.binary_label
+            )
+        pcap_acc[pid].update(
+            pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
+        )
+
+        if spec.binary_label == "ATTACK":
+            fam = spec.attack_family
+            if not fam:
+                raise FeatureExtractionError(f"ATTACK PCAP missing family: {pid}")
+            if fam not in family_acc:
+                family_acc[fam] = GroupAccumulator(
+                    key=fam, kind="attack_group", binary_label="ATTACK"
+                )
+            family_acc[fam].update(
+                pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
+            )
+        else:
+            cat = spec.benign_category
+            if not cat:
+                raise FeatureExtractionError(
+                    f"BENIGN PCAP missing benign_category: {pid}"
+                )
+            # Fine-grained category (publisher / profiling_*).
+            if cat not in benign_acc:
+                benign_acc[cat] = GroupAccumulator(
+                    key=cat, kind="benign_group", binary_label="BENIGN"
+                )
+            benign_acc[cat].update(
+                pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
+            )
+            # Rollups.
+            if cat == "publisher":
+                rollup = "publisher_benign"
+            else:
+                rollup = "profiling_benign"
+            if rollup not in benign_acc:
+                benign_acc[rollup] = GroupAccumulator(
+                    key=rollup, kind="benign_group", binary_label="BENIGN"
+                )
+            benign_acc[rollup].update(
+                pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
+            )
+
         rows_scored += batch.n_rows
         if progress_file is not None and rows_scored % 500_000 < batch.n_rows:
             progress_file.write(f"  scored {rows_scored} TEST rows\n")
             progress_file.flush()
 
-    _flush_pcap()
-
     if rows_scored != expected_rows:
         raise FeatureExtractionError(
             f"TEST rows scored {rows_scored} != expected {expected_rows}"
         )
-    if pcaps_scored != expected_pcaps:
+    if len(pcap_acc) != expected_pcaps:
         raise FeatureExtractionError(
-            f"TEST PCAPs scored {pcaps_scored} != expected {expected_pcaps}"
-        )
-    if len(per_pcap) != expected_pcaps:
-        raise FeatureExtractionError(
-            f"per-pcap summaries {len(per_pcap)} != {expected_pcaps}"
+            f"TEST PCAPs scored {len(pcap_acc)} != expected {expected_pcaps}"
         )
 
-    attack_support = tp + fn
-    benign_support = tn + fp
-    return {
+    y_true_all = (
+        np.concatenate(y_chunks) if y_chunks else np.empty(0, dtype=np.uint8)
+    )
+    scores_all = (
+        np.concatenate(score_chunks) if score_chunks else np.empty(0, dtype=np.float32)
+    )
+    ranking = global_ranking_metrics(y_true_all, scores_all)
+    conf_metrics = metrics_from_confusion(global_counts, threshold=threshold)
+    score_summary = global_scores.summary()
+
+    # Attack family rows in canonical order.
+    attack_family_rows: list[dict[str, Any]] = []
+    family_recalls: list[float | None] = []
+    for fam in ATTACK_FAMILIES_REPORT_ORDER:
+        acc = family_acc.get(fam)
+        if acc is None:
+            attack_family_rows.append(
+                {
+                    "attack_family": fam,
+                    "pcap_count": 0,
+                    "rows": 0,
+                    "tp": 0,
+                    "fn": 0,
+                    "recall": None,
+                    "score_mean": None,
+                    "score_p05": None,
+                    "score_p50": None,
+                    "score_p95": None,
+                    "present": False,
+                }
+            )
+            continue
+        base = acc.to_attack_row()
+        attack_family_rows.append(
+            {
+                "attack_family": fam,
+                "pcap_count": base["pcap_count"],
+                "rows": base["row_count"],
+                "tp": base["tp"],
+                "fn": base["fn"],
+                "recall": base["recall"],
+                "score_mean": base["attack_score_mean"],
+                "score_p05": base["attack_score_p05"],
+                "score_p50": base["attack_score_p50"],
+                "score_p95": base["attack_score_p95"],
+                "present": True,
+            }
+        )
+        family_recalls.append(base["recall"])
+
+    present_recalls = [r for r in family_recalls if r is not None]
+    macro_family_recall = macro_mean(present_recalls)
+    min_family_recall = float(min(present_recalls)) if present_recalls else None
+
+    # Benign groups: rollups first, then fine-grained categories present.
+    benign_order = [
+        "publisher_benign",
+        "profiling_benign",
+        "publisher",
+        "profiling_interaction",
+        "profiling_power",
+        "profiling_idle",
+    ]
+    benign_group_rows: list[dict[str, Any]] = []
+    seen_benign: set[str] = set()
+    for key in benign_order:
+        acc = benign_acc.get(key)
+        if acc is None:
+            continue
+        seen_benign.add(key)
+        base = acc.to_benign_row()
+        benign_group_rows.append(
+            {
+                "benign_group": key,
+                "pcap_count": base["pcap_count"],
+                "rows": base["row_count"],
+                "fp": base["fp"],
+                "tn": base["tn"],
+                "fpr": base["fpr"],
+                "specificity": base["specificity"],
+                "score_mean": base["attack_score_mean"],
+                "score_p95": base["attack_score_p95"],
+                "score_p99": base["attack_score_p99"],
+                "score_max": base["max_attack_score"],
+            }
+        )
+    for key, acc in sorted(benign_acc.items()):
+        if key in seen_benign:
+            continue
+        base = acc.to_benign_row()
+        benign_group_rows.append(
+            {
+                "benign_group": key,
+                "pcap_count": base["pcap_count"],
+                "rows": base["row_count"],
+                "fp": base["fp"],
+                "tn": base["tn"],
+                "fpr": base["fpr"],
+                "specificity": base["specificity"],
+                "score_mean": base["attack_score_mean"],
+                "score_p95": base["attack_score_p95"],
+                "score_p99": base["attack_score_p99"],
+                "score_max": base["max_attack_score"],
+            }
+        )
+
+    pcap_rows: list[dict[str, Any]] = []
+    for spec in specs:
+        acc = pcap_acc[spec.pcap_id]
+        base = acc.to_pcap_row(
+            modeling_group_key=(
+                f"{spec.attack_family}|{spec.attack_type}"
+                if spec.binary_label == "ATTACK"
+                else f"benign|{spec.benign_category}"
+            ),
+            binary_label=spec.binary_label,
+            benign_category=spec.benign_category,
+        )
+        s = acc.score_stats.summary()
+        pcap_rows.append(
+            {
+                "pcap_id": spec.pcap_id,
+                "pcap_path": spec.pcap_path,
+                "binary_label": spec.binary_label,
+                "attack_family": spec.attack_family,
+                "attack_type": spec.attack_type,
+                "benign_category": spec.benign_category,
+                "rows": base["row_count"],
+                "tp": base["tp"],
+                "fp": base["fp"],
+                "tn": base["tn"],
+                "fn": base["fn"],
+                "recall": base["recall"],
+                "fpr": base["fpr"],
+                "specificity": base["specificity"],
+                "score_mean": s["attack_score_mean"],
+                "score_p05": s["attack_score_p05"],
+                "score_p50": s["attack_score_p50"],
+                "score_p95": s["attack_score_p95"],
+                "score_p99": s["attack_score_p99"],
+                "score_max": s["max_attack_score"],
+            }
+        )
+
+    family_recall_map = {
+        r["attack_family"]: r["recall"] for r in attack_family_rows if r["present"]
+    }
+
+    global_metrics = {
         "threshold": threshold,
         "decision_rule": "ATTACK if score >= threshold",
+        "tp": global_counts.tp,
+        "tn": global_counts.tn,
+        "fp": global_counts.fp,
+        "fn": global_counts.fn,
+        "attack_recall": conf_metrics["attack_recall"],
+        "specificity": conf_metrics["specificity"],
+        "benign_fpr": conf_metrics["benign_fpr"],
+        "precision": conf_metrics["precision"],
+        "f1": conf_metrics["f1"],
+        "balanced_accuracy": conf_metrics["balanced_accuracy"],
+        "roc_auc": ranking["roc_auc"],
+        "pr_auc": ranking["pr_auc"],
         "rows_scored": rows_scored,
-        "pcaps_scored": pcaps_scored,
+        "pcaps_scored": len(pcap_acc),
+        "score_mean": score_summary["attack_score_mean"],
+        "score_p05": score_summary["attack_score_p05"],
+        "score_p50": score_summary["attack_score_p50"],
+        "score_p95": score_summary["attack_score_p95"],
+        "score_p99": score_summary["attack_score_p99"],
+        "score_max": score_summary["max_attack_score"],
+        "macro_attack_family_recall": macro_family_recall,
+        "min_attack_family_recall": min_family_recall,
+        "ddos_recall": family_recall_map.get("DDoS"),
+        "dos_recall": family_recall_map.get("DoS"),
+        "mqtt_recall": family_recall_map.get("MQTT"),
+        "recon_recall": family_recall_map.get("Recon"),
+        "spoofing_recall": family_recall_map.get("Spoofing"),
         "each_row_scored_once": True,
         "each_pcap_scored_once": True,
-        "confusion": {"tp": tp, "fp": fp, "tn": tn, "fn": fn},
-        "attack_support": attack_support,
-        "benign_support": benign_support,
-        "attack_recall": (tp / attack_support) if attack_support else None,
-        "benign_fpr": (fp / benign_support) if benign_support else None,
-        "per_pcap": per_pcap,
         "model_feature_count": EXPECTED_MODEL_FEATURE_COUNT,
         "extractor_feature_count": EXPECTED_EXTRACTOR_FEATURE_COUNT,
         "feature_names": list(FEATURES_22),
     }
+
+    return {
+        "global_metrics": global_metrics,
+        "attack_family_rows": attack_family_rows,
+        "benign_group_rows": benign_group_rows,
+        "pcap_rows": pcap_rows,
+        "rows_scored": rows_scored,
+        "pcaps_scored": len(pcap_acc),
+        # Back-compat aliases used by older summary formatters / tests.
+        "threshold": threshold,
+        "confusion": {
+            "tp": global_counts.tp,
+            "fp": global_counts.fp,
+            "tn": global_counts.tn,
+            "fn": global_counts.fn,
+        },
+        "attack_recall": conf_metrics["attack_recall"],
+        "benign_fpr": conf_metrics["benign_fpr"],
+        "per_pcap": pcap_rows,
+        "model_feature_count": EXPECTED_MODEL_FEATURE_COUNT,
+        "extractor_feature_count": EXPECTED_EXTRACTOR_FEATURE_COUNT,
+        "feature_names": list(FEATURES_22),
+        "each_row_scored_once": True,
+        "each_pcap_scored_once": True,
+    }
+
+
+def _build_validation_vs_test_rows(
+    *,
+    project_root: Path,
+    global_metrics: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Compare frozen TRAIN-validation operating point to one-shot TEST."""
+    package_path = project_root / DEFAULT_PHASE2C_FREEZE_PATH
+    val: dict[str, Any] = {}
+    if package_path.is_file():
+        package = json.loads(package_path.read_text(encoding="utf-8"))
+        val = dict(package.get("validation_operating_point") or {})
+
+    def row(metric: str, validation: Any, test: Any) -> dict[str, Any]:
+        try:
+            v = float(validation) if validation is not None else None
+        except (TypeError, ValueError):
+            v = None
+        try:
+            t = float(test) if test is not None else None
+        except (TypeError, ValueError):
+            t = None
+        delta = None if v is None or t is None else t - v
+        return {
+            "metric": metric,
+            "validation": v,
+            "test": t,
+            "delta_test_minus_validation": delta,
+        }
+
+    return [
+        row("benign_fpr", val.get("benign_fpr"), global_metrics.get("benign_fpr")),
+        row("ddos_recall", val.get("ddos_recall"), global_metrics.get("ddos_recall")),
+        row("dos_recall", val.get("dos_recall"), global_metrics.get("dos_recall")),
+        row("mqtt_recall", val.get("mqtt_recall"), global_metrics.get("mqtt_recall")),
+        row("recon_recall", val.get("recon_recall"), global_metrics.get("recon_recall")),
+        row(
+            "attack_recall",
+            None,
+            global_metrics.get("attack_recall"),
+        ),
+        row("specificity", None, global_metrics.get("specificity")),
+        row("precision", None, global_metrics.get("precision")),
+        row("f1", None, global_metrics.get("f1")),
+        row("balanced_accuracy", None, global_metrics.get("balanced_accuracy")),
+        row("roc_auc", None, global_metrics.get("roc_auc")),
+        row("pr_auc", None, global_metrics.get("pr_auc")),
+        row(
+            "macro_attack_family_recall",
+            None,
+            global_metrics.get("macro_attack_family_recall"),
+        ),
+        row(
+            "min_attack_family_recall",
+            None,
+            global_metrics.get("min_attack_family_recall"),
+        ),
+    ]
+
+
+def _atomic_csv(path: Path, rows: list[dict[str, Any]], columns: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=columns, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({c: row.get(c, "") for c in columns})
+    tmp.replace(path)
 
 
 def run_final_test(
@@ -1091,6 +1453,7 @@ def run_final_test(
     """One-shot sealed TEST evaluation bound to the Phase 2D contract.
 
     Does not accept model/threshold/feature/hyperparameter/sampling overrides.
+    Supporting metric artifacts are written before final_test_complete.json.
     """
     reject_final_test_overrides(**forbidden_overrides)
     root = (project_root or PROJECT_ROOT).resolve()
@@ -1146,6 +1509,101 @@ def run_final_test(
         modeling_split_pcap_ids=split_ids,
         progress_file=progress_file,
     )
+    global_metrics = metrics["global_metrics"]
+    val_vs_test = _build_validation_vs_test_rows(
+        project_root=root, global_metrics=global_metrics
+    )
+
+    out.mkdir(parents=True, exist_ok=True)
+
+    # Supporting artifacts first — completion marker is written last.
+    global_path = out / "test_global_metrics.json"
+    attack_path = out / "test_attack_family_metrics.csv"
+    benign_path = out / "test_benign_group_metrics.csv"
+    pcap_path = out / "test_pcap_metrics.csv"
+    compare_path = out / "validation_vs_test.csv"
+
+    _atomic_json(global_path, global_metrics)
+    _atomic_csv(
+        attack_path,
+        metrics["attack_family_rows"],
+        [
+            "attack_family",
+            "pcap_count",
+            "rows",
+            "tp",
+            "fn",
+            "recall",
+            "score_mean",
+            "score_p05",
+            "score_p50",
+            "score_p95",
+            "present",
+        ],
+    )
+    _atomic_csv(
+        benign_path,
+        metrics["benign_group_rows"],
+        [
+            "benign_group",
+            "pcap_count",
+            "rows",
+            "fp",
+            "tn",
+            "fpr",
+            "specificity",
+            "score_mean",
+            "score_p95",
+            "score_p99",
+            "score_max",
+        ],
+    )
+    _atomic_csv(
+        pcap_path,
+        metrics["pcap_rows"],
+        [
+            "pcap_id",
+            "pcap_path",
+            "binary_label",
+            "attack_family",
+            "attack_type",
+            "benign_category",
+            "rows",
+            "tp",
+            "fp",
+            "tn",
+            "fn",
+            "recall",
+            "fpr",
+            "specificity",
+            "score_mean",
+            "score_p05",
+            "score_p50",
+            "score_p95",
+            "score_p99",
+            "score_max",
+        ],
+    )
+    _atomic_csv(
+        compare_path,
+        val_vs_test,
+        ["metric", "validation", "test", "delta_test_minus_validation"],
+    )
+
+    artifact_rels = {
+        "final_test_contract": to_repo_relative(
+            out / "final_test_contract.json", project_root=root
+        ),
+        "preflight_complete": to_repo_relative(preflight_path, project_root=root),
+        "test_global_metrics": to_repo_relative(global_path, project_root=root),
+        "test_attack_family_metrics": to_repo_relative(attack_path, project_root=root),
+        "test_benign_group_metrics": to_repo_relative(benign_path, project_root=root),
+        "test_pcap_metrics": to_repo_relative(pcap_path, project_root=root),
+        "validation_vs_test": to_repo_relative(compare_path, project_root=root),
+        "final_test_complete": to_repo_relative(
+            out / "final_test_complete.json", project_root=root
+        ),
+    }
 
     complete = {
         "status": "passed",
@@ -1166,57 +1624,30 @@ def run_final_test(
         "model_artifact_sha256": (contract.get("pins") or {}).get(
             "model_artifact_sha256"
         ),
-        "metrics": {
-            k: v
-            for k, v in metrics.items()
-            if k != "per_pcap"
-        },
+        "metrics": global_metrics,
         "pcap_count": metrics["pcaps_scored"],
         "row_count": metrics["rows_scored"],
+        "predictions_generated": True,
+        "metrics_generated": True,
         "test": {
             "access": True,
             "pcaps_read": metrics["pcaps_scored"],
             "rows_read": metrics["rows_scored"],
             "one_shot": True,
         },
+        "artifacts": artifact_rels,
         "next": (
             "TEST evaluation complete. Do not change the model, features, "
             "hyperparameters, sampling, or threshold based on these results."
         ),
     }
-    out.mkdir(parents=True, exist_ok=True)
-    _atomic_json(out / "final_test_complete.json", complete)
-    _atomic_csv_pcap_summary(out / "final_test_per_pcap.csv", metrics["per_pcap"])
-    complete["artifacts"] = {
-        "final_test_contract": to_repo_relative(
-            out / "final_test_contract.json", project_root=root
-        ),
-        "final_test_complete": to_repo_relative(
-            out / "final_test_complete.json", project_root=root
-        ),
-        "final_test_per_pcap": to_repo_relative(
-            out / "final_test_per_pcap.csv", project_root=root
-        ),
-    }
+    # Final successful operation: completion marker.
     _atomic_json(out / "final_test_complete.json", complete)
     return complete
 
 
-def _atomic_csv_pcap_summary(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    cols = ["pcap_id", "rows_scored", "tp", "fp", "tn", "fn"]
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=cols)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({c: row.get(c, "") for c in cols})
-    tmp.replace(path)
-
-
 def format_final_test_summary(payload: dict[str, Any]) -> str:
     m = payload.get("metrics") or {}
-    conf = m.get("confusion") or {}
     lines = [
         "Phase 2D — One-shot sealed TEST evaluation",
         f"status: {payload.get('status')}",
@@ -1224,10 +1655,13 @@ def format_final_test_summary(payload: dict[str, Any]) -> str:
         f"threshold: {payload.get('threshold')}",
         f"pcaps: {payload.get('pcap_count')}",
         f"rows: {payload.get('row_count')}",
-        f"confusion: tp={conf.get('tp')} fp={conf.get('fp')} "
-        f"tn={conf.get('tn')} fn={conf.get('fn')}",
+        f"confusion: tp={m.get('tp')} fp={m.get('fp')} "
+        f"tn={m.get('tn')} fn={m.get('fn')}",
         f"attack_recall: {m.get('attack_recall')}",
         f"benign_fpr: {m.get('benign_fpr')}",
+        f"macro_family_recall: {m.get('macro_attack_family_recall')}",
+        f"min_family_recall: {m.get('min_attack_family_recall')}",
+        f"roc_auc: {m.get('roc_auc')} pr_auc: {m.get('pr_auc')}",
         f"measurement_only: {payload.get('measurement_only')}",
     ]
     arts = payload.get("artifacts") or {}

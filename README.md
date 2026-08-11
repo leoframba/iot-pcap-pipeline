@@ -631,6 +631,11 @@ Implements the frozen scoring path and integrity gates. The CLI accepts **no**
 Scoring path: 27-feature schema verify → select ordered 22 → HGB
 `predict_proba` → `score >= 0.9490790963172913` → BENIGN/ATTACK.
 
+One-shot outputs (written before `final_test_complete.json`):
+`test_global_metrics.json`, `test_attack_family_metrics.csv`,
+`test_benign_group_metrics.csv`, `test_pcap_metrics.csv`,
+`validation_vs_test.csv`.
+
 ## Phase 2D.2 — Preflight / dry run
 
 Final stop before opening TEST. Re-verifies all contracts and TEST inventory

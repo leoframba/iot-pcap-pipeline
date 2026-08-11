@@ -728,6 +728,154 @@ def test_phase2c_freeze_constants() -> None:
     assert "Close Phase 2C" in GATE_2C_DECISION
 
 
+def test_final_test_contract_constants() -> None:
+    from iot_pcap_pipeline.modeling.baselines.final_test import (
+        EXPECTED_TEST_ATTACK_PCAPS,
+        EXPECTED_TEST_BENIGN_PCAPS,
+        EXPECTED_TEST_ROWS,
+        PHASE2D_VERSION,
+    )
+    from iot_pcap_pipeline.features.dataset import EXPECTED_TEST_PCAP_COUNT
+
+    assert PHASE2D_VERSION == "phase2d_v1"
+    assert EXPECTED_TEST_PCAP_COUNT == 29
+    assert EXPECTED_TEST_ROWS == 6_206_674
+    assert EXPECTED_TEST_ATTACK_PCAPS == 20
+    assert EXPECTED_TEST_BENIGN_PCAPS == 9
+    assert EXPECTED_TEST_ATTACK_PCAPS + EXPECTED_TEST_BENIGN_PCAPS == 29
+
+
+def test_final_test_evaluator_synthetic_path(tmp_path: Path) -> None:
+    """2D.1 scoring path on synthetic shards (never touches real TEST)."""
+    import inspect
+
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    from iot_pcap_pipeline.features.schema import V1_FEATURE_NAMES
+    from iot_pcap_pipeline.modeling.baselines.final_test import (
+        FEATURES_22,
+        FROZEN_V1_THRESHOLD,
+        TestPcapSpec,
+        assert_test_inventory_integrity,
+        decide_attack,
+        evaluate_sealed_test_inventory,
+        load_test_pcap_specs,
+        reject_final_test_overrides,
+        run_final_test,
+        select_model_features_x22,
+    )
+
+    with pytest.raises(FeatureExtractionError, match="rejects overrides"):
+        reject_final_test_overrides(threshold=0.5)
+    with pytest.raises(FeatureExtractionError, match="rejects overrides"):
+        reject_final_test_overrides(model_path="/tmp/x.joblib")
+    with pytest.raises(FeatureExtractionError, match="rejects overrides"):
+        run_final_test(project_root=tmp_path, threshold=0.1)
+
+    sig = inspect.signature(run_final_test)
+    for banned in ("threshold", "model", "model_path", "features", "feature_names"):
+        assert banned not in sig.parameters
+
+    rng = np.random.default_rng(0)
+    X27 = rng.normal(size=(8, 27)).astype(np.float32)
+    X22 = select_model_features_x22(X27)
+    assert X22.shape == (8, 22)
+    bad = X27.copy()
+    # Inject NaN into a retained model-input column (not a dropped temporal).
+    from iot_pcap_pipeline.modeling.baselines.final_test import model_feature_column_indices
+
+    bad[0, model_feature_column_indices()[0]] = np.nan
+    with pytest.raises(FeatureExtractionError, match="non-finite"):
+        select_model_features_x22(bad)
+
+    thr = FROZEN_V1_THRESHOLD
+    preds = decide_attack(
+        np.array([thr - 1e-6, thr, thr + 1e-6], dtype=np.float32),
+        threshold=thr,
+    )
+    assert list(preds) == [0, 1, 1]
+    with pytest.raises(FeatureExtractionError, match="threshold"):
+        decide_attack(np.array([0.9], dtype=np.float32), threshold=0.5)
+
+    n_train = 80
+    X_tr = rng.normal(size=(n_train, 22)).astype(np.float32)
+    y_tr = np.array([0] * 40 + [1] * 40, dtype=np.uint8)
+    X_tr[y_tr == 1] += 1.5
+    est = HistGradientBoostingClassifier(
+        max_iter=20, max_leaf_nodes=7, random_state=42, early_stopping=False
+    )
+    est.fit(X_tr, y_tr)
+
+    atk_id = "synth-attack-aaaaaaaaaaaaaaaa"
+    ben_id = "synth-benign-bbbbbbbbbbbbbbbb"
+    train_id = "train-fit-cccccccccccccccc"
+    test_dir = tmp_path / "data" / "features" / "v1" / "test"
+    _write_feature_parquet(
+        test_dir / f"{atk_id}.parquet", n=12, label="ATTACK", pcap_id=atk_id
+    )
+    _write_feature_parquet(
+        test_dir / f"{ben_id}.parquet", n=8, label="BENIGN", pcap_id=ben_id
+    )
+
+    split_ids = {train_id}
+    specs = [
+        TestPcapSpec(
+            pcap_id=atk_id,
+            binary_label="ATTACK",
+            feature_parquet_path=f"data/features/v1/test/{atk_id}.parquet",
+            expected_row_count=12,
+        ),
+        TestPcapSpec(
+            pcap_id=ben_id,
+            binary_label="BENIGN",
+            feature_parquet_path=f"data/features/v1/test/{ben_id}.parquet",
+            expected_row_count=8,
+        ),
+    ]
+    assert_test_inventory_integrity(
+        specs,
+        expected_pcaps=2,
+        expected_rows=20,
+        modeling_split_pcap_ids=split_ids,
+    )
+    with pytest.raises(FeatureExtractionError, match="TRAIN/FIT/validation"):
+        assert_test_inventory_integrity(
+            specs,
+            expected_pcaps=2,
+            expected_rows=20,
+            modeling_split_pcap_ids={atk_id},
+        )
+
+    man = tmp_path / "dup_manifest.csv"
+    man.write_text(
+        "pcap_id,binary_label,status,output_path,output_row_count\n"
+        f"{atk_id},ATTACK,ok,data/features/v1/test/{atk_id}.parquet,12\n"
+        f"{atk_id},ATTACK,ok,data/features/v1/test/{atk_id}.parquet,12\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(FeatureExtractionError, match="more than once"):
+        load_test_pcap_specs(man, project_root=tmp_path)
+
+    result = evaluate_sealed_test_inventory(
+        specs,
+        est,
+        project_root=tmp_path,
+        threshold=FROZEN_V1_THRESHOLD,
+        expected_pcaps=2,
+        expected_rows=20,
+        modeling_split_pcap_ids=split_ids,
+    )
+    assert result["rows_scored"] == 20
+    assert result["pcaps_scored"] == 2
+    assert result["each_row_scored_once"] is True
+    assert result["model_feature_count"] == 22
+    assert result["feature_names"] == FEATURES_22
+    assert len(result["per_pcap"]) == 2
+    assert sum(p["rows_scored"] for p in result["per_pcap"]) == 20
+    assert len(FEATURES_22) == 22
+    assert all(name in V1_FEATURE_NAMES for name in FEATURES_22)
+
+
 def test_hgb_sensitivity_configs_and_fold_assignment() -> None:
     from iot_pcap_pipeline.modeling.baselines.hgb_sensitivity import (
         SENSITIVITY_CONFIGS,

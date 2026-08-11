@@ -151,6 +151,12 @@ from iot_pcap_pipeline.modeling.baselines.phase2c_freeze import (
     format_phase2c_freeze_summary,
     freeze_phase2c,
 )
+from iot_pcap_pipeline.modeling.baselines.final_test import (
+    format_final_test_summary,
+    format_prepare_final_test_summary,
+    prepare_final_test,
+    run_final_test,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -1065,6 +1071,22 @@ def build_parser() -> argparse.ArgumentParser:
             "close hyperparameter and threshold tuning (TEST sealed)"
         ),
     )
+
+    prep_2d_cmd = subparsers.add_parser(
+        "prepare-final-test",
+        help=(
+            "Phase 2D.0: freeze pre-TEST contract (pins model/threshold/hashes); "
+            "does not open TEST feature shards"
+        ),
+    )
+
+    run_2d_cmd = subparsers.add_parser(
+        "run-final-test",
+        help=(
+            "Phase 2D: one-shot sealed TEST evaluation of the frozen V1 package "
+            "(no --model/--threshold/--features overrides; measurement only)"
+        ),
+    )
     return parser
 
 
@@ -1586,6 +1608,24 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_phase2c_freeze_summary(payload))
         return 0 if payload.get("status") == "frozen" else 1
+
+    if args.command == "prepare-final-test":
+        try:
+            payload = prepare_final_test()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_prepare_final_test_summary(payload))
+        return 0 if payload.get("gate_2d0_status") == "passed" else 1
+
+    if args.command == "run-final-test":
+        try:
+            payload = run_final_test(progress_file=sys.stderr)
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_final_test_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

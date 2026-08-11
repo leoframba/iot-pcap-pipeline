@@ -31,15 +31,20 @@
     "unique_ip_count",
     "unique_port_count"
   ],
+  "feature_selection_status": "resolved",
+  "final_feature_count": 22,
   "model_input_feature_count": 22,
   "model_input_version": "v1_hgb22_nontemporal",
   "notes": [
     "Does not invalidate Phase 1C or require feature-dataset rebuilds.",
-    "Threshold remains unfrozen until a focused C operating-point review."
+    "Feature selection resolved in Phase 2B.5: model input is 22 nontemporal features.",
+    "V1 candidate is unweighted HGB on group_balanced FIT.",
+    "Threshold remains unfrozen; TEST remains sealed."
   ],
   "parent_feature_count": 27,
   "parent_feature_strategy_version": "phase1c2_v1",
   "provisional_class_weight": null,
   "provisional_model_family": "HistGradientBoostingClassifier",
-  "selection_policy": "Exclude the five temporal / span features from model input only; keep them in the extractor and Parquet schema for future experiments."
+  "selection_policy": "Exclude the five temporal / span features from model input only; keep them in the extractor and Parquet schema for future experiments.",
+  "status": "frozen"
 }

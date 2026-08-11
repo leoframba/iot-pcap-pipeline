@@ -137,6 +137,10 @@ from iot_pcap_pipeline.modeling.baselines.feature22_boost import (
     prepare_feature22_boost_rematch,
     run_feature22_boost_rematch,
 )
+from iot_pcap_pipeline.modeling.baselines.v1_candidate_freeze import (
+    format_v1_candidate_freeze_summary,
+    freeze_v1_candidate,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -1019,6 +1023,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force rescoring even if predictions/*.npz caches exist",
     )
+
+    freeze_cand_cmd = subparsers.add_parser(
+        "freeze-v1-candidate",
+        help=(
+            "Phase 2B.5: close model exploration; freeze HGB-22 as V1 candidate "
+            "and resolve 22-feature model input (threshold still unfrozen; no TEST)"
+        ),
+    )
     return parser
 
 
@@ -1504,6 +1516,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_feature22_boost_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "freeze-v1-candidate":
+        try:
+            payload = freeze_v1_candidate()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_v1_candidate_freeze_summary(payload))
+        return 0 if payload.get("status") == "frozen" else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

@@ -557,4 +557,23 @@ uv run iot-pcap-pipeline prepare-feature22-boost-rematch
 uv run iot-pcap-pipeline run-feature22-boost-rematch
 ```
 
+## Phase 2B.5 — Freeze V1 candidate (close model exploration)
+
+Locks the exploration outcome:
+
+- Extractor / Parquet: **27** features (unchanged)
+- V1 model input: **22** nontemporal features (`v1_hgb22_nontemporal`)
+- V1 candidate: **HGB-22**, unweighted, `group_balanced` FIT
+- Runner-up: XGBoost-22 (not selected)
+- Rejected: CatBoost-22 and all other families/configs from 2B.4*
+
+Threshold remains **unfrozen**. TEST remains sealed.
+
+```bash
+uv run iot-pcap-pipeline freeze-v1-candidate
+```
+
+Writes `data/modeling/v1/v1_candidate_freeze.json` and updates
+`data/modeling/v1/model_input/v1_hgb22_nontemporal.json`.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

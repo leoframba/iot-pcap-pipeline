@@ -695,3 +695,19 @@ def test_external_boost_fixed_configs_no_early_stopping() -> None:
     sx = attack_score_from_estimator(xgb, X[:5])
     sc = attack_score_from_estimator(cb, X[:5])
     assert sx.shape == (5,) and sc.shape == (5,)
+
+
+def test_v1_candidate_freeze_ranking_shape() -> None:
+    from iot_pcap_pipeline.modeling.baselines.model_input import (
+        V1_MODEL_INPUT_FEATURES,
+    )
+    from iot_pcap_pipeline.modeling.baselines.v1_candidate_freeze import (
+        GATE_2B5_DECISION,
+        MODEL_EXPLORATION_RANKING,
+    )
+
+    assert len(V1_MODEL_INPUT_FEATURES) == 22
+    assert MODEL_EXPLORATION_RANKING[0]["model_id"] == "hgb_22"
+    assert MODEL_EXPLORATION_RANKING[0]["status"] == "final_v1_candidate"
+    assert MODEL_EXPLORATION_RANKING[1]["model_id"] == "xgboost_22"
+    assert "Close Phase 2B" in GATE_2B5_DECISION

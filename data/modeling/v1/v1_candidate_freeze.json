@@ -1,0 +1,142 @@
+{
+  "artifacts": {
+    "hgb22_model_artifact": "data/modeling/v1/baselines/phase2b3b_v1/models/C_22_unweighted.joblib",
+    "model_input_contract": "data/modeling/v1/model_input/v1_hgb22_nontemporal.json",
+    "v1_candidate_freeze": "data/modeling/v1/v1_candidate_freeze.json"
+  },
+  "extractor_feature_count": 27,
+  "feature_selection_status": "resolved",
+  "final_feature_count": 22,
+  "gate_2b5_decision": "Close Phase 2B model-family exploration. Select HistGradientBoostingClassifier with the 22 nontemporal model-input features (unweighted, group_balanced FIT) as the V1 candidate. Keep all 27 features in the extractor/Parquet schema. XGBoost-22 is recorded as runner-up only. Reject CatBoost-22 and all other families/configs tested in 2B.4/2B.4B/2B.4C/2B.4D. Threshold remains unfrozen; TEST remains sealed.",
+  "gate_2b5_status": "passed",
+  "model_exploration_status": "closed",
+  "model_input": {
+    "excluded_from_model_input": [
+      "window_span_seconds",
+      "iat_mean_seconds",
+      "iat_std_seconds",
+      "iat_p50_seconds",
+      "iat_p95_seconds"
+    ],
+    "feature_count": 22,
+    "feature_names": [
+      "frame_length_mean",
+      "frame_length_std",
+      "frame_length_min",
+      "frame_length_max",
+      "ipv4_ratio",
+      "ipv6_ratio",
+      "arp_ratio",
+      "llc_ratio",
+      "other_protocol_ratio",
+      "tcp_ratio",
+      "udp_ratio",
+      "icmp_ratio",
+      "icmpv6_ratio",
+      "igmp_ratio",
+      "tcp_syn_ratio",
+      "tcp_ack_ratio",
+      "tcp_fin_ratio",
+      "tcp_rst_ratio",
+      "tcp_psh_ratio",
+      "tcp_urg_ratio",
+      "unique_ip_count",
+      "unique_port_count"
+    ],
+    "model_input_version": "v1_hgb22_nontemporal",
+    "parent_feature_count": 27,
+    "parent_feature_strategy_version": "phase1c2_v1",
+    "selection_policy": "Exclude five temporal/span features from X only; keep them in extractor and Parquet for future experiments."
+  },
+  "next": "Freeze a provisional operating threshold for HGB-22 on TRAIN-validation only, then package the V1 candidate. Do not consult TEST until model + threshold + model-input are frozen.",
+  "parents": {
+    "phase2b3b_ablation_status": "passed",
+    "phase2b4d_feature22_boost_status": "passed"
+  },
+  "parquet_feature_count": 27,
+  "ranking": [
+    {
+      "model_id": "hgb_22",
+      "notes": "HGB, 22 nontemporal features, unweighted, group_balanced FIT",
+      "rank": "1",
+      "status": "final_v1_candidate"
+    },
+    {
+      "model_id": "xgboost_22",
+      "notes": "Very strong; not selected (prefer characterized HGB on near-ties)",
+      "rank": "2",
+      "status": "runner_up"
+    },
+    {
+      "model_id": "catboost_22",
+      "notes": "Material Recon/min-family deficit vs HGB-22",
+      "rank": "reject",
+      "status": "rejected"
+    },
+    {
+      "model_id": "other_families_and_27_feature_variants",
+      "notes": "Includes AdaBoost, RandomForest, ExtraTrees, HGB-27, XGBoost-27, CatBoost-27, balanced-weight variants",
+      "rank": "reject",
+      "status": "rejected_or_baseline"
+    }
+  ],
+  "runner_up": {
+    "model_id": "xgboost_22",
+    "source_phase": "phase2b4d_v1",
+    "status": "runner_up_not_selected"
+  },
+  "status": "frozen",
+  "strategy_version": "phase2b5_v1",
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  },
+  "threshold": {
+    "note": "Operating threshold not frozen by this gate. Use prior C / 2B.3C refine points for provisional selection in a later step.",
+    "status": "unfrozen"
+  },
+  "v1_candidate": {
+    "class_weights": "none",
+    "feature_count": 22,
+    "feature_names": [
+      "frame_length_mean",
+      "frame_length_std",
+      "frame_length_min",
+      "frame_length_max",
+      "ipv4_ratio",
+      "ipv6_ratio",
+      "arp_ratio",
+      "llc_ratio",
+      "other_protocol_ratio",
+      "tcp_ratio",
+      "udp_ratio",
+      "icmp_ratio",
+      "icmpv6_ratio",
+      "igmp_ratio",
+      "tcp_syn_ratio",
+      "tcp_ack_ratio",
+      "tcp_fin_ratio",
+      "tcp_rst_ratio",
+      "tcp_psh_ratio",
+      "tcp_urg_ratio",
+      "unique_ip_count",
+      "unique_port_count"
+    ],
+    "hyperparameters": {
+      "early_stopping": false,
+      "l2_regularization": 1.0,
+      "learning_rate": 0.1,
+      "max_iter": 200,
+      "max_leaf_nodes": 31,
+      "random_state": 42
+    },
+    "model_artifact": "data/modeling/v1/baselines/phase2b3b_v1/models/C_22_unweighted.joblib",
+    "model_artifact_sha256": "ff6c15e10081dfa456628cc95ad46b3de3d9351c55fcee6668dd556d282ed938",
+    "model_family": "HistGradientBoostingClassifier",
+    "model_id": "hgb_22",
+    "random_state": 42,
+    "source_phase": "phase2b3b_v1",
+    "source_variant": "C_22_unweighted",
+    "training_view": "group_balanced"
+  }
+}

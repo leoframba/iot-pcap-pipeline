@@ -157,21 +157,55 @@ def eth_ipv6_icmp(*, src: str = "2001:db8::1", dst: str = "2001:db8::2") -> byte
     return bytes(eth)
 
 
-def eth_arp(*, spa: str = "10.0.0.1", tpa: str = "10.0.0.2") -> bytes:
+def _mac6(addr: str | bytes) -> bytes:
+    if isinstance(addr, (bytes, bytearray)):
+        raw = bytes(addr)
+        if len(raw) != 6:
+            raise ValueError(f"MAC must be 6 bytes, got {len(raw)}")
+        return raw
+    parts = addr.split(":")
+    if len(parts) != 6:
+        raise ValueError(f"MAC must have 6 octets, got {addr!r}")
+    return bytes(int(p, 16) for p in parts)
+
+
+def eth_arp(
+    *,
+    spa: str = "10.0.0.1",
+    tpa: str = "10.0.0.2",
+    op: int = dpkt.arp.ARP_OP_REQUEST,
+    sha: str | bytes = "11:22:33:44:55:66",
+    tha: str | bytes = "00:00:00:00:00:00",
+    eth_src: str | bytes | None = None,
+    eth_dst: str | bytes = "ff:ff:ff:ff:ff:ff",
+) -> bytes:
+    sha_b = _mac6(sha)
+    tha_b = _mac6(tha)
+    eth_src_b = sha_b if eth_src is None else _mac6(eth_src)
     arp = dpkt.arp.ARP(
-        sha=b"\x11\x22\x33\x44\x55\x66",
+        sha=sha_b,
         spa=_ip4(spa),
-        tha=b"\x00\x00\x00\x00\x00\x00",
+        tha=tha_b,
         tpa=_ip4(tpa),
-        op=dpkt.arp.ARP_OP_REQUEST,
+        op=op,
     )
     eth = dpkt.ethernet.Ethernet(
-        dst=b"\xff\xff\xff\xff\xff\xff",
-        src=b"\x11\x22\x33\x44\x55\x66",
+        dst=_mac6(eth_dst),
+        src=eth_src_b,
         type=dpkt.ethernet.ETH_TYPE_ARP,
         data=arp,
     )
     return bytes(eth)
+
+
+def eth_arp_truncated(*, spa: str = "10.0.0.1", tpa: str = "10.0.0.2") -> bytes:
+    """Ethernet ARP frame with a truncated ARP body (NeedData / PARTIAL)."""
+    dest = b"\xff\xff\xff\xff\xff\xff"
+    src = b"\x11\x22\x33\x44\x55\x66"
+    ethertype = dpkt.ethernet.ETH_TYPE_ARP.to_bytes(2, "big")
+    # hrd=1, pro=0x0800, hln=6, pln=4, op=request, then only 3 SHA bytes.
+    arp_hdr = b"\x00\x01\x08\x00\x06\x04\x00\x01" + b"\xaa\xbb\xcc"
+    return dest + src + ethertype + arp_hdr
 
 
 def eth_vlan_ip_udp(*, vlan_id: int = 100) -> bytes:

@@ -42,6 +42,22 @@ data/audit/*.log
 data/processed/
 data/windows/
 
+# Experiment manifests (JSON/CSV) are trackable; ignore heavy run outputs
+data/experiments/**
+!data/experiments/
+!data/experiments/**
+!data/experiments/**/*.json
+!data/experiments/**/*.csv
+data/experiments/**/*.parquet
+data/experiments/**/*.parquet.tmp
+data/experiments/**/*.joblib
+data/experiments/**/*.npz
+data/experiments/**/models/
+data/experiments/**/predictions/
+data/experiments/**/.work/
+data/experiments/**/*.log
+
+
 # Feature builds are heavy; keep characterization / V1 schema / smoke trackable
 data/features/**
 !data/features/

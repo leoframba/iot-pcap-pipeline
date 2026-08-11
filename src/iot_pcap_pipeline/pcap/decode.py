@@ -203,13 +203,24 @@ def _decode_arp(record: PacketRecord, arp: dpkt.arp.ARP) -> PacketRecord:
         src_ip = _ip4_to_str(arp.spa)
     if len(arp.tpa) == 4:
         dst_ip = _ip4_to_str(arp.tpa)
+    # ARP op / SHA / THA are internal parsing identities only (V2A).
+    # Never emit raw MAC/IP strings as model features.
+    sha = arp.sha if isinstance(arp.sha, (bytes, bytearray)) else b""
+    tha = arp.tha if isinstance(arp.tha, (bytes, bytearray)) else b""
     return replace(
         record,
         is_arp=True,
         src_ip=src_ip,
         dst_ip=dst_ip,
         protocol_name="arp",
+        extra={
+            **record.extra,
+            "arp_op": int(arp.op),
+            "arp_sha": _mac_to_str(sha) if len(sha) == 6 else None,
+            "arp_tha": _mac_to_str(tha) if len(tha) == 6 else None,
+        },
     )
+
 
 
 def _decode_llc(record: PacketRecord, payload: Any) -> PacketRecord:

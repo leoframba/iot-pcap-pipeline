@@ -1,0 +1,87 @@
+{
+  "strategy_version": "v2a1_arp_stateless",
+  "phase": "v2a1",
+  "experiment_namespace": "data/experiments/v2_arp/phase_v2a1",
+  "status": "contract_frozen",
+  "purpose": "V2A ARP semantic feature experiment: derive counts/ratios from ARP identity relationships inside each existing V1 25-packet window, without altering the frozen V1 package.",
+  "windowing": {
+    "policy": "existing_frozen_v1",
+    "window_size": 25,
+    "inactivity_timeout_seconds": 5.0,
+    "backward_reset_seconds": 1.0,
+    "windowing_strategy_version": "phase1c1_v2",
+    "config_id": "w25_gap5_bw1",
+    "source": "iot_pcap_pipeline.windowing.policy.frozen_window_policy"
+  },
+  "extraction_constraints": {
+    "state_across_windows": false,
+    "raw_mac_model_features": false,
+    "label_dependent_extraction": false,
+    "scope": "stateless_within_each_25_packet_window",
+    "model_features_are": "counts_and_ratios_only",
+    "internal_parsing_identities_only": [
+      "arp_op",
+      "arp_sha",
+      "arp_tha",
+      "src_ip",
+      "dst_ip",
+      "src_mac",
+      "dst_mac"
+    ]
+  },
+  "data_access": {
+    "development_data": "FIT only",
+    "v1_final_test_access": false
+  },
+  "v1_frozen_do_not_alter": {
+    "extractor": true,
+    "feature_schema_27": true,
+    "feature_schema_path": "data/features/v1/feature_schema.json",
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "feature_strategy_version": "phase1c2_v1",
+    "hgb22_artifact": true,
+    "threshold": true,
+    "final_test_artifacts": true
+  },
+  "candidate_features": {
+    "module": "iot_pcap_pipeline.features.arp_v2",
+    "dataclass": "ArpSemanticFeatures",
+    "extractor": "extract_arp_semantic_features",
+    "feature_count": 11,
+    "feature_names": [
+      "arp_request_ratio",
+      "arp_reply_ratio",
+      "arp_probe_ratio",
+      "arp_gratuitous_ratio",
+      "arp_sender_ip_conflict_count",
+      "arp_sender_ip_conflict_ratio",
+      "arp_max_macs_per_sender_ip",
+      "arp_mapping_change_count",
+      "arp_eth_src_sha_mismatch_ratio",
+      "arp_unique_sender_ip_count",
+      "arp_unique_sender_mac_count"
+    ],
+    "denominator_basic_ratios": "n_arp_packets_in_window",
+    "empty_arp_policy": "all_ratios_0_counts_0",
+    "arp_probe_definition": {
+      "op": "REQUEST",
+      "spa": "0.0.0.0",
+      "rfc": "5227"
+    },
+    "arp_gratuitous_definition": {
+      "spa_equals_tpa": true,
+      "exclude_spa": "0.0.0.0"
+    },
+    "identity_observation_excludes": [
+      "spa_0.0.0.0",
+      "invalid_or_missing_ipv4_spa",
+      "invalid_or_missing_sha"
+    ],
+    "separate_from_v1_feature_vector": true
+  },
+  "notes": [
+    "First experiment is intentionally stateless within each existing 25-packet window for determinism and deployment compatibility.",
+    "Raw MAC/IP strings must never appear as model input features; only relationship-derived counts/ratios.",
+    "Characterize all 11 candidates on FIT; retain only those with signal before any V1 package change."
+  ]
+}

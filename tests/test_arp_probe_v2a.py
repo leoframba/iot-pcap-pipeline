@@ -76,6 +76,7 @@ def test_probe_group_mapping() -> None:
     )
 
 
+@pytest.mark.corpus
 def test_load_arp_probe_targets_fit_only() -> None:
     targets = load_arp_probe_targets()
     assert len(targets) == 26  # 1 spoof + 25 benign

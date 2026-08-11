@@ -31,6 +31,16 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Local profiler / Instruments-style process sampling dumps
+stack.txt
+python_stack.txt
+*_stack.txt
+*.stackshot
+sample.txt
+
+# Serving / Docker freeze bundle (tracked, including the small V1 .joblib)
+# See artifacts/v1/README.md — do not ignore artifacts/**/*.joblib
+
 # Dataset — raw PCAPs are large local-only source data (see README)
 data/raw/
 

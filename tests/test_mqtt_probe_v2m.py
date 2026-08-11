@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import dpkt
+import pytest
 from pcap_synth import eth_ip_tcp, write_pcap
 
 from iot_pcap_pipeline.features.mqtt_v2 import extract_mqtt_structural_features
@@ -94,6 +95,7 @@ def test_probe_group_mapping() -> None:
     )
 
 
+@pytest.mark.corpus
 def test_load_mqtt_probe_targets_fit_only() -> None:
     targets = load_mqtt_probe_targets()
     assert any(t["probe_group"] == PROBE_GROUP_MQTT_MALFORMED for t in targets)

@@ -1,0 +1,50 @@
+{
+  "contract_path": "data/modeling/v1/model_input/v1_hgb22_nontemporal.json",
+  "excluded_from_model_input": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds"
+  ],
+  "feature_names": [
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "feature_selection_status": "resolved",
+  "final_feature_count": 22,
+  "model_input_feature_count": 22,
+  "model_input_version": "v1_hgb22_nontemporal",
+  "notes": [
+    "Does not invalidate Phase 1C or require feature-dataset rebuilds.",
+    "Feature selection resolved in Phase 2B.5: model input is 22 nontemporal features.",
+    "V1 candidate is unweighted HGB on group_balanced FIT.",
+    "Threshold remains unfrozen; TEST remains sealed."
+  ],
+  "parent_feature_count": 27,
+  "parent_feature_strategy_version": "phase1c2_v1",
+  "provisional_class_weight": null,
+  "provisional_model_family": "HistGradientBoostingClassifier",
+  "selection_policy": "Exclude the five temporal / span features from model input only; keep them in the extractor and Parquet schema for future experiments.",
+  "status": "frozen"
+}

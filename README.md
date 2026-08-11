@@ -672,3 +672,19 @@ model on this corpus. See
 Do **not** change the model, features, or threshold using TEST.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.
+
+## Pre-deployment notes
+
+**Package imports:** the CLI entrypoint is `iot_pcap_pipeline.cli:main`. The
+package root and `features` package stay import-light so serving code can load
+decoder / windowing / extractor without pulling research Parquet or experiment
+modules.
+
+**Tests:** default `uv run pytest` is self-contained (synthetic PCAPs). Tests
+marked `@pytest.mark.corpus` require local CICIoMT data under
+`data/raw/WiFI_and_MQTT/` and are skipped when that tree is absent.
+
+**Frozen model for Docker:** checkout-ready copy lives in `artifacts/v1/`
+(`H0_full_fit.joblib` + package/schema JSON). Verify SHA-256
+`c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb` before
+building images. Details: [`artifacts/v1/README.md`](artifacts/v1/README.md).

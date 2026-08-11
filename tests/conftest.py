@@ -6,6 +6,33 @@ from pathlib import Path
 
 import pytest
 
+from iot_pcap_pipeline.paths import DEFAULT_RAW_ROOT
+
+
+def corpus_available() -> bool:
+    """True when the local CICIoMT Wi-Fi/MQTT raw tree is present."""
+    return DEFAULT_RAW_ROOT.is_dir()
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers",
+        "corpus: requires local CICIoMT raw PCAPs under data/raw/WiFI_and_MQTT/",
+    )
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    if corpus_available():
+        return
+    skip = pytest.mark.skip(
+        reason="corpus integration test: local CICIoMT data missing (data/raw/WiFI_and_MQTT/)"
+    )
+    for item in items:
+        if item.get_closest_marker("corpus") is not None:
+            item.add_marker(skip)
+
 
 def _touch(path: Path, size: int = 10) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)

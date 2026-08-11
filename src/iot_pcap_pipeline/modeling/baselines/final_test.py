@@ -1084,6 +1084,40 @@ def evaluate_sealed_test_inventory(
     benign_acc: dict[str, GroupAccumulator] = {}
     pcap_acc: dict[str, GroupAccumulator] = {}
 
+    # Pre-register every inventory PCAP (including zero-row shards).
+    for spec in specs:
+        pcap_acc[spec.pcap_id] = GroupAccumulator(
+            key=spec.pcap_id, kind="pcap", binary_label=spec.binary_label
+        )
+        if spec.binary_label == "ATTACK":
+            fam = spec.attack_family
+            if not fam:
+                raise FeatureExtractionError(
+                    f"ATTACK PCAP missing family: {spec.pcap_id}"
+                )
+            if fam not in family_acc:
+                family_acc[fam] = GroupAccumulator(
+                    key=fam, kind="attack_group", binary_label="ATTACK"
+                )
+            family_acc[fam].pcap_ids.add(spec.pcap_id)
+        else:
+            cat = spec.benign_category
+            if not cat:
+                raise FeatureExtractionError(
+                    f"BENIGN PCAP missing benign_category: {spec.pcap_id}"
+                )
+            if cat not in benign_acc:
+                benign_acc[cat] = GroupAccumulator(
+                    key=cat, kind="benign_group", binary_label="BENIGN"
+                )
+            benign_acc[cat].pcap_ids.add(spec.pcap_id)
+            rollup = "publisher_benign" if cat == "publisher" else "profiling_benign"
+            if rollup not in benign_acc:
+                benign_acc[rollup] = GroupAccumulator(
+                    key=rollup, kind="benign_group", binary_label="BENIGN"
+                )
+            benign_acc[rollup].pcap_ids.add(spec.pcap_id)
+
     rows_scored = 0
     for batch in iter_test_score_batches(
         specs,
@@ -1102,48 +1136,18 @@ def evaluate_sealed_test_inventory(
         score_chunks.append(np.asarray(scores, dtype=np.float32))
 
         pid = spec.pcap_id
-        if pid not in pcap_acc:
-            pcap_acc[pid] = GroupAccumulator(
-                key=pid, kind="pcap", binary_label=spec.binary_label
-            )
-        pcap_acc[pid].update(
-            pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
-        )
+        pcap_acc[pid].update(pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores)
 
         if spec.binary_label == "ATTACK":
-            fam = spec.attack_family
-            if not fam:
-                raise FeatureExtractionError(f"ATTACK PCAP missing family: {pid}")
-            if fam not in family_acc:
-                family_acc[fam] = GroupAccumulator(
-                    key=fam, kind="attack_group", binary_label="ATTACK"
-                )
-            family_acc[fam].update(
+            family_acc[spec.attack_family].update(
                 pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
             )
         else:
             cat = spec.benign_category
-            if not cat:
-                raise FeatureExtractionError(
-                    f"BENIGN PCAP missing benign_category: {pid}"
-                )
-            # Fine-grained category (publisher / profiling_*).
-            if cat not in benign_acc:
-                benign_acc[cat] = GroupAccumulator(
-                    key=cat, kind="benign_group", binary_label="BENIGN"
-                )
             benign_acc[cat].update(
                 pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
             )
-            # Rollups.
-            if cat == "publisher":
-                rollup = "publisher_benign"
-            else:
-                rollup = "profiling_benign"
-            if rollup not in benign_acc:
-                benign_acc[rollup] = GroupAccumulator(
-                    key=rollup, kind="benign_group", binary_label="BENIGN"
-                )
+            rollup = "publisher_benign" if cat == "publisher" else "profiling_benign"
             benign_acc[rollup].update(
                 pcap_id=pid, y_true=y_t, y_pred=y_p, scores=scores
             )

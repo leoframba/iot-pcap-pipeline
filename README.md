@@ -653,4 +653,16 @@ Writes `data/modeling/v1/final_test/phase2d_v1/preflight_complete.json` with
 uv run iot-pcap-pipeline run-final-test
 ```
 
+## V1 wrap-up — evaluation complete
+
+Phase 2D one-shot TEST is finished. V1 (HGB-22 H0 + frozen threshold) is
+**evaluation-complete**, not a comprehensive IoMT detector.
+
+Fair deployment statement: strong on DDoS / DoS / MQTT floods / most Recon at
+~0.08% benign FPR; unreliable on ARP spoofing, MQTT malformed-data, and some
+low-volume recon types. See `data/modeling/v1/V1_ASSESSMENT.md` and
+`data/modeling/v1/v1_evaluation_complete.json`.
+
+Do **not** change the model, features, or threshold using TEST.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

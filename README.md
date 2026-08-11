@@ -460,4 +460,17 @@ Artifacts under `data/modeling/v1/baselines/phase2b2_v1/` (JSON/CSV tracked;
 `.joblib` models gitignored). Stop after review of benign FP/FPR and holdout
 group recall — do not pick a winner or tune.
 
+## Phase 2B.3A — Threshold sweep (no retraining)
+
+Rescore the same unsampled TRAIN-validation set with the frozen 2B.2 models
+and tabulate operating points. No new FIT sampling, no TEST.
+
+```bash
+uv run iot-pcap-pipeline threshold-sweep-baselines
+```
+
+Writes `data/modeling/v1/baselines/phase2b3a_v1/` with fixed-threshold and
+benign-FPR-target tables (HGB + LR). Score caches under `predictions/` are
+gitignored.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

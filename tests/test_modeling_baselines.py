@@ -459,3 +459,41 @@ def test_prepare_and_full_train_requires_frozen_contract(tmp_path: Path) -> None
     split.write_text("pcap_path\nx\n", encoding="utf-8")
     with pytest.raises(FeatureExtractionError, match="mismatch"):
         load_frozen_baseline_contract(out, project_root=tmp_path)
+
+
+def test_threshold_sweep_math_synthetic() -> None:
+    from iot_pcap_pipeline.modeling.baselines.threshold_sweep import (
+        ValidationScoreTape,
+        metrics_at_threshold,
+        sweep_model,
+        threshold_for_benign_fpr,
+    )
+
+    # 100 benign scores in [0,1), 100 attack scores mostly high with a few low.
+    benign = np.linspace(0.0, 0.99, 100, dtype=np.float32)
+    attack = np.array([0.05] * 10 + [0.99] * 90, dtype=np.float32)
+    y = np.array([0] * 100 + [1] * 100, dtype=np.uint8)
+    scores = np.concatenate([benign, attack])
+    # codes: idle=10 for benign, recon=4 for attack
+    g = np.array([10] * 100 + [4] * 100, dtype=np.uint8)
+    tape = ValidationScoreTape(y_true=y, scores=scores, group_code=g)
+
+    row = metrics_at_threshold(
+        tape, threshold=0.5, model_id="toy", point_type="fixed_threshold"
+    )
+    assert row["benign_fp"] == int(np.sum(benign >= 0.5))
+    assert row["recon_os_scan_recall"] == pytest.approx(0.9)
+
+    thr = threshold_for_benign_fpr(tape, 0.10)
+    fpr_row = metrics_at_threshold(
+        tape,
+        threshold=thr,
+        model_id="toy",
+        point_type="fpr_target",
+        fpr_target=0.10,
+    )
+    assert fpr_row["benign_fpr"] <= 0.10 + 1e-9
+
+    fixed, fpr_rows = sweep_model(tape, model_id="toy")
+    assert len(fixed) >= 11
+    assert len(fpr_rows) == 6

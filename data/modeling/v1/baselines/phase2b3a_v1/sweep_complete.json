@@ -1,0 +1,59 @@
+{
+  "artifacts": {
+    "comparison_fixed_thresholds": "data/modeling/v1/baselines/phase2b3a_v1/comparison_fixed_thresholds.csv",
+    "comparison_fpr_targets": "data/modeling/v1/baselines/phase2b3a_v1/comparison_fpr_targets.csv",
+    "output_dir": "data/modeling/v1/baselines/phase2b3a_v1",
+    "threshold_sweep_contract": "data/modeling/v1/baselines/phase2b3a_v1/threshold_sweep_contract.json"
+  },
+  "benign_fpr_targets": [
+    0.1,
+    0.05,
+    0.02,
+    0.01,
+    0.005,
+    0.001
+  ],
+  "fixed_thresholds": [
+    0.5,
+    0.75,
+    0.85,
+    0.9,
+    0.925,
+    0.94,
+    0.95,
+    0.97,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "models": [
+    {
+      "model_artifact": "data/modeling/v1/baselines/phase2b2_v1/logistic_regression/models/logistic_regression.joblib",
+      "model_artifact_sha256": "630265d3ffcba29024d0498df2a352e6f8752241f5ce730db4644d1966a0d432",
+      "model_id": "logistic_regression",
+      "score_cache": "data/modeling/v1/baselines/phase2b3a_v1/predictions/logistic_regression_val_scores.npz",
+      "score_seconds": 3.2113480418920517,
+      "sweep_seconds": 0.46937883319333196,
+      "validation_rows": 4944060
+    },
+    {
+      "model_artifact": "data/modeling/v1/baselines/phase2b2_v1/hist_gradient_boosting/models/hist_gradient_boosting.joblib",
+      "model_artifact_sha256": "edbcec54de1062fd929b54e62f0e45e208b31981f1cc40936fe1c9910fb15c4e",
+      "model_id": "hist_gradient_boosting",
+      "score_cache": "data/modeling/v1/baselines/phase2b3a_v1/predictions/hist_gradient_boosting_val_scores.npz",
+      "score_seconds": 14.073795458767563,
+      "sweep_seconds": 0.4582250420935452,
+      "validation_rows": 4944060
+    }
+  ],
+  "new_sampling": false,
+  "next": "Review operating-point tables (esp. ~0.94 vs Recon recall and Owltron interaction FPR). Do not freeze a threshold, retrain, or consult TEST without an explicit next-phase decision.",
+  "parent_baseline_strategy": "phase2b2_v1",
+  "parent_decision_threshold": 0.5,
+  "retraining": false,
+  "status": "passed",
+  "strategy_version": "phase2b3a_v1",
+  "test_access": false,
+  "validation_rows": 4944060,
+  "validation_sampling": "never"
+}

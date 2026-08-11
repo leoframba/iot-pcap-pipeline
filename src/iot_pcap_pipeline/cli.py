@@ -101,6 +101,10 @@ from iot_pcap_pipeline.modeling.baselines.contract import (
     format_prepare_baseline_summary,
     prepare_baseline_run,
 )
+from iot_pcap_pipeline.modeling.baselines.threshold_sweep import (
+    format_threshold_sweep_summary,
+    run_threshold_sweep,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -865,6 +869,19 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_BASELINE_CONTRACT_PATH,
         help=f"Output contract path (default: {DEFAULT_BASELINE_CONTRACT_PATH})",
     )
+
+    sweep_cmd = subparsers.add_parser(
+        "threshold-sweep-baselines",
+        help=(
+            "Phase 2B.3A: rescore TRAIN-validation with frozen 2B.2 models and "
+            "sweep operating thresholds (no retraining, no TEST)"
+        ),
+    )
+    sweep_cmd.add_argument(
+        "--no-cache-scores",
+        action="store_true",
+        help="Force rescoring even if predictions/*.npz caches exist",
+    )
     return parser
 
 
@@ -1233,6 +1250,18 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_baselines_summary(result))
         return 0 if result.passed else 1
+
+    if args.command == "threshold-sweep-baselines":
+        try:
+            payload = run_threshold_sweep(
+                progress_file=sys.stderr,
+                cache_scores=not args.no_cache_scores,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_threshold_sweep_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

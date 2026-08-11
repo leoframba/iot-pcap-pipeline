@@ -1,0 +1,43 @@
+{
+  "baseline_contract_pins": {
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "fit_view_manifest_sha256": "a8dc0f791c05381ccecef2604873ad08970b2f11b3f22121725b82a7057ad23f",
+    "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+    "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552"
+  },
+  "benign_fpr_targets": [
+    0.1,
+    0.05,
+    0.02,
+    0.01,
+    0.005,
+    0.001
+  ],
+  "fixed_thresholds": [
+    0.5,
+    0.75,
+    0.85,
+    0.9,
+    0.925,
+    0.94,
+    0.95,
+    0.97,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "label_mapping": {
+    "ATTACK": 1,
+    "BENIGN": 0
+  },
+  "new_sampling": false,
+  "note": "Scores are predict_proba(ATTACK) from resampled FIT models; not calibrated real-world probabilities. Sweep only \u2014 do not freeze an operating point without review.",
+  "parent_baseline_strategy": "phase2b2_v1",
+  "parent_run_complete": "data/modeling/v1/baselines/phase2b2_v1/run_complete.json",
+  "retraining": false,
+  "strategy_version": "phase2b3a_v1",
+  "task": "threshold_sweep_only",
+  "test_access": false,
+  "validation_rows": 4944060,
+  "validation_sampling": "never"
+}

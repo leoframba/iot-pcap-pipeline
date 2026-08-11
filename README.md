@@ -412,7 +412,31 @@ Recon/Spoofing/BENIGN uncapped). TRAIN-validation remains unsampled.
 uv run iot-pcap-pipeline freeze-modeling-split --plan-id group_balanced
 ```
 
-**Next (Phase 2B):** materialize the frozen FIT training view and train
-baselines. Do not tune on TEST.
+Pinned contract for materialization:
+
+- `data/modeling/v1/training_view_contract.json` — hashes + expected
+  704,305 FIT rows (493,235 ATTACK / 211,070 BENIGN)
+
+## Phase 2B.1 — Materialize TRAIN-fit view (no training)
+
+Execute the frozen Gate 2A policy only. Sources are the 65 TRAIN-fit feature
+Parquet shards. Validation / TEST are not copied or sampled.
+
+```bash
+uv run iot-pcap-pipeline build-modeling-fit-view --resume
+```
+
+Writes:
+
+```text
+data/modeling/v1/views/group_balanced/
+  fit/<pcap-id>.parquet          # gitignored
+  fit_view_manifest.csv          # tracked
+  fit_view_complete.json         # tracked when acceptance passes
+```
+
+Row selection uses `deterministic_reservoir_sample_without_replacement` with
+`seed = SHA256("phase2a_v1|42|{pcap_id}")` after group-budget allocation.
+Inspect the view before Phase 2B.2 model training. Do not consult TEST.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

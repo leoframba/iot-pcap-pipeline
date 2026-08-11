@@ -86,6 +86,12 @@ from iot_pcap_pipeline.modeling.freeze import (
     format_gate_2a_freeze_summary,
     freeze_gate_2a,
 )
+from iot_pcap_pipeline.modeling.view import (
+    DEFAULT_FIT_VIEW_ROOT,
+    DEFAULT_TRAINING_VIEW_CONTRACT_PATH,
+    build_modeling_fit_view,
+    format_fit_view_summary,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -783,6 +789,41 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_SPLIT_MANIFEST_PATH,
         help=f"modeling_split_manifest.csv (default: {DEFAULT_SPLIT_MANIFEST_PATH})",
     )
+
+    fit_view_cmd = subparsers.add_parser(
+        "build-modeling-fit-view",
+        help=(
+            "Phase 2B.1: materialize frozen TRAIN-fit view "
+            f"({FROZEN_SAMPLING_PLAN_ID}) as per-PCAP Parquet shards"
+        ),
+    )
+    fit_view_cmd.add_argument(
+        "--resume",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Reuse per-PCAP checkpoints when valid (default: true)",
+    )
+    fit_view_cmd.add_argument(
+        "--split-manifest",
+        type=Path,
+        default=DEFAULT_SPLIT_MANIFEST_PATH,
+        help=f"Frozen modeling split CSV (default: {DEFAULT_SPLIT_MANIFEST_PATH})",
+    )
+    fit_view_cmd.add_argument(
+        "--contract",
+        type=Path,
+        default=DEFAULT_TRAINING_VIEW_CONTRACT_PATH,
+        help=(
+            "Pinned training view contract JSON "
+            f"(default: {DEFAULT_TRAINING_VIEW_CONTRACT_PATH})"
+        ),
+    )
+    fit_view_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_FIT_VIEW_ROOT,
+        help=f"View root directory (default: {DEFAULT_FIT_VIEW_ROOT})",
+    )
     return parser
 
 
@@ -1115,6 +1156,21 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_gate_2a_freeze_summary(payload))
         return 0
+
+    if args.command == "build-modeling-fit-view":
+        try:
+            result = build_modeling_fit_view(
+                resume=args.resume,
+                split_manifest_path=args.split_manifest,
+                contract_path=args.contract,
+                output_dir=args.output_dir,
+                progress_file=sys.stderr,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_fit_view_summary(result))
+        return 0 if result.passed else 1
 
     parser.error(f"unknown command: {args.command}")
     return 2

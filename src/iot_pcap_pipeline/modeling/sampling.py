@@ -15,6 +15,7 @@ counts after allocation.
 from __future__ import annotations
 
 import csv
+import random
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -142,6 +143,69 @@ def windows_after_cap(window_count: int, cap: int | None) -> int:
     return min(int(window_count), int(cap))
 
 
+def reservoir_indices(
+    population_size: int,
+    sample_size: int,
+    seed: int,
+) -> list[int]:
+    """Deterministic Algorithm-R reservoir sample of row indices (sorted).
+
+    Selects ``sample_size`` distinct indices from ``0 .. population_size-1``
+    using ``random.Random(seed)``. Phase 2B must use this exact algorithm with
+    ``seed=reservoir_seed_for_pcap(pcap_id)``.
+    """
+    n = int(population_size)
+    k = int(sample_size)
+    if n < 0 or k < 0:
+        raise ValueError(
+            f"population_size and sample_size must be >= 0; got n={n}, k={k}"
+        )
+    if k > n:
+        raise ValueError(f"sample_size {k} exceeds population_size {n}")
+    if k == 0:
+        return []
+    if k == n:
+        return list(range(n))
+
+    rng = random.Random(int(seed))
+    reservoir = list(range(k))
+    for i in range(k, n):
+        j = rng.randint(0, i)
+        if j < k:
+            reservoir[j] = i
+    return sorted(reservoir)
+
+
+def allocate_fit_sample_sizes(
+    fit_rows: list[dict[str, Any]],
+    plan: dict[str, Any],
+    *,
+    base_seed: int = DEFAULT_MODELING_SEED,
+) -> dict[str, int]:
+    """Return per-``pcap_path`` allocated sample sizes for a frozen plan."""
+    caps: dict[str, int | None] = plan["caps"]
+    cap_mode: CapMode = plan.get("cap_mode", "per_pcap")  # type: ignore[assignment]
+    selected: dict[str, int] = {}
+    if cap_mode == "per_pcap":
+        for row in fit_rows:
+            _ = reservoir_seed_for_pcap(str(row["pcap_id"]), base_seed=base_seed)
+            cap = family_cap(row, caps)
+            selected[str(row["pcap_path"])] = windows_after_cap(
+                int(row["window_count"]), cap
+            )
+    elif cap_mode == "per_modeling_group":
+        by_group: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in fit_rows:
+            _ = reservoir_seed_for_pcap(str(row["pcap_id"]), base_seed=base_seed)
+            by_group[str(row["modeling_group_key"])].append(row)
+        for _gkey, members in by_group.items():
+            budget = family_cap(members[0], caps)
+            selected.update(allocate_group_budget(members, budget))
+    else:
+        raise ValueError(f"unknown cap_mode: {cap_mode!r}")
+    return selected
+
+
 def allocate_group_budget(
     members: list[dict[str, Any]],
     budget: int | None,
@@ -190,26 +254,7 @@ def simulate_plan(
     plan_id = str(plan["plan_id"])
     cap_mode: CapMode = plan.get("cap_mode", "per_pcap")  # type: ignore[assignment]
 
-    # Per-PCAP selected window counts after policy.
-    selected: dict[str, int] = {}
-    if cap_mode == "per_pcap":
-        for row in fit_rows:
-            _ = reservoir_seed_for_pcap(str(row["pcap_id"]), base_seed=base_seed)
-            cap = family_cap(row, caps)
-            selected[str(row["pcap_path"])] = windows_after_cap(
-                int(row["window_count"]), cap
-            )
-    elif cap_mode == "per_modeling_group":
-        by_group: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        for row in fit_rows:
-            _ = reservoir_seed_for_pcap(str(row["pcap_id"]), base_seed=base_seed)
-            by_group[str(row["modeling_group_key"])].append(row)
-        for _gkey, members in by_group.items():
-            # Family/BENIGN policy applies as the group budget.
-            budget = family_cap(members[0], caps)
-            selected.update(allocate_group_budget(members, budget))
-    else:
-        raise ValueError(f"unknown cap_mode: {cap_mode!r}")
+    selected = allocate_fit_sample_sizes(fit_rows, plan, base_seed=base_seed)
 
     # Aggregate by (label, category, family, type, modeling_group_key).
     buckets: dict[tuple[str, ...], dict[str, Any]] = {}

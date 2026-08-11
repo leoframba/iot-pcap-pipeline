@@ -405,6 +405,7 @@ def score_bakeoff_tape(
     project_root: Path,
     split_manifest_path: Path,
     expected_rows: int = EXPECTED_VAL_ROWS,
+    feature_names: tuple[str, ...] | list[str] | None = None,
     progress_file: TextIO | None = None,
 ) -> BakeoffScoreTape:
     specs = load_validation_specs(split_manifest_path, project_root=project_root)
@@ -418,7 +419,11 @@ def score_bakeoff_tape(
     pcap_table: list[dict[str, str]] = []
     pcap_index: dict[str, int] = {}
 
-    for batch in iter_validation_batches(specs, project_root=project_root):
+    for batch in iter_validation_batches(
+        specs,
+        project_root=project_root,
+        feature_names=feature_names,
+    ):
         n = batch.X.shape[0]
         if cursor + n > y_true.shape[0]:
             need = cursor + n - y_true.shape[0]

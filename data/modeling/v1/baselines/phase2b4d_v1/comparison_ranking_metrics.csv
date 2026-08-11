@@ -1,0 +1,4 @@
+model_id,roc_auc,pr_auc,accuracy_at_0_5,f1_at_0_5,benign_fpr_at_0_5,selection_role,note
+hgb_22,0.9994118952810068,0.9999973133178006,0.9977979636169464,0.9988939139870047,0.23529150373266974,secondary,secondary metrics only; do not auto-select winner
+xgboost_22,0.9994424031385983,0.999997451757001,0.997880486887295,0.9989352906888077,0.2108514041948098,secondary,secondary metrics only; do not auto-select winner
+catboost_22,0.9992228073848363,0.9999964506965605,0.997536639927509,0.9987627419848203,0.28012797724848915,secondary,secondary metrics only; do not auto-select winner

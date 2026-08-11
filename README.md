@@ -547,4 +547,14 @@ uv run iot-pcap-pipeline run-external-boost-challengers
 Rank at matched low FPR by min family → Recon → MQTT → macro → Owltron. Do not
 auto-replace HGB.
 
+## Phase 2B.4D — 22-feature boost rematch
+
+Same fixed XGBoost/CatBoost configs as 2B.4C, but on the **22 nontemporal**
+model-input features, compared against reused HGB-C from 2B.3B.
+
+```bash
+uv run iot-pcap-pipeline prepare-feature22-boost-rematch
+uv run iot-pcap-pipeline run-feature22-boost-rematch
+```
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

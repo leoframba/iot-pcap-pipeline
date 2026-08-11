@@ -1,0 +1,278 @@
+{
+  "artifacts": {
+    "comparison_fixed_thresholds": "data/modeling/v1/baselines/phase2b4d_v1/comparison_fixed_thresholds.csv",
+    "comparison_low_fpr": "data/modeling/v1/baselines/phase2b4d_v1/comparison_low_fpr.csv",
+    "comparison_ranking_metrics": "data/modeling/v1/baselines/phase2b4d_v1/comparison_ranking_metrics.csv",
+    "feature22_boost_contract": "data/modeling/v1/baselines/phase2b4d_v1/feature22_boost_contract.json",
+    "output_dir": "data/modeling/v1/baselines/phase2b4d_v1"
+  },
+  "auto_declare_winner": false,
+  "class_weights": "none",
+  "decision_rule": [
+    "Compare only under the 22 nontemporal model-input features.",
+    "At matched low FPR rank by: min attack-family recall \u2192 Recon \u2192 MQTT \u2192 macro \u2192 Owltron FPR.",
+    "Practical band: \u22640.5% and \u22640.1% benign FPR.",
+    "No hyperparameter search; no early stopping on TRAIN-validation.",
+    "Do not auto-declare a winner."
+  ],
+  "early_stopping_on_validation": false,
+  "excluded_temporal_features": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds"
+  ],
+  "feature_count": 22,
+  "feature_names": [
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "fit": {
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "pcaps": 65,
+    "rows": 704305
+  },
+  "hyperparameter_search": false,
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "model_input_version": "v1_hgb22_nontemporal",
+  "models": [
+    {
+      "early_stopping_on_validation": false,
+      "fit_seconds": 0.0,
+      "model_artifact_sha256": "ff6c15e10081dfa456628cc95ad46b3de3d9351c55fcee6668dd556d282ed938",
+      "model_id": "hgb_22",
+      "reused_phase2b3b_c": true,
+      "score_seconds": 10.601793333888054,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    },
+    {
+      "early_stopping_on_validation": false,
+      "fit_seconds": 1.974439833778888,
+      "model_artifact_sha256": "039a168c216bec3e60540b39463f3dff89f65e8afffe0d121418df57d74f8e4e",
+      "model_id": "xgboost_22",
+      "reused_phase2b3b_c": false,
+      "score_seconds": 4.630302916746587,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    },
+    {
+      "early_stopping_on_validation": false,
+      "fit_seconds": 7.298471041955054,
+      "model_artifact_sha256": "b99008fe4e7be622e91cd0499e338fe741be289bd205c95d7d300c458cf93172",
+      "model_id": "catboost_22",
+      "reused_phase2b3b_c": false,
+      "score_seconds": 3.3320713341236115,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    }
+  ],
+  "next": "Review comparison_low_fpr.csv for hgb_22 / xgboost_22 / catboost_22 at \u22640.5% and \u22640.1% FPR. Do not auto-declare a winner. TEST sealed.",
+  "purpose": "feature22_boost_rematch",
+  "status": "passed",
+  "strategy_version": "phase2b4d_v1",
+  "target_reachability": [
+    {
+      "benign_fpr": 0.0021773906861002486,
+      "fpr_target": 0.01,
+      "min_attack_group_recall": 0.872624703087886,
+      "model_id": "hgb_22",
+      "mqtt_publish_recall": 0.9932811697872652,
+      "recon_os_scan_recall": 0.872624703087886,
+      "target_reached": true,
+      "threshold": 0.9318886995315552
+    },
+    {
+      "benign_fpr": 0.0021773906861002486,
+      "fpr_target": 0.005,
+      "min_attack_group_recall": 0.872624703087886,
+      "model_id": "hgb_22",
+      "mqtt_publish_recall": 0.9932811697872652,
+      "recon_os_scan_recall": 0.872624703087886,
+      "target_reached": true,
+      "threshold": 0.9318886995315552
+    },
+    {
+      "benign_fpr": 0.0021773906861002486,
+      "fpr_target": 0.0025,
+      "min_attack_group_recall": 0.872624703087886,
+      "model_id": "hgb_22",
+      "mqtt_publish_recall": 0.9932811697872652,
+      "recon_os_scan_recall": 0.872624703087886,
+      "target_reached": true,
+      "threshold": 0.9318886995315552
+    },
+    {
+      "benign_fpr": 0.0010220405261286882,
+      "fpr_target": 0.001,
+      "min_attack_group_recall": 0.8689133016627079,
+      "model_id": "hgb_22",
+      "mqtt_publish_recall": 0.9929483310109837,
+      "recon_os_scan_recall": 0.8689133016627079,
+      "target_reached": false,
+      "threshold": 0.947233259677887
+    },
+    {
+      "benign_fpr": 0.0005332385353714896,
+      "fpr_target": 0.0005,
+      "min_attack_group_recall": 0.8650534441805225,
+      "model_id": "hgb_22",
+      "mqtt_publish_recall": 0.9925534375475987,
+      "recon_os_scan_recall": 0.8650534441805225,
+      "target_reached": false,
+      "threshold": 0.9663479328155518
+    },
+    {
+      "benign_fpr": 0.004665837184500533,
+      "fpr_target": 0.01,
+      "min_attack_group_recall": 0.8741092636579573,
+      "model_id": "xgboost_22",
+      "mqtt_publish_recall": 0.9932303977705443,
+      "recon_os_scan_recall": 0.8741092636579573,
+      "target_reached": true,
+      "threshold": 0.9337038397789001
+    },
+    {
+      "benign_fpr": 0.004665837184500533,
+      "fpr_target": 0.005,
+      "min_attack_group_recall": 0.8741092636579573,
+      "model_id": "xgboost_22",
+      "mqtt_publish_recall": 0.9932303977705443,
+      "recon_os_scan_recall": 0.8741092636579573,
+      "target_reached": true,
+      "threshold": 0.9337038397789001
+    },
+    {
+      "benign_fpr": 0.0021773906861002486,
+      "fpr_target": 0.0025,
+      "min_attack_group_recall": 0.8696555819477435,
+      "model_id": "xgboost_22",
+      "mqtt_publish_recall": 0.9927621669496737,
+      "recon_os_scan_recall": 0.8696555819477435,
+      "target_reached": true,
+      "threshold": 0.9543355107307434
+    },
+    {
+      "benign_fpr": 0.0010220405261286882,
+      "fpr_target": 0.001,
+      "min_attack_group_recall": 0.8680225653206651,
+      "model_id": "xgboost_22",
+      "mqtt_publish_recall": 0.992322142804759,
+      "recon_os_scan_recall": 0.8680225653206651,
+      "target_reached": false,
+      "threshold": 0.9652717113494873
+    },
+    {
+      "benign_fpr": 0.0004888019907571987,
+      "fpr_target": 0.0005,
+      "min_attack_group_recall": 0.8650534441805225,
+      "model_id": "xgboost_22",
+      "mqtt_publish_recall": 0.9915662038891365,
+      "recon_os_scan_recall": 0.8650534441805225,
+      "target_reached": true,
+      "threshold": 0.975692868232727
+    },
+    {
+      "benign_fpr": 0.0015552790615001777,
+      "fpr_target": 0.01,
+      "min_attack_group_recall": 0.8499109263657957,
+      "model_id": "catboost_22",
+      "mqtt_publish_recall": 0.9866074702560602,
+      "recon_os_scan_recall": 0.8499109263657957,
+      "target_reached": true,
+      "threshold": 0.9492011070251465
+    },
+    {
+      "benign_fpr": 0.0015552790615001777,
+      "fpr_target": 0.005,
+      "min_attack_group_recall": 0.8499109263657957,
+      "model_id": "catboost_22",
+      "mqtt_publish_recall": 0.9866074702560602,
+      "recon_os_scan_recall": 0.8499109263657957,
+      "target_reached": true,
+      "threshold": 0.9492011070251465
+    },
+    {
+      "benign_fpr": 0.0015552790615001777,
+      "fpr_target": 0.0025,
+      "min_attack_group_recall": 0.8499109263657957,
+      "model_id": "catboost_22",
+      "mqtt_publish_recall": 0.9866074702560602,
+      "recon_os_scan_recall": 0.8499109263657957,
+      "target_reached": true,
+      "threshold": 0.9492011070251465
+    },
+    {
+      "benign_fpr": 0.0010220405261286882,
+      "fpr_target": 0.001,
+      "min_attack_group_recall": 0.8479809976247031,
+      "model_id": "catboost_22",
+      "mqtt_publish_recall": 0.9857104979606574,
+      "recon_os_scan_recall": 0.8479809976247031,
+      "target_reached": false,
+      "threshold": 0.9555507302284241
+    },
+    {
+      "benign_fpr": 0.0005332385353714896,
+      "fpr_target": 0.0005,
+      "min_attack_group_recall": 0.8456057007125891,
+      "model_id": "catboost_22",
+      "mqtt_publish_recall": 0.9812087124780693,
+      "recon_os_scan_recall": 0.8456057007125891,
+      "target_reached": false,
+      "threshold": 0.9687561392784119
+    }
+  ],
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  },
+  "validation": {
+    "pcaps": 20,
+    "pcaps_scored_per_model": 20,
+    "rows": 4944060,
+    "rows_scored_per_model": 4944060,
+    "sampling": "never"
+  },
+  "versions": {
+    "catboost": "1.2.10",
+    "numpy": "2.4.6",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "pyarrow": "25.0.0",
+    "python": "3.11.15",
+    "scikit_learn": "1.9.0",
+    "xgboost": "3.2.0"
+  },
+  "winner": null
+}

@@ -1,0 +1,158 @@
+{
+  "artifacts": {
+    "feature_schema": "data/features/v1/feature_schema.json",
+    "fit_view_manifest": "data/modeling/v1/views/group_balanced/fit_view_manifest.csv",
+    "hgb22_source_artifact": "data/modeling/v1/baselines/phase2b3b_v1/models/C_22_unweighted.joblib",
+    "modeling_split_manifest": "data/modeling/v1/modeling_split_manifest.csv",
+    "training_view_contract": "data/modeling/v1/training_view_contract.json"
+  },
+  "auto_declare_winner": false,
+  "candidates": {
+    "catboost_22": {
+      "early_stopping": false,
+      "hyperparameters": {
+        "allow_writing_files": false,
+        "depth": 6,
+        "iterations": 200,
+        "learning_rate": 0.1,
+        "loss_function": "Logloss",
+        "random_seed": 42,
+        "verbose": false
+      }
+    },
+    "hgb_22": {
+      "hyperparameters": {
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "random_state": 42
+      },
+      "reuse_phase2b3b_c": true,
+      "source_artifact": "data/modeling/v1/baselines/phase2b3b_v1/models/C_22_unweighted.joblib",
+      "source_artifact_sha256": "ff6c15e10081dfa456628cc95ad46b3de3d9351c55fcee6668dd556d282ed938"
+    },
+    "xgboost_22": {
+      "early_stopping": false,
+      "hyperparameters": {
+        "colsample_bytree": 1.0,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 200,
+        "n_jobs": -1,
+        "objective": "binary:logistic",
+        "random_state": 42,
+        "reg_alpha": 0.0,
+        "reg_lambda": 1.0,
+        "subsample": 1.0,
+        "tree_method": "hist"
+      }
+    }
+  },
+  "class_weights": "none",
+  "decision_rule": [
+    "Compare only under the 22 nontemporal model-input features.",
+    "At matched low FPR rank by: min attack-family recall \u2192 Recon \u2192 MQTT \u2192 macro \u2192 Owltron FPR.",
+    "Practical band: \u22640.5% and \u22640.1% benign FPR.",
+    "No hyperparameter search; no early stopping on TRAIN-validation.",
+    "Do not auto-declare a winner."
+  ],
+  "early_stopping_on_validation": false,
+  "excluded_temporal_features": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds"
+  ],
+  "feature_count": 22,
+  "feature_names": [
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "feature_selection_status": "22_nontemporal_under_test",
+  "fit": {
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "pcaps": 65,
+    "rows": 704305,
+    "sampling": "group_balanced"
+  },
+  "fixed_thresholds": [
+    0.5,
+    0.75,
+    0.85,
+    0.9,
+    0.925,
+    0.94,
+    0.95,
+    0.97,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "hyperparameter_search": false,
+  "label_mapping": {
+    "ATTACK": 1,
+    "BENIGN": 0
+  },
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "model_input_version": "v1_hgb22_nontemporal",
+  "parent_ablation": "phase2b3b_v1",
+  "parent_feature_count": 27,
+  "pins": {
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "fit_view_manifest_sha256": "a8dc0f791c05381ccecef2604873ad08970b2f11b3f22121725b82a7057ad23f",
+    "hgb22_model_artifact_sha256": "ff6c15e10081dfa456628cc95ad46b3de3d9351c55fcee6668dd556d282ed938",
+    "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+    "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552"
+  },
+  "purpose": "feature22_boost_rematch",
+  "scope_limits": [
+    "Exactly HGB-22, XGBoost-22, CatBoost-22.",
+    "Pipeline still stores 27 features; model input is 22.",
+    "No TEST access.",
+    "No auto-winner."
+  ],
+  "status": "frozen",
+  "strategy_version": "phase2b4d_v1",
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  },
+  "test_access": false,
+  "threshold_selection": false,
+  "training_view": "group_balanced",
+  "validation": {
+    "pcaps": 20,
+    "rows": 4944060,
+    "sampling": "never"
+  }
+}

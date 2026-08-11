@@ -131,6 +131,12 @@ from iot_pcap_pipeline.modeling.baselines.external_boosting import (
     prepare_external_boost_challengers,
     run_external_boost_challengers,
 )
+from iot_pcap_pipeline.modeling.baselines.feature22_boost import (
+    format_feature22_boost_summary,
+    format_prepare_feature22_boost_summary,
+    prepare_feature22_boost_rematch,
+    run_feature22_boost_rematch,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -992,6 +998,27 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force rescoring even if predictions/*.npz caches exist",
     )
+
+    prep_f22_cmd = subparsers.add_parser(
+        "prepare-feature22-boost-rematch",
+        help=(
+            "Phase 2B.4D: freeze 22-feature rematch contract "
+            "(HGB-C vs XGBoost/CatBoost; no TEST)"
+        ),
+    )
+
+    f22_cmd = subparsers.add_parser(
+        "run-feature22-boost-rematch",
+        help=(
+            "Phase 2B.4D: HGB-22 vs XGBoost-22 vs CatBoost-22 "
+            "(full TRAIN-validation; no early stopping; no TEST)"
+        ),
+    )
+    f22_cmd.add_argument(
+        "--no-cache-scores",
+        action="store_true",
+        help="Force rescoring even if predictions/*.npz caches exist",
+    )
     return parser
 
 
@@ -1455,6 +1482,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAILED: {exc}", file=sys.stderr)
             return 1
         print(format_external_boost_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "prepare-feature22-boost-rematch":
+        try:
+            payload = prepare_feature22_boost_rematch()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_prepare_feature22_boost_summary(payload))
+        return 0
+
+    if args.command == "run-feature22-boost-rematch":
+        try:
+            payload = run_feature22_boost_rematch(
+                progress_file=sys.stderr,
+                cache_scores=not args.no_cache_scores,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_feature22_boost_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")

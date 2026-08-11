@@ -1,0 +1,58 @@
+Loading FIT arrays and selecting 22 features...
+
+=== hgb_22 ===
+  reused 2B.3B C sha=ff6c15e10081...
+  scoring TRAIN-validation for hgb_22...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+
+=== xgboost_22 ===
+  fitting xgboost_22 on 22 features (no early stopping)...
+  scoring TRAIN-validation for xgboost_22...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+
+=== catboost_22 ===
+  fitting catboost_22 on 22 features (no early stopping)...
+  scoring TRAIN-validation for catboost_22...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+Phase 2B.4D — 22-feature boost rematch
+status: passed
+strategy_version: phase2b4d_v1
+feature_count: 22
+auto_declare_winner: False
+winner: None
+  hgb_22: sha=ff6c15e10081… fit_s=0.0 score_s=10.6
+  xgboost_22: sha=039a168c216b… fit_s=2.0 score_s=4.6
+  catboost_22: sha=b99008fe4e7b… fit_s=7.3 score_s=3.3
+  hgb_22 ≤0.5%: ok fpr=0.218% recon=87.26% mqtt=99.33% min=87.26%
+  hgb_22 ≤0.1%: soft fpr=0.102% recon=86.89% mqtt=99.29% min=86.89%
+  xgboost_22 ≤0.5%: ok fpr=0.467% recon=87.41% mqtt=99.32% min=87.41%
+  xgboost_22 ≤0.1%: soft fpr=0.102% recon=86.80% mqtt=99.23% min=86.80%
+  catboost_22 ≤0.5%: ok fpr=0.156% recon=84.99% mqtt=98.66% min=84.99%
+  catboost_22 ≤0.1%: soft fpr=0.102% recon=84.80% mqtt=98.57% min=84.80%
+comparison: data/modeling/v1/baselines/phase2b4d_v1/comparison_low_fpr.csv
+next: Review comparison_low_fpr.csv for hgb_22 / xgboost_22 / catboost_22 at ≤0.5% and ≤0.1% FPR. Do not auto-declare a winner. TEST sealed.
+

@@ -1,0 +1,37 @@
+{
+  "decision_threshold": 0.5,
+  "feature_count": 22,
+  "global": {
+    "accuracy": 0.997880486887295,
+    "attack_recall": 0.9988349213135033,
+    "balanced_accuracy": 0.8939917585593466,
+    "benign_fp_count": 4745,
+    "benign_fpr": 0.2108514041948098,
+    "benign_support": 22504,
+    "confusion_matrix": {
+      "fn": 5734,
+      "fp": 4745,
+      "tn": 17759,
+      "tp": 4915822
+    },
+    "f1": 0.9989352906888077,
+    "false_positives_per_10k_benign": 2108.514041948098,
+    "pr_auc": 0.999997451757001,
+    "precision": 0.9990356802376636,
+    "roc_auc": 0.9994424031385983,
+    "specificity": 0.7891485958051901,
+    "threshold": 0.5
+  },
+  "macros": {
+    "macro_attack_group_recall": 0.9744831570009779,
+    "macro_benign_pcap_fpr": 0.45290843950892795,
+    "macro_pcap_attack_recall": 0.9892227659682474
+  },
+  "model_id": "xgboost_22",
+  "note": "metrics.json uses threshold 0.5 for continuity with Phase 2B.2; model-family selection uses comparison_low_fpr.csv.",
+  "selection_role": "secondary",
+  "validation_attack_rows": 4921556,
+  "validation_benign_rows": 22504,
+  "validation_pcaps_scored": 20,
+  "validation_rows": 4944060
+}

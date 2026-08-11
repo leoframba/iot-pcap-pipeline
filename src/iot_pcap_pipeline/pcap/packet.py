@@ -81,6 +81,10 @@ class PacketRecord:
     tcp_flag_psh: bool = False
     tcp_flag_urg: bool = False
 
+    # Internal only (V2M): TCP segment application bytes. Never a model feature /
+    # never written to feature Parquet. None when not TCP or payload unavailable.
+    tcp_payload: bytes | None = None
+
     protocol_name: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -93,4 +97,7 @@ class PacketRecord:
         data["parse_status"] = self.parse_status.value
         data["vlan_ids"] = list(self.vlan_ids)
         data["is_failure"] = self.is_failure
+        # Never serialize raw payload bytes (internal experimental field only).
+        payload = data.pop("tcp_payload", None)
+        data["tcp_payload_len"] = len(payload) if isinstance(payload, (bytes, bytearray)) else None
         return data

@@ -1,0 +1,91 @@
+group,feature,scope,window_count,nonzero_count,nonzero_rate,mean,p50,p95,p99,max
+mqtt_malformed,mqtt_packet_count,all_windows,2053,2010,0.9790550414028252,25.46712128592304,25.0,51.0,60.0,69.0
+mqtt_malformed,mqtt_packet_count,windows_with_mqtt,2010,2010,1.0,26.01194029850746,25.0,51.0,60.0,69.0
+mqtt_malformed,mqtt_packet_ratio,all_windows,2053,2010,0.9790550414028252,1.0186848514369191,1.0,2.04,2.4,2.76
+mqtt_malformed,mqtt_packet_ratio,windows_with_mqtt,2010,2010,1.0,1.040477611940296,1.0,2.04,2.4,2.76
+mqtt_malformed,mqtt_valid_count,all_windows,2053,1515,0.7379444715051144,7.186556259132976,2.0,26.399999999999864,36.0,60.0
+mqtt_malformed,mqtt_valid_count,windows_with_mqtt,2010,1515,0.753731343283582,7.340298507462687,2.0,27.0,36.0,60.0
+mqtt_malformed,mqtt_invalid_count,all_windows,2053,1430,0.6965416463711641,10.563078421821725,8.0,31.0,39.0,48.0
+mqtt_malformed,mqtt_invalid_count,windows_with_mqtt,2010,1430,0.7114427860696517,10.789054726368159,9.0,31.0,39.0,48.0
+mqtt_malformed,mqtt_incomplete_count,all_windows,2053,1413,0.6882610813443741,7.717486604968339,6.0,20.0,22.0,23.0
+mqtt_malformed,mqtt_incomplete_count,windows_with_mqtt,2010,1413,0.7029850746268657,7.882587064676617,7.0,20.0,22.0,23.0
+mqtt_malformed,mqtt_invalid_ratio,all_windows,2053,1430,0.6965416463711641,0.33794129226882763,0.42857142857142855,0.6666666666666666,0.75,1.0
+mqtt_malformed,mqtt_invalid_ratio,windows_with_mqtt,2010,1430,0.7114427860696517,0.3451708821034344,0.43478260869565216,0.6666666666666666,0.75,1.0
+mqtt_malformed,mqtt_incomplete_ratio,all_windows,2053,1413,0.6882610813443741,0.26328465409814383,0.3148148148148148,0.5796264855687604,0.7142857142857143,1.0
+mqtt_malformed,mqtt_incomplete_ratio,windows_with_mqtt,2010,1413,0.7029850746268657,0.26891711187238276,0.32432432432432434,0.5806451612903226,0.7142857142857144,1.0
+mqtt_malformed,mqtt_invalid_fixed_header_count,all_windows,2053,1422,0.6926449098879688,8.65854846566001,7.0,25.0,32.0,42.0
+mqtt_malformed,mqtt_invalid_fixed_header_count,windows_with_mqtt,2010,1422,0.7074626865671642,8.843781094527364,7.0,25.0,32.0,42.0
+mqtt_malformed,mqtt_invalid_remaining_length_count,all_windows,2053,996,0.48514369215781783,1.1880175353141744,0.0,4.0,6.0,9.0
+mqtt_malformed,mqtt_invalid_remaining_length_count,windows_with_mqtt,2010,996,0.4955223880597015,1.2134328358208955,0.0,4.0,6.0,9.0
+mqtt_malformed,mqtt_publish_count,all_windows,2053,1793,0.873356064296152,7.092547491475889,3.0,26.0,36.0,60.0
+mqtt_malformed,mqtt_publish_count,windows_with_mqtt,2010,1793,0.8920398009950249,7.244278606965175,3.0,26.0,36.0,60.0
+mqtt_malformed,mqtt_invalid_publish_qos_count,all_windows,2053,289,0.14076960545543107,0.15879201169020946,0.0,1.0,2.0,3.0
+mqtt_malformed,mqtt_invalid_publish_qos_count,windows_with_mqtt,2010,289,0.14378109452736318,0.16218905472636816,0.0,1.0,2.0,3.0
+mqtt_malformed,mqtt_publish_wildcard_topic_count,all_windows,2053,0,0.0,0.0,0.0,0.0,0.0,0.0
+mqtt_malformed,mqtt_publish_wildcard_topic_count,windows_with_mqtt,2010,0,0.0,0.0,0.0,0.0,0.0,0.0
+mqtt_malformed,mqtt_invalid_publish_topic_count,all_windows,2053,786,0.3828543594739406,0.6712128592303945,0.0,3.0,4.0,6.0
+mqtt_malformed,mqtt_invalid_publish_topic_count,windows_with_mqtt,2010,786,0.39104477611940297,0.6855721393034826,0.0,3.0,4.0,6.0
+mqtt_malformed,mqtt_connect_count,all_windows,2053,1519,0.7398928397467122,1.9756453969800292,2.0,5.0,7.0,12.0
+mqtt_malformed,mqtt_connect_count,windows_with_mqtt,2010,1519,0.7557213930348259,2.017910447761194,2.0,5.0,7.0,12.0
+mqtt_malformed,mqtt_invalid_connect_count,all_windows,2053,1039,0.5060886507549927,1.0603994154895275,1.0,4.0,6.0,11.0
+mqtt_malformed,mqtt_invalid_connect_count,windows_with_mqtt,2010,1039,0.5169154228855721,1.083084577114428,1.0,4.0,6.0,11.0
+profiling benign,mqtt_packet_count,all_windows,120860,109450,0.905593248386563,17.105460863809366,15.0,46.0,58.0,116.0
+profiling benign,mqtt_packet_count,windows_with_mqtt,109450,109450,1.0,18.888679762448607,16.0,47.0,58.0,116.0
+profiling benign,mqtt_packet_ratio,all_windows,120860,109450,0.905593248386563,0.6842184345522536,0.6,1.84,2.32,4.64
+profiling benign,mqtt_packet_ratio,windows_with_mqtt,109450,109450,1.0,0.7555471904978106,0.64,1.88,2.32,4.64
+profiling benign,mqtt_valid_count,all_windows,120860,100220,0.829223895416184,14.067309283468475,14.0,39.0,51.0,116.0
+profiling benign,mqtt_valid_count,windows_with_mqtt,109450,100220,0.9156692553677478,15.53380539058931,15.0,40.0,52.0,116.0
+profiling benign,mqtt_invalid_count,all_windows,120860,27589,0.2282723812675823,1.9488664570577527,0.0,12.0,29.410000000003492,69.0
+profiling benign,mqtt_invalid_count,windows_with_mqtt,109450,27589,0.25206943809958887,2.152032891731384,0.0,13.0,30.0,69.0
+profiling benign,mqtt_incomplete_count,all_windows,120860,24491,0.20263941750786033,1.0892851232831375,0.0,6.0,19.0,25.0
+profiling benign,mqtt_incomplete_count,windows_with_mqtt,109450,24491,0.22376427592507994,1.2028414801279124,0.0,6.0,20.0,25.0
+profiling benign,mqtt_invalid_ratio,all_windows,120860,27589,0.2282723812675823,0.09669030769603701,0.0,0.6666666666666666,1.0,1.0
+profiling benign,mqtt_invalid_ratio,windows_with_mqtt,109450,27589,0.25206943809958887,0.10677012871761565,0.0,0.6666666666666666,1.0,1.0
+profiling benign,mqtt_incomplete_ratio,all_windows,120860,24491,0.20263941750786033,0.04582407463694622,0.0,0.35714285714285715,0.5,1.0
+profiling benign,mqtt_incomplete_ratio,windows_with_mqtt,109450,24491,0.22376427592507994,0.050601166383017995,0.0,0.3684210526315789,0.5,1.0
+profiling benign,mqtt_invalid_fixed_header_count,all_windows,120860,27216,0.22518616581168294,1.6007115671024326,0.0,10.0,24.0,64.0
+profiling benign,mqtt_invalid_fixed_header_count,windows_with_mqtt,109450,27216,0.24866148926450435,1.767583371402467,0.0,11.0,25.0,64.0
+profiling benign,mqtt_invalid_remaining_length_count,all_windows,120860,14468,0.11970875393016714,0.25157206685421146,0.0,2.0,4.0,11.0
+profiling benign,mqtt_invalid_remaining_length_count,windows_with_mqtt,109450,14468,0.132188213796254,0.27779808131566924,0.0,2.0,4.0,11.0
+profiling benign,mqtt_publish_count,all_windows,120860,98820,0.8176402449114678,13.231308952507034,14.0,39.0,51.0,116.0
+profiling benign,mqtt_publish_count,windows_with_mqtt,109450,98820,0.9028780264961169,14.610653266331658,14.0,39.0,52.0,116.0
+profiling benign,mqtt_invalid_publish_qos_count,all_windows,120860,1800,0.014893264934635116,0.017483038226046667,0.0,0.0,1.0,5.0
+profiling benign,mqtt_invalid_publish_qos_count,windows_with_mqtt,109450,1800,0.01644586569209685,0.019305619004111468,0.0,0.0,1.0,5.0
+profiling benign,mqtt_publish_wildcard_topic_count,all_windows,120860,0,0.0,0.0,0.0,0.0,0.0,0.0
+profiling benign,mqtt_publish_wildcard_topic_count,windows_with_mqtt,109450,0,0.0,0.0,0.0,0.0,0.0,0.0
+profiling benign,mqtt_invalid_publish_topic_count,all_windows,120860,6218,0.05144795631308952,0.08317888465993711,0.0,1.0,2.0,8.0
+profiling benign,mqtt_invalid_publish_topic_count,windows_with_mqtt,109450,6218,0.056811329374143446,0.0918501598903609,0.0,1.0,2.0,8.0
+profiling benign,mqtt_connect_count,all_windows,120860,25102,0.20769485354956146,0.8497104087373821,0.0,6.0,10.0,33.0
+profiling benign,mqtt_connect_count,windows_with_mqtt,109450,25102,0.2293467336683417,0.9382914572864322,0.0,6.0,10.0,33.0
+profiling benign,mqtt_invalid_connect_count,all_windows,120860,24633,0.20381433063048154,0.7637431739202383,0.0,5.0,9.0,31.0
+profiling benign,mqtt_invalid_connect_count,windows_with_mqtt,109450,24633,0.22506167199634536,0.8433622658748287,0.0,5.0,9.0,31.0
+publisher benign,mqtt_packet_count,all_windows,77427,73904,0.954499076549524,15.879124853087424,15.0,32.0,50.0,453.0
+publisher benign,mqtt_packet_count,windows_with_mqtt,73904,73904,1.0,16.636081944143754,15.0,33.0,51.0,453.0
+publisher benign,mqtt_packet_ratio,all_windows,77427,73904,0.954499076549524,0.6351649941231946,0.6,1.28,2.0,18.12
+publisher benign,mqtt_packet_ratio,windows_with_mqtt,73904,73904,1.0,0.6654432777654334,0.6,1.32,2.04,18.12
+publisher benign,mqtt_valid_count,all_windows,77427,71625,0.9250648998411407,12.539346739509474,14.0,21.0,27.0,94.0
+publisher benign,mqtt_valid_count,windows_with_mqtt,73904,71625,0.969162697553583,13.137096774193548,14.0,21.0,27.0,94.0
+publisher benign,mqtt_invalid_count,all_windows,77427,23149,0.2989783925504023,2.0968008575819805,0.0,14.0,31.0,362.0
+publisher benign,mqtt_invalid_count,windows_with_mqtt,73904,23149,0.31323067763585194,2.196755250054124,0.0,15.0,31.0,362.0
+publisher benign,mqtt_incomplete_count,all_windows,77427,18550,0.23958050809149264,1.2429772559959704,0.0,9.0,20.0,25.0
+publisher benign,mqtt_incomplete_count,windows_with_mqtt,73904,18550,0.25100129898246376,1.3022299198960814,0.0,11.0,20.0,25.0
+publisher benign,mqtt_invalid_ratio,all_windows,77427,23149,0.2989783925504023,0.07740528382676241,0.0,0.5319148936170213,0.696969696969697,1.0
+publisher benign,mqtt_invalid_ratio,windows_with_mqtt,73904,23149,0.31323067763585194,0.0810951898524401,0.0,0.5405405405405406,0.7,1.0
+publisher benign,mqtt_incomplete_ratio,all_windows,77427,18550,0.23958050809149264,0.044370377397838105,0.0,0.3333333333333333,0.5,1.0
+publisher benign,mqtt_incomplete_ratio,windows_with_mqtt,73904,18550,0.25100129898246376,0.04648551107899993,0.0,0.34782608695652173,0.5,1.0
+publisher benign,mqtt_invalid_fixed_header_count,all_windows,77427,21510,0.2778100662559572,1.7080992418665324,0.0,12.0,26.0,239.0
+publisher benign,mqtt_invalid_fixed_header_count,windows_with_mqtt,73904,21510,0.2910532582810132,1.7895242476726565,0.0,13.0,26.0,239.0
+publisher benign,mqtt_invalid_remaining_length_count,all_windows,77427,8354,0.10789517868443825,0.23642915262117867,0.0,2.0,4.0,36.0
+publisher benign,mqtt_invalid_remaining_length_count,windows_with_mqtt,73904,8354,0.11303853647975752,0.24769971855379952,0.0,2.0,4.0,36.0
+publisher benign,mqtt_publish_count,all_windows,77427,70684,0.9129115166543971,11.638188228912394,13.0,20.0,27.0,134.0
+publisher benign,mqtt_publish_count,windows_with_mqtt,73904,70684,0.9564299631954969,12.192980082268889,14.0,20.0,27.0,134.0
+publisher benign,mqtt_invalid_publish_qos_count,all_windows,77427,1509,0.019489325429113875,0.030829038965735467,0.0,0.0,1.0,31.0
+publisher benign,mqtt_invalid_publish_qos_count,windows_with_mqtt,73904,1509,0.020418380601861876,0.03229865771812081,0.0,0.0,1.0,31.0
+publisher benign,mqtt_publish_wildcard_topic_count,all_windows,77427,0,0.0,0.0,0.0,0.0,0.0,0.0
+publisher benign,mqtt_publish_wildcard_topic_count,windows_with_mqtt,73904,0,0.0,0.0,0.0,0.0,0.0,0.0
+publisher benign,mqtt_invalid_publish_topic_count,all_windows,77427,4300,0.05553618246864789,0.14491069006935564,0.0,1.0,3.0,126.0
+publisher benign,mqtt_invalid_publish_topic_count,windows_with_mqtt,73904,4300,0.05818358952154146,0.15181857544923144,0.0,1.0,3.0,126.0
+publisher benign,mqtt_connect_count,all_windows,77427,20417,0.26369354359590325,0.6837795601017733,0.0,4.0,8.0,30.0
+publisher benign,mqtt_connect_count,windows_with_mqtt,73904,20417,0.2762638016886772,0.7163752976834813,0.0,4.0,8.0,30.0
+publisher benign,mqtt_invalid_connect_count,all_windows,77427,19813,0.25589264726774896,0.5835948700065868,0.0,3.0,7.0,29.0
+publisher benign,mqtt_invalid_connect_count,windows_with_mqtt,73904,19813,0.26809103702100023,0.6114148084000866,0.0,3.0,7.0,29.0

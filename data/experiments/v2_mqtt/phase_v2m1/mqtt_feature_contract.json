@@ -1,0 +1,78 @@
+{
+  "strategy_version": "v2m1_mqtt_structural_probe",
+  "phase": "v2m1",
+  "experiment_namespace": "data/experiments/v2_mqtt/phase_v2m1",
+  "status": "contract_frozen",
+  "purpose": "Determine whether MQTT_Malformed_Data contains protocol-structural violations observable from raw TCP payloads and uncommon in benign MQTT traffic. Stop if that hypothesis fails.",
+  "windowing": {
+    "policy": "existing_frozen_v1",
+    "window_size": 25,
+    "inactivity_timeout_seconds": 5.0,
+    "backward_reset_seconds": 1.0,
+    "windowing_strategy_version": "phase1c1_v2",
+    "config_id": "w25_gap5_bw1",
+    "source": "iot_pcap_pipeline.windowing.policy.frozen_window_policy"
+  },
+  "extraction_constraints": {
+    "tcp_reassembly": false,
+    "model_training": false,
+    "label_dependent_extraction": false,
+    "raw_payload_model_features": false,
+    "payload_written_to_feature_parquet": false,
+    "missing_bytes_policy": "INCOMPLETE_not_INVALID"
+  },
+  "data_access": {
+    "development_data": "FIT only",
+    "v1_final_test_access": false,
+    "targets": {
+      "attack": "MQTT_Malformed_Data FIT PCAP",
+      "benign": "FIT benign PCAPs containing plaintext MQTT traffic"
+    }
+  },
+  "v1_frozen_do_not_alter": {
+    "v1_model_unchanged": true,
+    "v1_features_unchanged": true,
+    "v1_threshold_unchanged": true,
+    "extractor": true,
+    "feature_schema_27": true,
+    "feature_schema_path": "data/features/v1/feature_schema.json",
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "feature_strategy_version": "phase1c2_v1"
+  },
+  "structural_checks": [
+    "invalid_fixed_header",
+    "invalid_remaining_length",
+    "invalid_publish_qos",
+    "publish_topic_contains_wildcard",
+    "invalid_publish_topic",
+    "invalid_connect_structure"
+  ],
+  "parse_statuses": [
+    "NOT_MQTT",
+    "INCOMPLETE",
+    "VALID",
+    "INVALID"
+  ],
+  "candidate_features": [
+    "mqtt_packet_count",
+    "mqtt_packet_ratio",
+    "mqtt_valid_count",
+    "mqtt_invalid_count",
+    "mqtt_incomplete_count",
+    "mqtt_invalid_ratio",
+    "mqtt_incomplete_ratio",
+    "mqtt_invalid_fixed_header_count",
+    "mqtt_invalid_remaining_length_count",
+    "mqtt_publish_count",
+    "mqtt_invalid_publish_qos_count",
+    "mqtt_publish_wildcard_topic_count",
+    "mqtt_invalid_publish_topic_count",
+    "mqtt_connect_count",
+    "mqtt_invalid_connect_count"
+  ],
+  "notes": [
+    "No TCP stream reassembly in v2m1.",
+    "Truncation / short reads are INCOMPLETE, never INVALID.",
+    "Stop the MQTT feature line if malformed structural signal is not uncommon vs benign MQTT."
+  ]
+}

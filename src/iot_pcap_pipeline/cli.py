@@ -23,6 +23,10 @@ from iot_pcap_pipeline.features.arp_v2_probe import (
 from iot_pcap_pipeline.features.arp_v2_stateful_probe import (
     run_arp_stateful_feasibility_probe,
 )
+from iot_pcap_pipeline.features.mqtt_v2_probe import (
+    DEFAULT_MQTT_PROBE_DIR,
+    run_mqtt_fit_probe,
+)
 from iot_pcap_pipeline.features.build import (
     DEFAULT_MAX_WINDOWS_PER_PCAP,
     DEFAULT_SMOKE_FEATURES_CSV,
@@ -1150,6 +1154,32 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_ARP_PROBE_DIR,
         help=f"Experiment output directory (default: {DEFAULT_ARP_PROBE_DIR})",
     )
+
+    mqtt_probe_cmd = subparsers.add_parser(
+        "probe-mqtt-features-fit",
+        help=(
+            "V2M M4: FIT-only MQTT structural feature probe "
+            "(MQTT_Malformed_Data FIT + benign MQTT FIT; no TEST; no training)"
+        ),
+    )
+    mqtt_probe_cmd.add_argument(
+        "--split-manifest",
+        type=Path,
+        default=DEFAULT_SPLIT_MANIFEST_PATH,
+        help=f"modeling_split_manifest.csv (default: {DEFAULT_SPLIT_MANIFEST_PATH})",
+    )
+    mqtt_probe_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_MQTT_PROBE_DIR,
+        help=f"Experiment output directory (default: {DEFAULT_MQTT_PROBE_DIR})",
+    )
+    mqtt_probe_cmd.add_argument(
+        "--max-windows-per-pcap",
+        type=int,
+        default=None,
+        help="Optional per-PCAP window cap (smoke only; omit for full FIT probe)",
+    )
     return parser
 
 
@@ -1753,6 +1783,33 @@ def main(argv: list[str] | None = None) -> int:
             "arp_stateful_by_pcap",
             "arp_stateful_by_group",
             "arp_stateful_feasibility_complete",
+        ):
+            print(f"Wrote {arts[key]}")
+        return 0
+
+    if args.command == "probe-mqtt-features-fit":
+        try:
+            payload = run_mqtt_fit_probe(
+                split_manifest_path=args.split_manifest,
+                output_dir=args.output_dir,
+                progress_file=sys.stderr,
+                max_windows_per_pcap=args.max_windows_per_pcap,
+            )
+        except (FeatureExtractionError, FileNotFoundError, ValueError) as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        arts = payload["artifacts"]
+        hyp = payload.get("hypothesis") or {}
+        print("MQTT FIT structural probe complete")
+        print(f"  PCAPs: {payload['data_access']['pcap_count']}")
+        print(f"  next: {hyp.get('recommended_next_step')}")
+        for note in hyp.get("notes") or []:
+            print(f"  note: {note}")
+        for key in (
+            "mqtt_feature_summary",
+            "mqtt_feature_by_pcap",
+            "mqtt_violation_summary",
+            "mqtt_probe_complete",
         ):
             print(f"Wrote {arts[key]}")
         return 0

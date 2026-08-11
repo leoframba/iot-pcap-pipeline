@@ -32,10 +32,10 @@ def eth_ip_tcp(
     sport: int = 12345,
     dport: int = 80,
     flags: int = dpkt.tcp.TH_SYN,
+    data: bytes = b"",
 ) -> bytes:
     tcp = dpkt.tcp.TCP(sport=sport, dport=dport, flags=flags, seq=1, ack=0, win=8192)
-    # Empty payload — do not invent application data.
-    tcp.data = b""
+    tcp.data = data
     ip = dpkt.ip.IP(
         src=_ip4(src),
         dst=_ip4(dst),

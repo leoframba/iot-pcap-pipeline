@@ -94,6 +94,13 @@ def _base_record(
 
 def _with_tcp_flags(record: PacketRecord, tcp: dpkt.tcp.TCP) -> PacketRecord:
     flags = int(tcp.flags)
+    raw = tcp.data
+    if isinstance(raw, memoryview):
+        payload = raw.tobytes()
+    elif isinstance(raw, (bytes, bytearray)):
+        payload = bytes(raw)
+    else:
+        payload = b""
     return replace(
         record,
         is_tcp=True,
@@ -106,6 +113,7 @@ def _with_tcp_flags(record: PacketRecord, tcp: dpkt.tcp.TCP) -> PacketRecord:
         tcp_flag_psh=bool(flags & dpkt.tcp.TH_PUSH),
         tcp_flag_ack=bool(flags & dpkt.tcp.TH_ACK),
         tcp_flag_urg=bool(flags & dpkt.tcp.TH_URG),
+        tcp_payload=payload,
         protocol_name="tcp",
     )
 

@@ -1,0 +1,62 @@
+{
+  "status": "complete",
+  "strategy_version": "v2m1_mqtt_structural_probe",
+  "phase": "v2m1",
+  "completed_at_utc": "2026-08-11T22:12:22.887042+00:00",
+  "windowing": {
+    "window_size": 25,
+    "tcp_reassembly": false
+  },
+  "model_training": false,
+  "data_access": {
+    "development_data": "FIT only",
+    "v1_final_test_access": false,
+    "pcap_count": 4,
+    "pcaps": [
+      {
+        "probe_group": "mqtt_malformed",
+        "pcap_id": "MQTT-Malformed_Data_train-047bd795e609d53a",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-Malformed_Data_train.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Active-75691db1b5d9bcb7",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "ActiveBroker-773ce2fbdc89f2e6",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Broker/ActiveBroker.pcap"
+      },
+      {
+        "probe_group": "publisher benign",
+        "pcap_id": "Benign_train-afa71a594c44d5e9",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Benign_train.pcap"
+      }
+    ]
+  },
+  "hypothesis": {
+    "statement": "MQTT_Malformed_Data contains protocol-structural violations observable from raw TCP payloads and uncommon in benign MQTT",
+    "mqtt_invalid_ratio_given_mqtt": {
+      "mqtt_malformed": 0.3451708821034344,
+      "publisher_benign": 0.0810951898524401,
+      "profiling_benign": 0.10677012871761565
+    },
+    "mqtt_invalid_nonzero_rate_given_mqtt": {
+      "mqtt_malformed": 0.7114427860696517,
+      "publisher_benign": 0.31323067763585194,
+      "profiling_benign": 0.25206943809958887
+    },
+    "notes": [
+      "structural_signal_weak_or_partial: mqtt_invalid_ratio|mqtt malformed=0.3452 benign_max=0.1068"
+    ],
+    "recommended_next_step": "review_before_training"
+  },
+  "artifacts": {
+    "mqtt_feature_summary": "data/experiments/v2_mqtt/phase_v2m1/mqtt_feature_summary.csv",
+    "mqtt_feature_by_pcap": "data/experiments/v2_mqtt/phase_v2m1/mqtt_feature_by_pcap.csv",
+    "mqtt_violation_summary": "data/experiments/v2_mqtt/phase_v2m1/mqtt_violation_summary.csv",
+    "mqtt_probe_complete": "data/experiments/v2_mqtt/phase_v2m1/mqtt_probe_complete.json"
+  },
+  "max_windows_per_pcap": null
+}

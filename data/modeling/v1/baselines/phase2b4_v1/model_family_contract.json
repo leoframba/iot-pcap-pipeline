@@ -1,0 +1,173 @@
+{
+  "artifacts": {
+    "feature_schema": "data/features/v1/feature_schema.json",
+    "fit_view_manifest": "data/modeling/v1/views/group_balanced/fit_view_manifest.csv",
+    "hgb_source_artifact": "data/modeling/v1/baselines/phase2b2_v1/hist_gradient_boosting/models/hist_gradient_boosting.joblib",
+    "modeling_split_manifest": "data/modeling/v1/modeling_split_manifest.csv",
+    "training_view_contract": "data/modeling/v1/training_view_contract.json"
+  },
+  "auto_declare_winner": false,
+  "bakeoff_feature_set": "all_27_v1",
+  "candidates": {
+    "adaboost": {
+      "hyperparameters": {
+        "learning_rate": 1.0,
+        "n_estimators": 50,
+        "random_state": 42
+      },
+      "implementation": {
+        "compatibility_note": "exact SAMME.R reproduction unavailable in current sklearn API",
+        "estimator": "sklearn default DecisionTreeClassifier(max_depth=1)",
+        "learning_rate": 1.0,
+        "n_estimators": 50,
+        "sklearn": "1.9.x"
+      },
+      "paper_inspired": true,
+      "paper_reference": {
+        "algorithm": "SAMME.R",
+        "estimator": "DecisionTreeClassifier",
+        "learning_rate": 1.0,
+        "n_estimators": 50
+      },
+      "reuse_phase2b2": false
+    },
+    "hgb": {
+      "hyperparameters": {
+        "early_stopping": false,
+        "l2_regularization": 1.0,
+        "learning_rate": 0.1,
+        "max_iter": 200,
+        "max_leaf_nodes": 31,
+        "random_state": 42
+      },
+      "reuse_phase2b2": true,
+      "source_artifact": "data/modeling/v1/baselines/phase2b2_v1/hist_gradient_boosting/models/hist_gradient_boosting.joblib",
+      "source_artifact_sha256": "edbcec54de1062fd929b54e62f0e45e208b31981f1cc40936fe1c9910fb15c4e"
+    },
+    "random_forest": {
+      "hyperparameters": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_features": "sqrt",
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "oob_score": false,
+        "random_state": 42,
+        "warm_start": false
+      },
+      "paper_inspired": true,
+      "reuse_phase2b2": false
+    }
+  },
+  "class_weights": "none",
+  "feature_count": 27,
+  "feature_names": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds",
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "feature_selection_note": "all_27 used only to hold the feature representation constant during model-family comparison; this is not the final feature-selection decision.",
+  "feature_selection_status": "deferred",
+  "final_feature_count": "unresolved",
+  "fit": {
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "pcaps": 65,
+    "rows": 704305,
+    "sampling": "group_balanced"
+  },
+  "fixed_thresholds": [
+    0.5,
+    0.75,
+    0.85,
+    0.9,
+    0.925,
+    0.94,
+    0.95,
+    0.97,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "hyperparameter_search": false,
+  "label_mapping": {
+    "ATTACK": 1,
+    "BENIGN": 0
+  },
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "model_families": [
+    "hgb",
+    "adaboost",
+    "random_forest"
+  ],
+  "pins": {
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "fit_view_manifest_sha256": "a8dc0f791c05381ccecef2604873ad08970b2f11b3f22121725b82a7057ad23f",
+    "hgb_model_artifact_sha256": "edbcec54de1062fd929b54e62f0e45e208b31981f1cc40936fe1c9910fb15c4e",
+    "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+    "phase2b2_run_complete_status": "passed",
+    "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552"
+  },
+  "ranking_criteria": [
+    "Reject candidates with a material deployment problem at low FPR.",
+    "Then compare primarily by: (1) minimum attack-group recall, (2) Recon OS Scan recall, (3) MQTT held-out recall, (4) macro attack-group recall, (5) Owltron interaction FPR, (6) DDoS/DoS recall.",
+    "ROC-AUC / PR-AUC / accuracy / global F1 are secondary and must not select the winner automatically."
+  ],
+  "scope_limits": [
+    "Exactly three families: HGB, AdaBoost, Random Forest.",
+    "No ExtraTrees, XGBoost, CatBoost, NN, SVM, KNN, grids, or ensembles.",
+    "No TEST access.",
+    "Feature 22-vs-27 decision deferred until after family review."
+  ],
+  "status": "frozen",
+  "strategy_version": "phase2b4_v1",
+  "task": "model_family_bakeoff",
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  },
+  "training_view": "group_balanced",
+  "validation": {
+    "attack_rows": 4921556,
+    "benign_rows": 22504,
+    "pcaps": 20,
+    "rows": 4944060,
+    "sampling": "never"
+  }
+}

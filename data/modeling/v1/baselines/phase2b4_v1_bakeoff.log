@@ -1,0 +1,65 @@
+Loading FIT arrays (27 features)...
+
+=== hgb ===
+  reused 2B.2 HGB sha=edbcec54de10...
+/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py:131: UserWarning: Could not find the number of physical cores for the following reason:
+invalid literal for int() with base 10: ''
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 249, in _count_physical_cores
+    cpu_count_physical = _count_physical_cores_darwin()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 318, in _count_physical_cores_darwin
+    return int(cpu_info)
+           ^^^^^^^^^^^^^
+  scoring TRAIN-validation for hgb...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+
+=== adaboost ===
+  fitting adaboost...
+  scoring TRAIN-validation for adaboost...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+
+=== random_forest ===
+  fitting random_forest...
+  scoring TRAIN-validation for random_forest...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+Phase 2B.4 — model-family bake-off
+status: passed
+strategy_version: phase2b4_v1
+models: ['hgb', 'adaboost', 'random_forest']
+feature_selection_status: deferred
+bakeoff_feature_set: all_27_v1
+final_feature_count: unresolved
+auto_declare_winner: False
+winner: None
+  hgb: sha=edbcec54de10… fit_s=0.0 score_s=9.7 rows=4944060 pcaps=20 test=0
+  adaboost: sha=25ba87bae747… fit_s=25.9 score_s=7.8 rows=4944060 pcaps=20 test=0
+  random_forest: sha=a25a7fcfd370… fit_s=12.0 score_s=6.5 rows=4944060 pcaps=20 test=0
+low_fpr: data/modeling/v1/baselines/phase2b4_v1/comparison_low_fpr.csv
+next: Review comparison_low_fpr.csv using the predeclared ranking criteria. Do not declare a winner in code. Feature 22-vs-27 remains deferred. Do not touch TEST.
+

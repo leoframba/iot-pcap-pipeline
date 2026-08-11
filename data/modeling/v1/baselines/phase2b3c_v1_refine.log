@@ -1,0 +1,19 @@
+Loading C (C_22_unweighted) scores from /Users/lframba/cs_projects/iot-pcap-pipeline/data/modeling/v1/baselines/phase2b3b_v1/predictions...
+  FPR≤0.5000% → thr=0.931889 benign_fpr=0.217739% recon=87.2625% mqtt=99.3281%
+  FPR≤0.2500% → thr=0.931889 benign_fpr=0.217739% recon=87.2625% mqtt=99.3281%
+  FPR≤0.1000% → thr=0.947233 benign_fpr=0.102204% recon=86.8913% mqtt=99.2948%
+  FPR≤0.0500% → thr=0.966348 benign_fpr=0.053324% recon=86.5053% mqtt=99.2553%
+Phase 2B.3C — focused C (22-feature HGB) threshold refine
+status: passed
+strategy_version: phase2b3c_v1
+model_input_version: v1_hgb22_nontemporal
+variant: C_22_unweighted
+operating points:
+  FPR≤0.5000% thr=0.931889 benign=0.2177% recon=87.26% mqtt=99.33% owltron=0.4724%
+  FPR≤0.2500% thr=0.931889 benign=0.2177% recon=87.26% mqtt=99.33% owltron=0.4724%
+  FPR≤0.1000% thr=0.947233 benign=0.1022% recon=86.89% mqtt=99.29% owltron=0.2040%
+  FPR≤0.0500% thr=0.966348 benign=0.0533% recon=86.51% mqtt=99.26% owltron=0.0859%
+table: data/modeling/v1/baselines/phase2b3c_v1/focused_fpr_targets.csv
+model_input: data/modeling/v1/model_input/v1_hgb22_nontemporal.json
+next: Review focused_fpr_targets.csv. Choose a provisional threshold for C from the ~0.5% / 0.25% / 0.1% / 0.05% band; do not freeze TEST yet.
+

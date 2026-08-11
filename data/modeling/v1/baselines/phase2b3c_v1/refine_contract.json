@@ -1,0 +1,53 @@
+{
+  "class_weight": null,
+  "excluded_temporal_features": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds"
+  ],
+  "focused_benign_fpr_targets": [
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "model_input_contract": "data/modeling/v1/model_input/v1_hgb22_nontemporal.json",
+  "model_input_features": [
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "model_input_version": "v1_hgb22_nontemporal",
+  "model_source": "data/modeling/v1/baselines/phase2b3b_v1/models/C_22_unweighted.joblib",
+  "notes": [
+    "No retraining. Threshold not frozen by this run.",
+    "Pipeline still extracts all 27 V1 features; model input is 22."
+  ],
+  "parent_ablation": "phase2b3b_v1",
+  "score_source": "data/modeling/v1/baselines/phase2b3b_v1/predictions/C_22_unweighted_val_scores.npz",
+  "strategy_version": "phase2b3c_v1",
+  "test_access": false,
+  "validation_sampling": "never",
+  "variant_id": "C_22_unweighted"
+}

@@ -27,6 +27,10 @@ from iot_pcap_pipeline.modeling.baselines.contract import (
     require_fit_view_ready,
 )
 from iot_pcap_pipeline.modeling.baselines.data import load_fit_arrays
+from iot_pcap_pipeline.modeling.baselines.model_input import (
+    DROPPED_TEMPORAL_FEATURES,
+    FEATURES_22,
+)
 from iot_pcap_pipeline.modeling.baselines.models import HGB_PARAMS, RANDOM_SEED
 from iot_pcap_pipeline.modeling.baselines.threshold_sweep import (
     BENIGN_FPR_TARGETS,
@@ -54,19 +58,6 @@ ABLATION_VERSION = "phase2b3b_v1"
 DEFAULT_ABLATION_ROOT = (
     DEFAULT_MODELING_DIR / "v1" / "baselines" / ABLATION_VERSION
 )
-
-# Drop only the five timing / span features for the 22-feature variants.
-DROPPED_TEMPORAL_FEATURES: tuple[str, ...] = (
-    "window_span_seconds",
-    "iat_mean_seconds",
-    "iat_std_seconds",
-    "iat_p50_seconds",
-    "iat_p95_seconds",
-)
-FEATURES_22: tuple[str, ...] = tuple(
-    n for n in V1_FEATURE_NAMES if n not in DROPPED_TEMPORAL_FEATURES
-)
-assert len(FEATURES_22) == 22
 
 # Primary comparison band from the 2B.3A review.
 LOW_FPR_TARGETS: tuple[float, ...] = (0.01, 0.005, 0.001)

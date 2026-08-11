@@ -1,0 +1,85 @@
+{
+  "artifacts": {
+    "comparison_fixed_thresholds": "data/modeling/v1/baselines/phase2b4_v1/comparison_fixed_thresholds.csv",
+    "comparison_low_fpr": "data/modeling/v1/baselines/phase2b4_v1/comparison_low_fpr.csv",
+    "comparison_ranking_metrics": "data/modeling/v1/baselines/phase2b4_v1/comparison_ranking_metrics.csv",
+    "model_family_contract": "data/modeling/v1/baselines/phase2b4_v1/model_family_contract.json",
+    "output_dir": "data/modeling/v1/baselines/phase2b4_v1"
+  },
+  "auto_declare_winner": false,
+  "bakeoff_feature_set": "all_27_v1",
+  "class_weights": "none",
+  "families": [
+    {
+      "fit_seconds": 0.0,
+      "model_artifact_sha256": "edbcec54de1062fd929b54e62f0e45e208b31981f1cc40936fe1c9910fb15c4e",
+      "model_id": "hgb",
+      "reused_phase2b2": true,
+      "score_seconds": 9.723558875266463,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    },
+    {
+      "fit_seconds": 25.897904040757567,
+      "model_artifact_sha256": "25ba87bae747a67c628c5f46ef2c340a9246a143a4b7b5dbcf70b8294ce131a4",
+      "model_id": "adaboost",
+      "reused_phase2b2": false,
+      "score_seconds": 7.80278395768255,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    },
+    {
+      "fit_seconds": 12.030898957978934,
+      "model_artifact_sha256": "a25a7fcfd370df4f6695124ed5e46d4cd6855d06179d80dc9d64df4c3f00440b",
+      "model_id": "random_forest",
+      "reused_phase2b2": false,
+      "score_seconds": 6.525697625242174,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    }
+  ],
+  "feature_count": 27,
+  "feature_selection_status": "deferred",
+  "final_feature_count": "unresolved",
+  "fit": {
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "pcaps": 65,
+    "rows": 704305
+  },
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "models_evaluated": [
+    "hgb",
+    "adaboost",
+    "random_forest"
+  ],
+  "next": "Review comparison_low_fpr.csv using the predeclared ranking criteria. Do not declare a winner in code. Feature 22-vs-27 remains deferred. Do not touch TEST.",
+  "ranking_criteria": [
+    "Reject candidates with a material deployment problem at low FPR.",
+    "Then compare primarily by: (1) minimum attack-group recall, (2) Recon OS Scan recall, (3) MQTT held-out recall, (4) macro attack-group recall, (5) Owltron interaction FPR, (6) DDoS/DoS recall.",
+    "ROC-AUC / PR-AUC / accuracy / global F1 are secondary and must not select the winner automatically."
+  ],
+  "status": "passed",
+  "strategy_version": "phase2b4_v1",
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  },
+  "validation": {
+    "pcaps": 20,
+    "pcaps_scored_per_model": 20,
+    "rows": 4944060,
+    "rows_scored_per_model": 4944060,
+    "sampling": "never"
+  },
+  "winner": null
+}

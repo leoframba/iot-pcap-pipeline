@@ -1,0 +1,35 @@
+{
+  "decision_threshold": 0.5,
+  "global": {
+    "accuracy": 0.9976646723542999,
+    "attack_recall": 0.9986435184319756,
+    "balanced_accuracy": 0.8911187730801897,
+    "benign_fp_count": 4870,
+    "benign_fpr": 0.21640597227159616,
+    "benign_support": 22504,
+    "confusion_matrix": {
+      "fn": 6676,
+      "fp": 4870,
+      "tn": 17634,
+      "tp": 4914880
+    },
+    "f1": 0.9988267817299857,
+    "false_positives_per_10k_benign": 2164.0597227159615,
+    "pr_auc": 0.9999962950480225,
+    "precision": 0.9990101123024544,
+    "roc_auc": 0.9991930216230358,
+    "specificity": 0.7835940277284038,
+    "threshold": 0.5
+  },
+  "macros": {
+    "macro_attack_group_recall": 0.9684081211487134,
+    "macro_benign_pcap_fpr": 0.3594328558451933,
+    "macro_pcap_attack_recall": 0.986591469019551
+  },
+  "model_id": "adaboost",
+  "note": "metrics.json uses threshold 0.5 for continuity with Phase 2B.2; model-family selection uses comparison_low_fpr.csv.",
+  "validation_attack_rows": 4921556,
+  "validation_benign_rows": 22504,
+  "validation_pcaps_scored": 20,
+  "validation_rows": 4944060
+}

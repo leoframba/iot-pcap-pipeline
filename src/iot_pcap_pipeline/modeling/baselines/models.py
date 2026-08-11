@@ -1,10 +1,14 @@
-"""Fixed unweighted baseline model definitions for Phase 2B.2."""
+"""Fixed unweighted baseline model definitions for Phase 2B.2 / 2B.4."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import (
+    AdaBoostClassifier,
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -29,6 +33,48 @@ HGB_PARAMS: dict[str, Any] = {
     "random_state": RANDOM_SEED,
 }
 
+# Paper-inspired AdaBoost (CICIoMT2024). Not an exact SAMME.R reproduction:
+# sklearn>=1.9 dropped the algorithm= argument.
+ADABOOST_PARAMS: dict[str, Any] = {
+    "n_estimators": 50,
+    "learning_rate": 1.0,
+    "random_state": RANDOM_SEED,
+}
+
+ADABOOST_PAPER_REFERENCE: dict[str, Any] = {
+    "estimator": "DecisionTreeClassifier",
+    "n_estimators": 50,
+    "learning_rate": 1.0,
+    "algorithm": "SAMME.R",
+}
+
+ADABOOST_IMPLEMENTATION_NOTE: dict[str, Any] = {
+    "sklearn": "1.9.x",
+    "estimator": "sklearn default DecisionTreeClassifier(max_depth=1)",
+    "n_estimators": 50,
+    "learning_rate": 1.0,
+    "compatibility_note": (
+        "exact SAMME.R reproduction unavailable in current sklearn API"
+    ),
+}
+
+RANDOM_FOREST_PARAMS: dict[str, Any] = {
+    "n_estimators": 100,
+    "criterion": "gini",
+    "min_samples_split": 2,
+    "min_samples_leaf": 1,
+    "min_weight_fraction_leaf": 0.0,
+    "max_features": "sqrt",
+    "min_impurity_decrease": 0.0,
+    "bootstrap": True,
+    "oob_score": False,
+    "warm_start": False,
+    "ccp_alpha": 0.0,
+    "class_weight": None,
+    "random_state": RANDOM_SEED,
+    "n_jobs": -1,
+}
+
 
 def build_logistic_regression() -> Pipeline:
     return Pipeline(
@@ -41,6 +87,14 @@ def build_logistic_regression() -> Pipeline:
 
 def build_hist_gradient_boosting() -> HistGradientBoostingClassifier:
     return HistGradientBoostingClassifier(**HGB_PARAMS)
+
+
+def build_adaboost() -> AdaBoostClassifier:
+    return AdaBoostClassifier(**ADABOOST_PARAMS)
+
+
+def build_random_forest() -> RandomForestClassifier:
+    return RandomForestClassifier(**RANDOM_FOREST_PARAMS)
 
 
 def attack_score_from_estimator(estimator: Any, X) -> Any:

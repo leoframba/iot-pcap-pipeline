@@ -505,13 +505,58 @@ def test_ablation_feature_sets_and_balanced_weights() -> None:
         FEATURES_22,
         balanced_class_weight_map,
     )
+    from iot_pcap_pipeline.modeling.baselines.c_threshold_refine import (
+        FOCUSED_FPR_TARGETS,
+    )
+    from iot_pcap_pipeline.modeling.baselines.model_input import (
+        V1_MODEL_INPUT_FEATURES,
+        V1_MODEL_INPUT_VERSION,
+        build_v1_model_input_contract,
+    )
     from iot_pcap_pipeline.features.schema import V1_FEATURE_NAMES
 
+    assert FEATURES_22 == V1_MODEL_INPUT_FEATURES
     assert len(FEATURES_22) == 22
     assert set(DROPPED_TEMPORAL_FEATURES).isdisjoint(FEATURES_22)
     assert len(V1_FEATURE_NAMES) - len(DROPPED_TEMPORAL_FEATURES) == 22
+    assert V1_MODEL_INPUT_VERSION == "v1_hgb22_nontemporal"
+    contract = build_v1_model_input_contract()
+    assert contract["model_input_feature_count"] == 22
+    assert contract["parent_feature_count"] == 27
+    assert FOCUSED_FPR_TARGETS == (0.005, 0.0025, 0.001, 0.0005)
 
     y = np.array([0] * 211_070 + [1] * 493_235, dtype=np.uint8)
     weights = balanced_class_weight_map(y)
     assert weights[0] == pytest.approx(704_305 / (2 * 211_070), rel=1e-6)
     assert weights[1] == pytest.approx(704_305 / (2 * 493_235), rel=1e-6)
+
+
+def test_model_family_bakeoff_contract_shape() -> None:
+    from iot_pcap_pipeline.modeling.baselines.model_family import (
+        CANDIDATE_SPECS,
+        LOW_FPR_TARGETS,
+        RANKING_CRITERIA,
+    )
+    from iot_pcap_pipeline.modeling.baselines.models import (
+        ADABOOST_PARAMS,
+        RANDOM_FOREST_PARAMS,
+        build_adaboost,
+        build_random_forest,
+    )
+    from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+
+    assert [c["model_id"] for c in CANDIDATE_SPECS] == [
+        "hgb",
+        "adaboost",
+        "random_forest",
+    ]
+    assert LOW_FPR_TARGETS == (0.01, 0.005, 0.0025, 0.001, 0.0005)
+    assert len(RANKING_CRITERIA) >= 3
+    ada = build_adaboost()
+    rf = build_random_forest()
+    assert isinstance(ada, AdaBoostClassifier)
+    assert isinstance(rf, RandomForestClassifier)
+    assert ada.n_estimators == ADABOOST_PARAMS["n_estimators"]
+    assert rf.n_estimators == RANDOM_FOREST_PARAMS["n_estimators"]
+    assert rf.max_features == "sqrt"
+    assert rf.class_weight is None

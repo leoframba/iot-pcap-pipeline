@@ -109,6 +109,16 @@ from iot_pcap_pipeline.modeling.baselines.ablations import (
     format_ablation_summary,
     run_hgb_ablations,
 )
+from iot_pcap_pipeline.modeling.baselines.c_threshold_refine import (
+    format_c_threshold_refine_summary,
+    run_c_threshold_refine,
+)
+from iot_pcap_pipeline.modeling.baselines.model_family import (
+    format_model_family_summary,
+    format_prepare_model_family_summary,
+    prepare_model_family_bakeoff,
+    run_model_family_bakeoff,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -899,6 +909,35 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force rescoring even if predictions/*.npz caches exist",
     )
+
+    refine_cmd = subparsers.add_parser(
+        "refine-c-thresholds",
+        help=(
+            "Phase 2B.3C: focused benign-FPR threshold refine on C "
+            "(22-feature unweighted HGB; reuses 2B.3B scores; no TEST)"
+        ),
+    )
+
+    prep_fam_cmd = subparsers.add_parser(
+        "prepare-model-family-bakeoff",
+        help=(
+            "Phase 2B.4: freeze model_family_contract.json before training "
+            "(feature selection deferred; no TEST)"
+        ),
+    )
+
+    fam_cmd = subparsers.add_parser(
+        "run-model-family-bakeoff",
+        help=(
+            "Phase 2B.4: HGB vs AdaBoost vs Random Forest on 27 features "
+            "(full TRAIN-validation; no TEST; no auto-winner)"
+        ),
+    )
+    fam_cmd.add_argument(
+        "--no-cache-scores",
+        action="store_true",
+        help="Force rescoring even if predictions/*.npz caches exist",
+    )
     return parser
 
 
@@ -1290,6 +1329,36 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAILED: {exc}", file=sys.stderr)
             return 1
         print(format_ablation_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "refine-c-thresholds":
+        try:
+            payload = run_c_threshold_refine(progress_file=sys.stderr)
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_c_threshold_refine_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "prepare-model-family-bakeoff":
+        try:
+            payload = prepare_model_family_bakeoff()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_prepare_model_family_summary(payload))
+        return 0
+
+    if args.command == "run-model-family-bakeoff":
+        try:
+            payload = run_model_family_bakeoff(
+                progress_file=sys.stderr,
+                cache_scores=not args.no_cache_scores,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_model_family_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")

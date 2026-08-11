@@ -486,7 +486,35 @@ Four HGB configurations on the same FIT view (A reused from 2B.2):
 uv run iot-pcap-pipeline run-hgb-ablations
 ```
 
-Compare `comparison_low_fpr.csv` at 1% / 0.5% / 0.1% benign FPR. Replace A
-only if Recon improves materially without a substantial MQTT hit.
+Compare `comparison_low_fpr.csv` at 1% / 0.5% / 0.1% benign FPR. Ablations
+supported selecting the 22-feature unweighted HGB (C) as the stronger V1
+candidate while keeping all 27 columns in the extractor / Parquet schema.
+
+## Phase 2B.3C — Focused C threshold refine
+
+Reuses frozen C validation scores. Writes the versioned model-input contract
+(`v1_hgb22_nontemporal`) and tabulates exact thresholds for ~0.5% / 0.25% /
+0.1% / 0.05% benign FPR. Threshold is not frozen by this run.
+
+```bash
+uv run iot-pcap-pipeline refine-c-thresholds
+```
+
+## Phase 2B.4 — Model-family bake-off
+
+Compare HGB (reused 2B.2), paper-inspired AdaBoost, and paper-inspired Random
+Forest under an identical contract: FIT `group_balanced` 704,305 rows, full
+unsampled TRAIN-validation (4,944,060 rows), **all 27 V1 features**, no class
+weights. Feature selection is explicitly **deferred** (`final_feature_count =
+unresolved`); this phase isolates model-family differences only. TEST stays
+sealed.
+
+```bash
+uv run iot-pcap-pipeline prepare-model-family-bakeoff
+uv run iot-pcap-pipeline run-model-family-bakeoff
+```
+
+Primary comparison: `comparison_low_fpr.csv` at 1% / 0.5% / 0.25% / 0.1% /
+0.05% benign FPR. No automatic winner — stop for review.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

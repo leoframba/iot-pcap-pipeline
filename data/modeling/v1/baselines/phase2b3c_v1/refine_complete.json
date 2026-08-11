@@ -1,0 +1,74 @@
+{
+  "artifacts": {
+    "focused_fpr_targets": "data/modeling/v1/baselines/phase2b3c_v1/focused_fpr_targets.csv",
+    "model_input_contract": "data/modeling/v1/model_input/v1_hgb22_nontemporal.json",
+    "output_dir": "data/modeling/v1/baselines/phase2b3c_v1",
+    "refine_contract": "data/modeling/v1/baselines/phase2b3c_v1/refine_contract.json"
+  },
+  "focused_benign_fpr_targets": [
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "model_input_version": "v1_hgb22_nontemporal",
+  "next": "Review focused_fpr_targets.csv. Choose a provisional threshold for C from the ~0.5% / 0.25% / 0.1% / 0.05% band; do not freeze TEST yet.",
+  "operating_points": [
+    {
+      "benign_fpr": 0.0021773906861002486,
+      "ddos_tcp_recall": 0.9986709556714751,
+      "dos_tcp_recall": 0.9978855459709657,
+      "fpr_target": 0.005,
+      "macro_attack_group_recall": 0.965615593629398,
+      "min_attack_group_recall": 0.872624703087886,
+      "mqtt_publish_recall": 0.9932811697872652,
+      "owltron_interaction_fpr": 0.0047235641438539986,
+      "profiling_idle_fpr": 0.0003802570537683474,
+      "recon_os_scan_recall": 0.872624703087886,
+      "threshold": 0.9318886995315552
+    },
+    {
+      "benign_fpr": 0.0021773906861002486,
+      "ddos_tcp_recall": 0.9986709556714751,
+      "dos_tcp_recall": 0.9978855459709657,
+      "fpr_target": 0.0025,
+      "macro_attack_group_recall": 0.965615593629398,
+      "min_attack_group_recall": 0.872624703087886,
+      "mqtt_publish_recall": 0.9932811697872652,
+      "owltron_interaction_fpr": 0.0047235641438539986,
+      "profiling_idle_fpr": 0.0003802570537683474,
+      "recon_os_scan_recall": 0.872624703087886,
+      "threshold": 0.9318886995315552
+    },
+    {
+      "benign_fpr": 0.0010220405261286882,
+      "ddos_tcp_recall": 0.9985932337809181,
+      "dos_tcp_recall": 0.9975153850199874,
+      "fpr_target": 0.001,
+      "macro_attack_group_recall": 0.9644925628686493,
+      "min_attack_group_recall": 0.8689133016627079,
+      "mqtt_publish_recall": 0.9929483310109837,
+      "owltron_interaction_fpr": 0.0020397208803005903,
+      "profiling_idle_fpr": 0.0003042056430146779,
+      "recon_os_scan_recall": 0.8689133016627079,
+      "threshold": 0.947233259677887
+    },
+    {
+      "benign_fpr": 0.0005332385353714896,
+      "ddos_tcp_recall": 0.9984508472774177,
+      "dos_tcp_recall": 0.997095913107511,
+      "fpr_target": 0.0005,
+      "macro_attack_group_recall": 0.9632884105282625,
+      "min_attack_group_recall": 0.8650534441805225,
+      "mqtt_publish_recall": 0.9925534375475987,
+      "owltron_interaction_fpr": 0.0008588298443370907,
+      "profiling_idle_fpr": 0.0003042056430146779,
+      "recon_os_scan_recall": 0.8650534441805225,
+      "threshold": 0.9663479328155518
+    }
+  ],
+  "status": "passed",
+  "strategy_version": "phase2b3c_v1",
+  "test_access": false,
+  "variant_id": "C_22_unweighted"
+}

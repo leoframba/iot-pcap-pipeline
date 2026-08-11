@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Sync locked dependencies
+        run: uv sync --locked
+
+      - name: Verify frozen V1 model SHA-256
+        run: |
+          uv run python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path(".")
+          model = root / "artifacts/v1/H0_full_fit.joblib"
+          pkg_path = root / "artifacts/v1/v1_model_package.json"
+          if not model.is_file():
+              raise SystemExit(f"missing model artifact: {model}")
+          if not pkg_path.is_file():
+              raise SystemExit(f"missing package json: {pkg_path}")
+
+          digest = hashlib.sha256(model.read_bytes()).hexdigest()
+          expected = json.loads(pkg_path.read_text())["model_artifact_sha256"]
+          if digest != expected:
+              raise SystemExit(
+                  f"model SHA mismatch:\n  got:      {digest}\n  expected: {expected}"
+              )
+          print(f"ok artifacts/v1/H0_full_fit.joblib == {digest}")
+          PY
+
+      - name: Unit / synthetic tests (exclude corpus)
+        run: uv run pytest -m "not corpus" -q --tb=short
+
+      - name: CLI / package smoke test
+        run: uv run iot-pcap-pipeline --help

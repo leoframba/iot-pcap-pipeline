@@ -682,7 +682,9 @@ modules.
 
 **Tests:** default `uv run pytest` is self-contained (synthetic PCAPs). Tests
 marked `@pytest.mark.corpus` require local CICIoMT data under
-`data/raw/WiFI_and_MQTT/` and are skipped when that tree is absent.
+`data/raw/WiFI_and_MQTT/` and are skipped when that tree is absent. GitHub
+Actions CI (`.github/workflows/ci.yml`) runs `pytest -m "not corpus"`, verifies
+the frozen model SHA, and smokes the CLI — no CIC dataset required.
 
 **Frozen model for Docker:** checkout-ready copy lives in `artifacts/v1/`
 (`H0_full_fit.joblib` + package/schema JSON). Verify SHA-256

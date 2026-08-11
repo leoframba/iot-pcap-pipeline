@@ -628,12 +628,24 @@ match. Measurement-only: no decisions may change based on TEST.
 Implements the frozen scoring path and integrity gates. The CLI accepts **no**
 `--model` / `--threshold` / `--features` overrides.
 
-```bash
-# Do not run against real TEST until Gate 2D.2+ is explicitly opened:
-# uv run iot-pcap-pipeline run-final-test
-```
-
 Scoring path: 27-feature schema verify → select ordered 22 → HGB
 `predict_proba` → `score >= 0.9490790963172913` → BENIGN/ATTACK.
+
+## Phase 2D.2 — Preflight / dry run
+
+Final stop before opening TEST. Re-verifies all contracts and TEST inventory
+metadata; generates **no** predictions or class-performance statistics.
+
+```bash
+uv run iot-pcap-pipeline preflight-final-test
+```
+
+Writes `data/modeling/v1/final_test/phase2d_v1/preflight_complete.json` with
+`ready_for_one_shot_test=true` when Gate 2D.2 passes.
+
+```bash
+# Only after preflight passes:
+uv run iot-pcap-pipeline run-final-test
+```
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

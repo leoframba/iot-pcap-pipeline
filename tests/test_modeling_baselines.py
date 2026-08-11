@@ -745,6 +745,13 @@ def test_final_test_contract_constants() -> None:
     assert EXPECTED_TEST_ATTACK_PCAPS + EXPECTED_TEST_BENIGN_PCAPS == 29
 
 
+def test_preflight_requires_contract(tmp_path: Path) -> None:
+    from iot_pcap_pipeline.modeling.baselines.final_test import preflight_final_test
+
+    with pytest.raises(FeatureExtractionError, match="prepare-final-test"):
+        preflight_final_test(project_root=tmp_path, output_dir=tmp_path / "out")
+
+
 def test_final_test_evaluator_synthetic_path(tmp_path: Path) -> None:
     """2D.1 scoring path on synthetic shards (never touches real TEST)."""
     import inspect

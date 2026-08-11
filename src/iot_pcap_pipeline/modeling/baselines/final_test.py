@@ -371,8 +371,9 @@ def prepare_final_test(
         out = root / out
     out.mkdir(parents=True, exist_ok=True)
 
-    # Clear any prior evaluation marker so a re-prepare cannot look complete.
+    # Clear any prior evaluation / preflight markers so a re-prepare is clean.
     (out / "final_test_complete.json").unlink(missing_ok=True)
+    (out / "preflight_complete.json").unlink(missing_ok=True)
 
     contract = build_final_test_contract(project_root=root)
     contract_path = out / "final_test_contract.json"
@@ -405,6 +406,126 @@ def format_prepare_final_test_summary(payload: dict[str, Any]) -> str:
     ]
     if payload.get("contract_path"):
         lines.append(f"contract: {payload['contract_path']}")
+    if payload.get("next"):
+        lines.append(f"next: {payload['next']}")
+    return "\n".join(lines) + "\n"
+
+
+def preflight_final_test(
+    *,
+    project_root: Path | None = None,
+    output_dir: Path | str | None = None,
+    **forbidden_overrides: Any,
+) -> dict[str, Any]:
+    """Gate 2D.2 — verify contracts + TEST inventory; no predictions/metrics.
+
+    Final stopping point before one-shot sealed TEST evaluation.
+    """
+    reject_final_test_overrides(**forbidden_overrides)
+    root = (project_root or PROJECT_ROOT).resolve()
+    out = Path(output_dir or DEFAULT_FINAL_TEST_ROOT)
+    if not out.is_absolute():
+        out = root / out
+
+    contract_path = out / "final_test_contract.json"
+    if not contract_path.is_file():
+        raise FeatureExtractionError(
+            f"final_test_contract.json missing at {contract_path}. "
+            "Run prepare-final-test first."
+        )
+
+    contract = load_final_test_contract(contract_path, project_root=root)
+    live_pins = verify_contract_integrity(contract, project_root=root)
+
+    arts = contract.get("artifacts") or {}
+    specs = load_test_pcap_specs(
+        arts.get("test_build_manifest") or DEFAULT_TEST_BUILD_MANIFEST_PATH,
+        project_root=root,
+    )
+    split_ids = load_modeling_split_pcap_ids(
+        arts.get("modeling_split_manifest") or DEFAULT_SPLIT_MANIFEST_PATH,
+        project_root=root,
+    )
+    assert_test_inventory_integrity(
+        specs,
+        expected_pcaps=EXPECTED_TEST_PCAP_COUNT,
+        expected_rows=EXPECTED_TEST_ROWS,
+        modeling_split_pcap_ids=split_ids,
+    )
+
+    # Confirm pinned model file is loadable without scoring any TEST rows.
+    _ = load_frozen_hgb_estimator(contract, project_root=root)
+
+    # Re-prepare clears eval markers; preflight also refuses a stale complete.
+    (out / "final_test_complete.json").unlink(missing_ok=True)
+
+    payload = {
+        "status": "passed",
+        "gate_2d2_status": "passed",
+        "strategy_version": PHASE2D_VERSION,
+        "evaluation_mode": "one_shot_sealed_test",
+        "model_hash_verified": True,
+        "model_input_hash_verified": True,
+        "feature_schema_hash_verified": True,
+        "phase2c_freeze_verified": True,
+        "training_view_contract_verified": True,
+        "modeling_split_manifest_verified": True,
+        "test_build_manifest_verified": True,
+        "test_build_complete_verified": True,
+        "threshold_verified": True,
+        "threshold": FROZEN_V1_THRESHOLD,
+        "hyperparameter_config_id": "H0",
+        "model_feature_count": EXPECTED_MODEL_FEATURE_COUNT,
+        "extractor_feature_count": EXPECTED_EXTRACTOR_FEATURE_COUNT,
+        "expected_test_pcaps": EXPECTED_TEST_PCAP_COUNT,
+        "expected_test_rows": EXPECTED_TEST_ROWS,
+        "expected_test_attack_pcaps": EXPECTED_TEST_ATTACK_PCAPS,
+        "expected_test_benign_pcaps": EXPECTED_TEST_BENIGN_PCAPS,
+        "inventory_pcap_count": len(specs),
+        "inventory_row_count": sum(s.expected_row_count for s in specs),
+        "train_fit_validation_overlap_pcaps": 0,
+        "predictions_generated": False,
+        "metrics_generated": False,
+        "feature_parquet_rows_read": 0,
+        "test_feature_shards_opened": False,
+        "ready_for_one_shot_test": True,
+        "verified_pins": live_pins,
+        "artifacts": {
+            "final_test_contract": to_repo_relative(contract_path, project_root=root),
+            "preflight_complete": to_repo_relative(
+                out / "preflight_complete.json", project_root=root
+            ),
+        },
+        "next": (
+            "Preflight passed. Open one-shot sealed TEST evaluation with "
+            "`iot-pcap-pipeline run-final-test` when ready. Do not alter the "
+            "frozen candidate based on TEST."
+        ),
+    }
+    out.mkdir(parents=True, exist_ok=True)
+    _atomic_json(out / "preflight_complete.json", payload)
+    return payload
+
+
+def format_preflight_final_test_summary(payload: dict[str, Any]) -> str:
+    lines = [
+        "Phase 2D.2 — Preflight / dry run",
+        f"status: {payload.get('status')}",
+        f"gate_2d2_status: {payload.get('gate_2d2_status')}",
+        f"strategy_version: {payload.get('strategy_version')}",
+        f"model_hash_verified: {payload.get('model_hash_verified')}",
+        f"model_input_hash_verified: {payload.get('model_input_hash_verified')}",
+        f"feature_schema_hash_verified: {payload.get('feature_schema_hash_verified')}",
+        f"phase2c_freeze_verified: {payload.get('phase2c_freeze_verified')}",
+        f"expected_test_pcaps: {payload.get('expected_test_pcaps')}",
+        f"expected_test_rows: {payload.get('expected_test_rows')}",
+        f"predictions_generated: {payload.get('predictions_generated')}",
+        f"metrics_generated: {payload.get('metrics_generated')}",
+        f"ready_for_one_shot_test: {payload.get('ready_for_one_shot_test')}",
+    ]
+    arts = payload.get("artifacts") or {}
+    if arts.get("preflight_complete"):
+        lines.append(f"preflight: {arts['preflight_complete']}")
     if payload.get("next"):
         lines.append(f"next: {payload['next']}")
     return "\n".join(lines) + "\n"
@@ -979,6 +1100,23 @@ def run_final_test(
 
     contract = load_final_test_contract(project_root=root)
     verify_contract_integrity(contract, project_root=root)
+
+    preflight_path = out / "preflight_complete.json"
+    if not preflight_path.is_file():
+        raise FeatureExtractionError(
+            f"preflight_complete.json missing at {preflight_path}. "
+            "Run preflight-final-test before one-shot TEST evaluation."
+        )
+    preflight = _require_json(preflight_path, label="preflight_complete")
+    if preflight.get("status") != "passed" or not preflight.get(
+        "ready_for_one_shot_test"
+    ):
+        raise FeatureExtractionError(
+            "Phase 2D.2 preflight not ready: "
+            f"status={preflight.get('status')!r} "
+            f"ready_for_one_shot_test={preflight.get('ready_for_one_shot_test')!r}"
+        )
+
     estimator = load_frozen_hgb_estimator(contract, project_root=root)
 
     arts = contract.get("artifacts") or {}

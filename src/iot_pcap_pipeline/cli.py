@@ -154,7 +154,9 @@ from iot_pcap_pipeline.modeling.baselines.phase2c_freeze import (
 from iot_pcap_pipeline.modeling.baselines.final_test import (
     format_final_test_summary,
     format_prepare_final_test_summary,
+    format_preflight_final_test_summary,
     prepare_final_test,
+    preflight_final_test,
     run_final_test,
 )
 from iot_pcap_pipeline.paths import (
@@ -1080,6 +1082,14 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    preflight_2d_cmd = subparsers.add_parser(
+        "preflight-final-test",
+        help=(
+            "Phase 2D.2: verify contracts + TEST inventory metadata; "
+            "no predictions or metrics (final stop before one-shot TEST)"
+        ),
+    )
+
     run_2d_cmd = subparsers.add_parser(
         "run-final-test",
         help=(
@@ -1617,6 +1627,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_prepare_final_test_summary(payload))
         return 0 if payload.get("gate_2d0_status") == "passed" else 1
+
+    if args.command == "preflight-final-test":
+        try:
+            payload = preflight_final_test()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_preflight_final_test_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
 
     if args.command == "run-final-test":
         try:

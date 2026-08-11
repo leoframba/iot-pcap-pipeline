@@ -1,0 +1,37 @@
+{
+  "decision_threshold": 0.5,
+  "early_stopping_on_validation": false,
+  "global": {
+    "accuracy": 0.9979872817077463,
+    "attack_recall": 0.9989487064660039,
+    "balanced_accuracy": 0.8933376664217684,
+    "benign_fp_count": 4777,
+    "benign_fpr": 0.21227337362246712,
+    "benign_support": 22504,
+    "confusion_matrix": {
+      "fn": 5174,
+      "fp": 4777,
+      "tn": 17727,
+      "tp": 4916382
+    },
+    "f1": 0.9989889984623145,
+    "false_positives_per_10k_benign": 2122.7337362246712,
+    "pr_auc": 0.9999977653339159,
+    "precision": 0.9990292937090632,
+    "roc_auc": 0.9995108786412953,
+    "specificity": 0.7877266263775329,
+    "threshold": 0.5
+  },
+  "macros": {
+    "macro_attack_group_recall": 0.9717658252733502,
+    "macro_benign_pcap_fpr": 0.3964738821808279,
+    "macro_pcap_attack_recall": 0.9881588630293103
+  },
+  "model_id": "catboost",
+  "note": "Threshold-0.5 / ROC-AUC / PR-AUC are secondary; selection uses comparison_low_fpr.csv. No early stopping was used.",
+  "selection_role": "secondary",
+  "validation_attack_rows": 4921556,
+  "validation_benign_rows": 22504,
+  "validation_pcaps_scored": 20,
+  "validation_rows": 4944060
+}

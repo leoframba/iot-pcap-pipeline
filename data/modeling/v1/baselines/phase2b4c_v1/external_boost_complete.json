@@ -1,0 +1,157 @@
+{
+  "artifacts": {
+    "comparison_fixed_thresholds": "data/modeling/v1/baselines/phase2b4c_v1/comparison_fixed_thresholds.csv",
+    "comparison_low_fpr": "data/modeling/v1/baselines/phase2b4c_v1/comparison_low_fpr.csv",
+    "comparison_ranking_metrics": "data/modeling/v1/baselines/phase2b4c_v1/comparison_ranking_metrics.csv",
+    "external_boost_contract": "data/modeling/v1/baselines/phase2b4c_v1/external_boost_contract.json",
+    "output_dir": "data/modeling/v1/baselines/phase2b4c_v1"
+  },
+  "auto_declare_winner": false,
+  "class_weights": "none",
+  "decision_rule": [
+    "At matched low FPR, rank by: (1) min attack-family recall, (2) Recon, (3) MQTT, (4) macro attack recall, (5) Owltron FPR.",
+    "Practical band: \u22640.5% and \u22640.1% benign FPR.",
+    "No hyperparameter search; fixed configs only.",
+    "No early stopping / best-iteration selection on TRAIN-validation.",
+    "Do not auto-replace HGB; stop for review."
+  ],
+  "early_stopping_on_validation": false,
+  "feature_count": 27,
+  "feature_selection_status": "deferred",
+  "final_feature_count": "unresolved",
+  "fit": {
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "pcaps": 65,
+    "rows": 704305
+  },
+  "hyperparameter_search": false,
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.0025,
+    0.001,
+    0.0005
+  ],
+  "models": [
+    {
+      "early_stopping_on_validation": false,
+      "fit_seconds": 2.837716333102435,
+      "model_artifact_sha256": "9578f8cab6b9a4b7914b3ddc2ff6fd3b7110fe020c643cfcbc0e13c03ed3c166",
+      "model_id": "xgboost",
+      "score_seconds": 5.237763832788914,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    },
+    {
+      "early_stopping_on_validation": false,
+      "fit_seconds": 8.597433124668896,
+      "model_artifact_sha256": "6866a5986b9c26f6061bf1967678964c3507d605b28da32048c15cc78ddfbc7c",
+      "model_id": "catboost",
+      "score_seconds": 3.8092782921157777,
+      "test_pcaps_read": 0,
+      "validation_pcaps_scored": 20,
+      "validation_rows_scored": 4944060
+    }
+  ],
+  "next": "Review comparison_low_fpr.csv at \u22640.5% / \u22640.1% FPR using the predeclared ranking (min family \u2192 Recon \u2192 MQTT \u2192 macro \u2192 Owltron). Do not auto-replace HGB. Feature selection remains deferred. Do not touch TEST.",
+  "parent_strategy": "phase2b4_v1",
+  "purpose": "external_boosting_challengers",
+  "status": "passed",
+  "strategy_version": "phase2b4c_v1",
+  "target_reachability": [
+    {
+      "benign_fpr": 0.006887664415215073,
+      "fpr_target": 0.01,
+      "model_id": "xgboost",
+      "target_reached": true,
+      "threshold": 0.9562051296234131
+    },
+    {
+      "benign_fpr": 0.0011997867045858515,
+      "fpr_target": 0.005,
+      "model_id": "xgboost",
+      "target_reached": true,
+      "threshold": 0.9580442905426025
+    },
+    {
+      "benign_fpr": 0.0011997867045858515,
+      "fpr_target": 0.0025,
+      "model_id": "xgboost",
+      "target_reached": true,
+      "threshold": 0.9580442905426025
+    },
+    {
+      "benign_fpr": 0.0009776039815143974,
+      "fpr_target": 0.001,
+      "model_id": "xgboost",
+      "target_reached": true,
+      "threshold": 0.95908522605896
+    },
+    {
+      "benign_fpr": 0.0004888019907571987,
+      "fpr_target": 0.0005,
+      "model_id": "xgboost",
+      "target_reached": true,
+      "threshold": 0.9617995619773865
+    },
+    {
+      "benign_fpr": 0.01004265908282972,
+      "fpr_target": 0.01,
+      "model_id": "catboost",
+      "target_reached": false,
+      "threshold": 0.9407238960266113
+    },
+    {
+      "benign_fpr": 0.004843583362957696,
+      "fpr_target": 0.005,
+      "model_id": "catboost",
+      "target_reached": true,
+      "threshold": 0.9450029730796814
+    },
+    {
+      "benign_fpr": 0.002444009953785994,
+      "fpr_target": 0.0025,
+      "model_id": "catboost",
+      "target_reached": true,
+      "threshold": 0.9479079842567444
+    },
+    {
+      "benign_fpr": 0.0010220405261286882,
+      "fpr_target": 0.001,
+      "model_id": "catboost",
+      "target_reached": false,
+      "threshold": 0.9509848952293396
+    },
+    {
+      "benign_fpr": 0.0005332385353714896,
+      "fpr_target": 0.0005,
+      "model_id": "catboost",
+      "target_reached": false,
+      "threshold": 0.9537861347198486
+    }
+  ],
+  "test": {
+    "access": false,
+    "pcaps_read": 0
+  },
+  "threshold_selection": false,
+  "validation": {
+    "pcaps": 20,
+    "pcaps_scored_per_model": 20,
+    "rows": 4944060,
+    "rows_scored_per_model": 4944060,
+    "sampling": "never"
+  },
+  "versions": {
+    "catboost": "1.2.10",
+    "numpy": "2.4.6",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "pyarrow": "25.0.0",
+    "python": "3.11.15",
+    "scikit_learn": "1.9.0",
+    "xgboost": "3.2.0"
+  },
+  "winner": null
+}

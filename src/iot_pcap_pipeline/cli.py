@@ -125,6 +125,12 @@ from iot_pcap_pipeline.modeling.baselines.extratrees import (
     prepare_extratrees_challenger,
     run_extratrees_challenger,
 )
+from iot_pcap_pipeline.modeling.baselines.external_boosting import (
+    format_external_boost_summary,
+    format_prepare_external_boost_summary,
+    prepare_external_boost_challengers,
+    run_external_boost_challengers,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -965,6 +971,27 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force rescoring even if predictions/*.npz caches exist",
     )
+
+    prep_ext_cmd = subparsers.add_parser(
+        "prepare-external-boost-challengers",
+        help=(
+            "Phase 2B.4C: freeze external_boost_contract.json before fitting "
+            "XGBoost/CatBoost (no early stopping; no TEST)"
+        ),
+    )
+
+    ext_cmd = subparsers.add_parser(
+        "run-external-boost-challengers",
+        help=(
+            "Phase 2B.4C: fixed XGBoost + CatBoost challengers "
+            "(full TRAIN-validation; no early stopping; no TEST)"
+        ),
+    )
+    ext_cmd.add_argument(
+        "--no-cache-scores",
+        action="store_true",
+        help="Force rescoring even if predictions/*.npz caches exist",
+    )
     return parser
 
 
@@ -1407,6 +1434,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAILED: {exc}", file=sys.stderr)
             return 1
         print(format_extratrees_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "prepare-external-boost-challengers":
+        try:
+            payload = prepare_external_boost_challengers()
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_prepare_external_boost_summary(payload))
+        return 0
+
+    if args.command == "run-external-boost-challengers":
+        try:
+            payload = run_external_boost_challengers(
+                progress_file=sys.stderr,
+                cache_scores=not args.no_cache_scores,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_external_boost_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")

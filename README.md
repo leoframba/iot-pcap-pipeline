@@ -532,4 +532,19 @@ uv run iot-pcap-pipeline run-extratrees-challenger
 Advance ExtraTrees only if it materially beats HGB at ≤0.5% / ≤0.1% FPR on
 Recon without MQTT regression; otherwise keep HGB. No automatic advance.
 
+## Phase 2B.4C — External boosting challengers
+
+Fixed untuned XGBoost (`hist`, 200 trees, depth 6) and CatBoost (200 iterations,
+depth 6, Logloss) on the same 2B.4 contract. No hyperparameter search and **no
+early stopping** against TRAIN-validation. Parent low-FPR rows reused from
+2B.4 / 2B.4B.
+
+```bash
+uv run iot-pcap-pipeline prepare-external-boost-challengers
+uv run iot-pcap-pipeline run-external-boost-challengers
+```
+
+Rank at matched low FPR by min family → Recon → MQTT → macro → Owltron. Do not
+auto-replace HGB.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

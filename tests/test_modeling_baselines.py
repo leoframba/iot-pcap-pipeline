@@ -658,3 +658,40 @@ def test_extratrees_complete_gate_rejects_bad_payloads() -> None:
     bad_hash["model"]["model_artifact_sha256"] = ""
     with pytest.raises(FeatureExtractionError, match="hash"):
         _assert_complete_gate(bad_hash)
+
+
+def test_external_boost_fixed_configs_no_early_stopping() -> None:
+    from iot_pcap_pipeline.modeling.baselines.external_boosting import CANDIDATE_SPECS
+    from iot_pcap_pipeline.modeling.baselines.models import (
+        CATBOOST_PARAMS,
+        XGBOOST_PARAMS,
+        attack_score_from_estimator,
+        build_catboost,
+        build_xgboost,
+    )
+    from iot_pcap_pipeline.modeling.baselines.model_family import LOW_FPR_TARGETS
+
+    assert [c["model_id"] for c in CANDIDATE_SPECS] == ["xgboost", "catboost"]
+    assert LOW_FPR_TARGETS == (0.01, 0.005, 0.0025, 0.001, 0.0005)
+    assert XGBOOST_PARAMS["n_estimators"] == 200
+    assert XGBOOST_PARAMS["tree_method"] == "hist"
+    assert XGBOOST_PARAMS["random_state"] == 42
+    assert "early_stopping_rounds" not in XGBOOST_PARAMS
+    assert CATBOOST_PARAMS["iterations"] == 200
+    assert CATBOOST_PARAMS["depth"] == 6
+    assert CATBOOST_PARAMS["loss_function"] == "Logloss"
+    assert CATBOOST_PARAMS["allow_writing_files"] is False
+    assert CATBOOST_PARAMS.get("use_best_model") in (None, False)
+
+    xgb = build_xgboost()
+    cb = build_catboost()
+    assert xgb.n_estimators == 200
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(80, 4)).astype(np.float32)
+    y = np.array([0] * 40 + [1] * 40, dtype=np.uint8)
+    xgb.fit(X, y)
+    cb.fit(X, y)
+    sx = attack_score_from_estimator(xgb, X[:5])
+    sc = attack_score_from_estimator(cb, X[:5])
+    assert sx.shape == (5,) and sc.shape == (5,)

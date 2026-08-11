@@ -90,6 +90,48 @@ EXTRA_TREES_PARAMS: dict[str, Any] = {
     "n_jobs": -1,
 }
 
+# Phase 2B.4C external boosting challengers (fixed configs; no early stopping).
+XGBOOST_PARAMS: dict[str, Any] = {
+    "n_estimators": 200,
+    "max_depth": 6,
+    "learning_rate": 0.1,
+    "subsample": 1.0,
+    "colsample_bytree": 1.0,
+    "reg_lambda": 1.0,
+    "reg_alpha": 0.0,
+    "objective": "binary:logistic",
+    "tree_method": "hist",
+    "random_state": RANDOM_SEED,
+    "n_jobs": -1,
+}
+
+CATBOOST_PARAMS: dict[str, Any] = {
+    "iterations": 200,
+    "depth": 6,
+    "learning_rate": 0.1,
+    "loss_function": "Logloss",
+    "random_seed": RANDOM_SEED,
+    "verbose": False,
+    "allow_writing_files": False,
+}
+
+
+def _preload_libomp_if_needed() -> None:
+    """macOS Homebrew libomp is keg-only; preload so XGBoost can dlopen."""
+    import ctypes
+    from pathlib import Path
+
+    for candidate in (
+        Path("/opt/homebrew/opt/libomp/lib/libomp.dylib"),
+        Path("/usr/local/opt/libomp/lib/libomp.dylib"),
+    ):
+        if candidate.is_file():
+            try:
+                ctypes.CDLL(str(candidate))
+            except OSError:
+                continue
+            return
+
 
 def build_logistic_regression() -> Pipeline:
     return Pipeline(
@@ -114,6 +156,21 @@ def build_random_forest() -> RandomForestClassifier:
 
 def build_extra_trees() -> ExtraTreesClassifier:
     return ExtraTreesClassifier(**EXTRA_TREES_PARAMS)
+
+
+def build_xgboost():
+    """Fixed untuned XGBClassifier (no eval_set / early stopping)."""
+    _preload_libomp_if_needed()
+    from xgboost import XGBClassifier
+
+    return XGBClassifier(**XGBOOST_PARAMS)
+
+
+def build_catboost():
+    """Fixed untuned CatBoostClassifier (no validation-based early stopping)."""
+    from catboost import CatBoostClassifier
+
+    return CatBoostClassifier(**CATBOOST_PARAMS)
 
 
 def attack_score_from_estimator(estimator: Any, X) -> Any:

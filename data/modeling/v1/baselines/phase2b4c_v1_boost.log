@@ -1,0 +1,49 @@
+Loading FIT arrays (27 features)...
+
+=== xgboost ===
+  fitting xgboost (no early stopping)...
+  scoring TRAIN-validation for xgboost...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+
+=== catboost ===
+  fitting catboost (no early stopping)...
+  scoring TRAIN-validation for catboost...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+Phase 2B.4C — external boosting challengers
+status: passed
+strategy_version: phase2b4c_v1
+early_stopping_on_validation: False
+feature_selection_status: deferred
+auto_declare_winner: False
+winner: None
+  xgboost: sha=9578f8cab6b9… fit_s=2.8 score_s=5.2 rows=4944060 pcaps=20 test=0
+  catboost: sha=6866a5986b9c… fit_s=8.6 score_s=3.8 rows=4944060 pcaps=20 test=0
+  xgboost FPR≤1.0000%: reached actual=0.6888% thr=0.956205
+  xgboost FPR≤0.5000%: reached actual=0.1200% thr=0.958044
+  xgboost FPR≤0.2500%: reached actual=0.1200% thr=0.958044
+  xgboost FPR≤0.1000%: reached actual=0.0978% thr=0.959085
+  xgboost FPR≤0.0500%: reached actual=0.0489% thr=0.961800
+  catboost FPR≤1.0000%: UNREACHABLE actual=1.0043% thr=0.940724
+  catboost FPR≤0.5000%: reached actual=0.4844% thr=0.945003
+  catboost FPR≤0.2500%: reached actual=0.2444% thr=0.947908
+  catboost FPR≤0.1000%: UNREACHABLE actual=0.1022% thr=0.950985
+  catboost FPR≤0.0500%: UNREACHABLE actual=0.0533% thr=0.953786
+comparison: data/modeling/v1/baselines/phase2b4c_v1/comparison_low_fpr.csv
+next: Review comparison_low_fpr.csv at ≤0.5% / ≤0.1% FPR using the predeclared ranking (min family → Recon → MQTT → macro → Owltron). Do not auto-replace HGB. Feature selection remains deferred. Do not touch TEST.
+

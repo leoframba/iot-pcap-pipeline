@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import dpkt
+import pytest
 from pcap_synth import eth_arp, eth_ip_tcp, write_pcap
 
 from iot_pcap_pipeline.features.arp_v2 import (
@@ -14,9 +15,9 @@ from iot_pcap_pipeline.features.arp_v2 import (
 )
 from iot_pcap_pipeline.features.extractor import extract_features
 from iot_pcap_pipeline.pcap.decode import DLT_EN10MB, decode_frame
-from iot_pcap_pipeline.pcap.packet import PacketRecord
+from iot_pcap_pipeline.pcap.packet import PacketRecord, ParseStatus
 from iot_pcap_pipeline.pcap.reader import iter_packets
-from iot_pcap_pipeline.windowing.policy import frozen_window_policy
+from iot_pcap_pipeline.windowing.policy import WINDOW_SIZE, frozen_window_policy
 from iot_pcap_pipeline.windowing.stream import iter_windows
 from iot_pcap_pipeline.windowing.window import PacketWindow
 
@@ -42,6 +43,16 @@ def _pad_to_window(arp_bufs: list[bytes], *, n: int = 25) -> PacketWindow:
         bufs.append(eth_ip_tcp(flags=dpkt.tcp.TH_SYN))
     assert len(bufs) == n
     return _window_from_bufs(bufs)
+
+
+def test_rejects_partial_and_oversized_windows() -> None:
+    with pytest.raises(ValueError, match="exactly 25 packets, got 24"):
+        extract_arp_semantic_features(_pad_to_window([], n=24))
+    feats = extract_arp_semantic_features(_pad_to_window([], n=25))
+    assert feats.arp_request_ratio == 0.0
+    with pytest.raises(ValueError, match="exactly 25 packets, got 26"):
+        extract_arp_semantic_features(_pad_to_window([], n=26))
+    assert WINDOW_SIZE == 25
 
 
 def test_no_arp_returns_zeros() -> None:
@@ -129,8 +140,8 @@ def test_sender_ip_conflict_count_and_ratio() -> None:
 
 
 def test_mapping_change_counts_within_window_order() -> None:
-    # Novel MAC discoveries only (plan algorithm): AA → BB → AA → CC
-    # changes: BB (1), AA already seen (0), CC (2). Final cardinality=3.
+    # Novel additional MAC claims (not every transition): AA → BB → AA → CC
+    # BB new → +1; AA already known → +0; CC new → +1. Final cardinality=3.
     aa = "aa:aa:aa:aa:aa:aa"
     bb = "bb:bb:bb:bb:bb:bb"
     cc = "cc:cc:cc:cc:cc:cc"
@@ -166,6 +177,72 @@ def test_eth_src_sha_mismatch_ratio() -> None:
     assert feats.arp_eth_src_sha_mismatch_ratio == 0.5
     assert feats.arp_unique_sender_ip_count == 2
     assert feats.arp_unique_sender_mac_count == 1
+
+
+def test_eth_src_sha_mismatch_skips_missing_src_mac() -> None:
+    """Missing Ethernet src MAC is not in the mismatch denominator."""
+    packets: list[PacketRecord] = []
+    for i in range(WINDOW_SIZE):
+        if i == 0:
+            packets.append(
+                PacketRecord(
+                    packet_index=i,
+                    timestamp=1.0 + 0.01 * i,
+                    frame_length=42,
+                    linktype=DLT_EN10MB,
+                    parse_status=ParseStatus.OK,
+                    is_arp=True,
+                    src_ip="10.0.0.1",
+                    dst_ip="10.0.0.2",
+                    protocol_name="arp",
+                    extra={
+                        "arp_op": dpkt.arp.ARP_OP_REQUEST,
+                        "arp_sha": "11:22:33:44:55:66",
+                        "arp_tha": "00:00:00:00:00:00",
+                        # no src_mac
+                    },
+                )
+            )
+        elif i == 1:
+            packets.append(
+                PacketRecord(
+                    packet_index=i,
+                    timestamp=1.0 + 0.01 * i,
+                    frame_length=42,
+                    linktype=DLT_EN10MB,
+                    parse_status=ParseStatus.OK,
+                    is_arp=True,
+                    src_ip="10.0.0.3",
+                    dst_ip="10.0.0.2",
+                    protocol_name="arp",
+                    extra={
+                        "arp_op": dpkt.arp.ARP_OP_REQUEST,
+                        "arp_sha": "11:22:33:44:55:66",
+                        "arp_tha": "00:00:00:00:00:00",
+                        "src_mac": "99:88:77:66:55:44",
+                    },
+                )
+            )
+        else:
+            packets.append(
+                decode_frame(
+                    eth_ip_tcp(flags=dpkt.tcp.TH_SYN),
+                    packet_index=i,
+                    timestamp=1.0 + 0.01 * i,
+                    linktype=DLT_EN10MB,
+                )
+            )
+    window = PacketWindow(
+        segment_index=0,
+        window_index=0,
+        packet_index_start=0,
+        packet_index_end=WINDOW_SIZE - 1,
+        packets=tuple(packets),
+    )
+    feats = extract_arp_semantic_features(window)
+    # Only the second identity is mismatch-eligible → ratio 1.0 (not 0.5).
+    assert feats.arp_eth_src_sha_mismatch_ratio == 1.0
+    assert feats.arp_unique_sender_ip_count == 2
 
 
 def test_same_ip_same_mac_no_conflict() -> None:
@@ -214,3 +291,9 @@ def test_contract_lists_eleven_candidates() -> None:
     contract = json.loads(contract_path.read_text(encoding="utf-8"))
     assert contract["candidate_features"]["feature_names"] == list(ARP_V2_FEATURE_NAMES)
     assert contract["candidate_features"]["feature_count"] == 11
+    assert contract["candidate_features"]["required_window_size"] == 25
+    assert "novel additional MAC" in contract["candidate_features"]["arp_mapping_change_count"]
+    assert (
+        contract["candidate_features"]["arp_eth_src_sha_mismatch_denominator"]
+        == "valid ARP identity observations with a valid Ethernet source MAC"
+    )

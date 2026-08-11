@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from iot_pcap_pipeline.pcap.packet import PacketRecord
+from iot_pcap_pipeline.windowing.policy import WINDOW_SIZE
 from iot_pcap_pipeline.windowing.window import PacketWindow
 
 # Must match data/experiments/v2_arp/phase_v2a1/arp_feature_contract.json
@@ -49,7 +50,10 @@ class ArpSemanticFeatures:
     arp_sender_ip_conflict_count: int
     arp_sender_ip_conflict_ratio: float
     arp_max_macs_per_sender_ip: int
+    # Count of novel additional MAC claims for previously observed sender IPs
+    # within the window (not every SPA→SHA transition / flip-flop).
     arp_mapping_change_count: int
+    # mismatches / identity observations that also have a valid Ethernet src MAC
     arp_eth_src_sha_mismatch_ratio: float
     arp_unique_sender_ip_count: int
     arp_unique_sender_mac_count: int
@@ -122,13 +126,23 @@ def _empty_features() -> ArpSemanticFeatures:
 
 
 def extract_arp_semantic_features(window: PacketWindow) -> ArpSemanticFeatures:
-    """Extract V2A ARP semantic features from one window (stateless).
+    """Extract V2A ARP semantic features from one full 25-packet window (stateless).
 
-    Ratios use ``n_arp`` (``is_arp`` packet count) as denominator and return
-    0.0 when the window has no ARP packets. Identity features ignore probes
-    (SPA 0.0.0.0) and invalid SHA/SPA. No state is retained across windows.
+    Requires exactly ``WINDOW_SIZE`` packets (frozen V1 policy). Ratios use
+    ``n_arp`` (``is_arp`` packet count) as denominator and return 0.0 when the
+    window has no ARP packets. Identity features ignore probes (SPA 0.0.0.0)
+    and invalid SHA/SPA. ``arp_mapping_change_count`` counts novel additional
+    MAC claims for previously observed sender IPs (not every transition).
+    ``arp_eth_src_sha_mismatch_ratio`` denominates only identity observations
+    that also have a valid Ethernet source MAC. No state across windows.
     """
     packets = window.packets
+    n = len(packets)
+    if n != WINDOW_SIZE:
+        raise ValueError(
+            f"V2A ARP windows must contain exactly {WINDOW_SIZE} packets, got {n}"
+        )
+
     arp_packets = [p for p in packets if p.is_arp]
     n_arp = len(arp_packets)
     if n_arp == 0:
@@ -161,10 +175,12 @@ def extract_arp_semantic_features(window: PacketWindow) -> ArpSemanticFeatures:
     macs_by_ip: dict[str, set[str]] = defaultdict(set)
     seen: dict[str, set[str]] = {}
     mapping_change_count = 0
+    mismatch_eligible = 0
     mismatch_count = 0
 
     for spa, sha, packet in identities:
         macs_by_ip[spa].add(sha)
+        # Novel additional MAC for an already-seen SPA (not flip-flop frequency).
         if spa not in seen:
             seen[spa] = {sha}
         elif sha not in seen[spa]:
@@ -172,8 +188,10 @@ def extract_arp_semantic_features(window: PacketWindow) -> ArpSemanticFeatures:
             seen[spa].add(sha)
 
         src_mac = packet.extra.get("src_mac")
-        if isinstance(src_mac, str) and src_mac and src_mac != sha:
-            mismatch_count += 1
+        if isinstance(src_mac, str) and src_mac:
+            mismatch_eligible += 1
+            if src_mac != sha:
+                mismatch_count += 1
 
     conflict_ips = {ip for ip, macs in macs_by_ip.items() if len(macs) > 1}
     conflict_obs = sum(1 for spa, _sha, _p in identities if spa in conflict_ips)
@@ -194,7 +212,9 @@ def extract_arp_semantic_features(window: PacketWindow) -> ArpSemanticFeatures:
         arp_sender_ip_conflict_ratio=(conflict_obs / n_ident) if n_ident else 0.0,
         arp_max_macs_per_sender_ip=max_macs,
         arp_mapping_change_count=mapping_change_count,
-        arp_eth_src_sha_mismatch_ratio=(mismatch_count / n_ident) if n_ident else 0.0,
+        arp_eth_src_sha_mismatch_ratio=(
+            (mismatch_count / mismatch_eligible) if mismatch_eligible else 0.0
+        ),
         arp_unique_sender_ip_count=len(unique_ips),
         arp_unique_sender_mac_count=len(unique_macs),
     )
@@ -222,6 +242,14 @@ def arp_v2_feature_contract_fragment() -> dict[str, Any]:
             "invalid_or_missing_ipv4_spa",
             "invalid_or_missing_sha",
         ],
+        "arp_mapping_change_count": (
+            "count of novel additional MAC claims for previously observed "
+            "sender IPs within the window"
+        ),
+        "arp_eth_src_sha_mismatch_denominator": (
+            "valid ARP identity observations with a valid Ethernet source MAC"
+        ),
+        "required_window_size": WINDOW_SIZE,
         "raw_mac_model_features": False,
         "state_across_windows": False,
     }

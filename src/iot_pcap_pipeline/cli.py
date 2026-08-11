@@ -16,6 +16,10 @@ from iot_pcap_pipeline.audit.policy import (
 )
 from iot_pcap_pipeline.audit.scan import audit_corpus
 from iot_pcap_pipeline.dataset.build import build_manifests
+from iot_pcap_pipeline.features.arp_v2_probe import (
+    DEFAULT_ARP_PROBE_DIR,
+    run_arp_fit_probe,
+)
 from iot_pcap_pipeline.features.build import (
     DEFAULT_MAX_WINDOWS_PER_PCAP,
     DEFAULT_SMOKE_FEATURES_CSV,
@@ -1097,6 +1101,32 @@ def build_parser() -> argparse.ArgumentParser:
             "(no --model/--threshold/--features overrides; measurement only)"
         ),
     )
+
+    arp_probe_cmd = subparsers.add_parser(
+        "probe-arp-features-fit",
+        help=(
+            "V2A A4/A5: FIT-only ARP semantic feature probe "
+            "(ARP Spoofing FIT + all BENIGN FIT; no TEST; no training)"
+        ),
+    )
+    arp_probe_cmd.add_argument(
+        "--split-manifest",
+        type=Path,
+        default=DEFAULT_SPLIT_MANIFEST_PATH,
+        help=f"modeling_split_manifest.csv (default: {DEFAULT_SPLIT_MANIFEST_PATH})",
+    )
+    arp_probe_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_ARP_PROBE_DIR,
+        help=f"Experiment output directory (default: {DEFAULT_ARP_PROBE_DIR})",
+    )
+    arp_probe_cmd.add_argument(
+        "--max-windows-per-pcap",
+        type=int,
+        default=None,
+        help="Optional per-PCAP window cap (smoke only; omit for full FIT probe)",
+    )
     return parser
 
 
@@ -1645,6 +1675,34 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_final_test_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "probe-arp-features-fit":
+        try:
+            payload = run_arp_fit_probe(
+                split_manifest_path=args.split_manifest,
+                output_dir=args.output_dir,
+                progress_file=sys.stderr,
+                max_windows_per_pcap=args.max_windows_per_pcap,
+            )
+        except (FeatureExtractionError, FileNotFoundError, ValueError) as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        arts = payload["artifacts"]
+        print("ARP FIT probe complete")
+        print(f"  PCAPs: {payload['data_access']['pcap_count']}")
+        print(f"  groups: {payload['data_access']['group_counts']}")
+        print(f"  windows_by_group: {payload['window_counts_by_group']}")
+        for note in payload.get("a5_semantic_signal_notes") or []:
+            print(f"  note: {note}")
+        for key in (
+            "arp_feature_summary",
+            "arp_feature_by_pcap",
+            "arp_feature_nonzero_rates",
+            "arp_vs_arp_ratio",
+            "arp_probe_complete",
+        ):
+            print(f"Wrote {arts[key]}")
+        return 0
 
     parser.error(f"unknown command: {args.command}")
     return 2

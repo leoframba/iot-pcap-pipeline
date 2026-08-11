@@ -77,6 +77,9 @@
       "invalid_or_missing_ipv4_spa",
       "invalid_or_missing_sha"
     ],
+    "arp_mapping_change_count": "count of novel additional MAC claims for previously observed sender IPs within the window",
+    "arp_eth_src_sha_mismatch_denominator": "valid ARP identity observations with a valid Ethernet source MAC",
+    "required_window_size": 25,
     "separate_from_v1_feature_vector": true
   },
   "notes": [

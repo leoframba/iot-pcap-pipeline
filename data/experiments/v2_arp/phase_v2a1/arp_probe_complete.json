@@ -1,0 +1,264 @@
+{
+  "status": "complete",
+  "strategy_version": "v2a1_arp_stateless",
+  "phase": "v2a1",
+  "completed_at_utc": "2026-08-11T21:21:39.223817+00:00",
+  "windowing": {
+    "window_size": 25,
+    "policy": "frozen_window_policy"
+  },
+  "data_access": {
+    "development_data": "FIT only",
+    "v1_final_test_access": false,
+    "pcaps": [
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Active-75691db1b5d9bcb7",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "ActiveBroker-773ce2fbdc89f2e6",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Broker/ActiveBroker.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Blink_Camera_LAN_MIC-de6bc19993839f4f",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Blink_Camera/Blink_Camera_LAN_MIC.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Blink_Camera_LAN_WATCH-3f8bf69fb1069588",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Blink_Camera/Blink_Camera_LAN_WATCH.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Blink_Camera_WAN_MIC-e15dc3ec7ec45279",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Blink_Camera/Blink_Camera_WAN_MIC.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Blink_Camera_WAN_WATCH-d368ff79b64700f1",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Blink_Camera/Blink_Camera_WAN_WATCH.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Blink_Mini_Camera_Power-ae915edb988f5bdc",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Blink_Mini_Camera_Power.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Ecobee_Camera_LAN_MIC-bd23bc998ec6fbae",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Ecobee_Camera/Ecobee_Camera_LAN_MIC.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Ecobee_Camera_LAN_WATCH-86027c5a7abe11b1",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Ecobee_Camera/Ecobee_Camera_LAN_WATCH.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Ecobee_Camera_Power-670935afbd6dd632",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Ecobee_Camera_Power.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Ecobee_Camera_WAN_MIC-9f00e38f021daf12",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Ecobee_Camera/Ecobee_Camera_WAN_MIC.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Ecobee_Camera_WAN_WATCH-d8fd5b4e4a5384d9",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Ecobee_Camera/Ecobee_Camera_WAN_WATCH.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_LAN_MIC-82292e094d4c92fc",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_LAN_MIC.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_LAN_PHOTO-5c311124058e65a8",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_LAN_PHOTO.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_LAN_PRECORDING-52238a5ec47bd101",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_LAN_PRECORDING.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_LAN_WATCH-be56cf109f9deaa9",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_LAN_WATCH.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_Power-09122daa7d244f73",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/M1T_Camera_Power.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_WAN_MIC-81f4bd71b5e6453b",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_WAN_MIC.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_WAN_PHOTO-3ed5188c39d7b60c",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_WAN_PHOTO.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_WAN_RECORDING-24eb271fd02aef20",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_WAN_RECORDING.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "M1T_Camera_WAN_WATCH-87c44d4b3f40c536",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/M1T_Camera/M1T_Camera_WAN_WATCH.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Singcall_LAN_PHYSICAL-015d084b26c99a8c",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Singcall/Singcall_LAN_PHYSICAL.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Singcall_Power-2e7ddb9f29135c81",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Power/Singcall_Power.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Singcall_WAN_PHYSICAL-648acf97ea26a9fb",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Interactions/Singcall/Singcall_WAN_PHYSICAL.pcap"
+      },
+      {
+        "probe_group": "publisher benign",
+        "pcap_id": "Benign_train-afa71a594c44d5e9",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Benign_train.pcap"
+      },
+      {
+        "probe_group": "spoofing",
+        "pcap_id": "ARP_Spoofing_train-96f95da2dd4aca68",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/ARP_Spoofing_train.pcap"
+      }
+    ],
+    "pcap_count": 26,
+    "group_counts": {
+      "spoofing": 1,
+      "publisher benign": 1,
+      "profiling benign": 24
+    }
+  },
+  "artifacts": {
+    "arp_feature_summary": "data/experiments/v2_arp/phase_v2a1/arp_feature_summary.csv",
+    "arp_feature_by_pcap": "data/experiments/v2_arp/phase_v2a1/arp_feature_by_pcap.csv",
+    "arp_feature_nonzero_rates": "data/experiments/v2_arp/phase_v2a1/arp_feature_nonzero_rates.csv",
+    "arp_vs_arp_ratio": "data/experiments/v2_arp/phase_v2a1/arp_vs_arp_ratio.csv",
+    "arp_probe_complete": "data/experiments/v2_arp/phase_v2a1/arp_probe_complete.json"
+  },
+  "window_counts_by_group": {
+    "profiling benign": 133643,
+    "publisher benign": 77427,
+    "spoofing": 6423
+  },
+  "a5_conditional_conflict_given_arp": {
+    "arp_sender_ip_conflict_count": {
+      "profiling benign": {
+        "windows_with_arp": 19684,
+        "feature_nonzero_given_arp": 0,
+        "feature_nonzero_rate_given_arp": 0.0,
+        "feature_mean_given_arp": 0.0,
+        "arp_ratio_mean_given_arp": 0.12921967079860247
+      },
+      "publisher benign": {
+        "windows_with_arp": 10234,
+        "feature_nonzero_given_arp": 5,
+        "feature_nonzero_rate_given_arp": 0.0004885675200312683,
+        "feature_mean_given_arp": 0.0013679890560875513,
+        "arp_ratio_mean_given_arp": 0.15243306624975017
+      },
+      "spoofing": {
+        "windows_with_arp": 610,
+        "feature_nonzero_given_arp": 7,
+        "feature_nonzero_rate_given_arp": 0.011475409836065573,
+        "feature_mean_given_arp": 0.011475409836065573,
+        "arp_ratio_mean_given_arp": 0.29180327868852435
+      }
+    },
+    "arp_sender_ip_conflict_ratio": {
+      "profiling benign": {
+        "windows_with_arp": 19684,
+        "feature_nonzero_given_arp": 0,
+        "feature_nonzero_rate_given_arp": 0.0,
+        "feature_mean_given_arp": 0.0,
+        "arp_ratio_mean_given_arp": 0.12921967079860247
+      },
+      "publisher benign": {
+        "windows_with_arp": 10234,
+        "feature_nonzero_given_arp": 5,
+        "feature_nonzero_rate_given_arp": 0.0004885675200312683,
+        "feature_mean_given_arp": 0.0002977756397729038,
+        "arp_ratio_mean_given_arp": 0.15243306624975017
+      },
+      "spoofing": {
+        "windows_with_arp": 610,
+        "feature_nonzero_given_arp": 7,
+        "feature_nonzero_rate_given_arp": 0.011475409836065573,
+        "feature_mean_given_arp": 0.008743169398907104,
+        "arp_ratio_mean_given_arp": 0.29180327868852435
+      }
+    },
+    "arp_max_macs_per_sender_ip": {
+      "profiling benign": {
+        "windows_with_arp": 19684,
+        "feature_nonzero_given_arp": 19681,
+        "feature_nonzero_rate_given_arp": 0.9998475919528551,
+        "feature_mean_given_arp": 0.9998475919528551,
+        "arp_ratio_mean_given_arp": 0.12921967079860247
+      },
+      "publisher benign": {
+        "windows_with_arp": 10234,
+        "feature_nonzero_given_arp": 10227,
+        "feature_nonzero_rate_given_arp": 0.9993160054719562,
+        "feature_mean_given_arp": 0.9998045729919874,
+        "arp_ratio_mean_given_arp": 0.15243306624975017
+      },
+      "spoofing": {
+        "windows_with_arp": 610,
+        "feature_nonzero_given_arp": 610,
+        "feature_nonzero_rate_given_arp": 1.0,
+        "feature_mean_given_arp": 1.0114754098360657,
+        "arp_ratio_mean_given_arp": 0.29180327868852435
+      }
+    },
+    "arp_mapping_change_count": {
+      "profiling benign": {
+        "windows_with_arp": 19684,
+        "feature_nonzero_given_arp": 0,
+        "feature_nonzero_rate_given_arp": 0.0,
+        "feature_mean_given_arp": 0.0,
+        "arp_ratio_mean_given_arp": 0.12921967079860247
+      },
+      "publisher benign": {
+        "windows_with_arp": 10234,
+        "feature_nonzero_given_arp": 5,
+        "feature_nonzero_rate_given_arp": 0.0004885675200312683,
+        "feature_mean_given_arp": 0.0013679890560875513,
+        "arp_ratio_mean_given_arp": 0.15243306624975017
+      },
+      "spoofing": {
+        "windows_with_arp": 610,
+        "feature_nonzero_given_arp": 7,
+        "feature_nonzero_rate_given_arp": 0.011475409836065573,
+        "feature_mean_given_arp": 0.011475409836065573,
+        "arp_ratio_mean_given_arp": 0.29180327868852435
+      }
+    }
+  },
+  "a5_semantic_signal_notes": [
+    "arp_sender_ip_conflict_count: spoofing nonzero_rate 0.0011 >> benign 0.0001",
+    "arp_sender_ip_conflict_ratio: spoofing nonzero_rate 0.0011 >> benign 0.0001",
+    "arp_mapping_change_count: spoofing nonzero_rate 0.0011 >> benign 0.0001"
+  ],
+  "max_windows_per_pcap": null
+}

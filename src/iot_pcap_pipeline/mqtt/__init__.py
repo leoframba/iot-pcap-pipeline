@@ -1,7 +1,7 @@
 """V2M MQTT structural parsing package (feasibility only)."""
 
 from iot_pcap_pipeline.mqtt.parse import (
-    MQTT_V2_STRATEGY_VERSION,
+    MQTT_PARSE_VERSION,
     MqttParseResult,
     MqttStatus,
     classify_mqtt_payload,
@@ -10,7 +10,7 @@ from iot_pcap_pipeline.mqtt.parse import (
 )
 
 __all__ = [
-    "MQTT_V2_STRATEGY_VERSION",
+    "MQTT_PARSE_VERSION",
     "MqttParseResult",
     "MqttStatus",
     "classify_mqtt_payload",

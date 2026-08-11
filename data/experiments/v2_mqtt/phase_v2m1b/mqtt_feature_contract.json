@@ -1,11 +1,12 @@
 {
-  "strategy_version": "v2m1_mqtt_structural_probe",
-  "phase": "v2m1",
-  "experiment_namespace": "data/experiments/v2_mqtt/phase_v2m1",
-  "status": "superseded_by_v2m1b",
-  "superseded_by": "data/experiments/v2_mqtt/phase_v2m1b",
-  "attempt1_artifacts": "data/experiments/v2_mqtt/phase_v2m1/attempt1",
-  "purpose": "Determine whether MQTT_Malformed_Data contains protocol-structural violations observable from raw TCP payloads and uncommon in benign MQTT traffic. Stop if that hypothesis fails.",
+  "strategy_version": "v2m1b_mqtt_structural_probe_port_gated",
+  "phase": "v2m1b",
+  "experiment_namespace": "data/experiments/v2_mqtt/phase_v2m1b",
+  "status": "closed_hypothesis_failed",
+  "closed_at_reason": "stop_mqtt_structural_features",
+  "closure_marker": "data/experiments/v2_mqtt/phase_v2m1b/v2m_experiment_closed.json",
+  "parent_attempt": "data/experiments/v2_mqtt/phase_v2m1/attempt1",
+  "purpose": "Corrected M4: gate MQTT structural parsing to pinned plaintext MQTT ports before asking whether MQTT_Malformed_Data violations are uncommon in benign MQTT.",
   "windowing": {
     "policy": "existing_frozen_v1",
     "window_size": 25,
@@ -21,7 +22,12 @@
     "label_dependent_extraction": false,
     "raw_payload_model_features": false,
     "payload_written_to_feature_parquet": false,
-    "missing_bytes_policy": "INCOMPLETE_not_INVALID"
+    "missing_bytes_policy": "INCOMPLETE_not_INVALID",
+    "mqtt_plaintext_ports": [
+      1883
+    ],
+    "mqtt_plaintext_ports_discovery": "FIT-only port scan of malformed + Benign_train + Active + ActiveBroker; 1883 present, 8883 present but excluded as TLS",
+    "exclude_tls_mqtt_port_8883": true
   },
   "data_access": {
     "development_data": "FIT only",
@@ -56,8 +62,10 @@
     "INVALID"
   ],
   "candidate_features": [
-    "mqtt_packet_count",
-    "mqtt_packet_ratio",
+    "mqtt_control_packet_count",
+    "mqtt_control_packets_per_frame",
+    "mqtt_frame_count",
+    "mqtt_frame_ratio",
     "mqtt_valid_count",
     "mqtt_invalid_count",
     "mqtt_incomplete_count",
@@ -72,9 +80,16 @@
     "mqtt_connect_count",
     "mqtt_invalid_connect_count"
   ],
+  "feature_semantics": {
+    "mqtt_control_packet_count": "number of MQTT control packets parsed in the window (may exceed 25)",
+    "mqtt_control_packets_per_frame": "mqtt_control_packet_count / 25 (unbounded above 1)",
+    "mqtt_frame_count": "captured frames with ≥1 MQTT control packet",
+    "mqtt_frame_ratio": "mqtt_frame_count / 25 (bounded [0,1])"
+  },
   "notes": [
-    "No TCP stream reassembly in v2m1.",
+    "v2m1 attempt1 parsed all TCP payloads and suffered false MQTT detection; superseded.",
+    "No TCP stream reassembly in v2m1b.",
     "Truncation / short reads are INCOMPLETE, never INVALID.",
-    "Stop the MQTT feature line if malformed structural signal is not uncommon vs benign MQTT."
+    "Do not parse port 8883 (MQTT over TLS)."
   ]
 }

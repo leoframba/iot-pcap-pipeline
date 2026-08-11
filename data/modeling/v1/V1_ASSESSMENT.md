@@ -54,6 +54,15 @@ After V1 freeze, experiment `v2a1` tested whether ARP IP↔MAC *relationship* fe
 
 MQTT family average is excellent (**99.48%**), but **MQTT_Malformed_Data** is only **160 / 698 = 22.92%**.
 
+#### V2M follow-up (FIT only) — closed after port-gated probe
+
+Experiment `v2m1` / corrected `v2m1b` tested whether raw-TCP MQTT *structural* violations separate malformed from benign MQTT without touching TEST.
+
+- **attempt1** parsed all TCP payloads and produced false INVALID MQTT on mixed benign traffic (especially non-MQTT TCP in `Active.pcap`).
+- **v2m1b** gates parsing to FIT-pinned plaintext port **1883** only. Conditional `mqtt_invalid_ratio` is ~0 for malformed and benign; PUBLISH wildcards never appear on the wire.
+
+**Decision:** do not add MQTT structural features or train a V2 structural-MQTT model on this corpus. Write-up: `data/experiments/v2_mqtt/phase_v2m1b/MQTT_STRUCTURAL_LIMITATION.md`.
+
 Recon varies substantially:
 
 | Type | Recall |

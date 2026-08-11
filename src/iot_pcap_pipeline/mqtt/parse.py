@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-MQTT_V2_STRATEGY_VERSION = "v2m1_mqtt_structural_probe"
+MQTT_PARSE_VERSION = "v2m1_mqtt_structural_parser"
 
 # MQTT 3.1.1 control packet types
 PKT_CONNECT = 1
@@ -278,7 +278,7 @@ def classify_mqtt_payload(payload: bytes) -> MqttParseResult:
 
 
 __all__ = [
-    "MQTT_V2_STRATEGY_VERSION",
+    "MQTT_PARSE_VERSION",
     "MqttParseResult",
     "MqttStatus",
     "PKT_CONNECT",

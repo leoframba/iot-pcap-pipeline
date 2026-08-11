@@ -1,0 +1,31 @@
+group,feature,scope,window_count,nonzero_count,nonzero_rate,mean,p50,p95,p99,max
+mqtt_malformed,mqtt_invalid_count,windows_with_mqtt,902,1,0.0011086474501108647,0.0011086474501108647,0.0,0.0,0.0,1.0
+mqtt_malformed,mqtt_incomplete_count,windows_with_mqtt,902,3,0.0033259423503325942,0.0066518847006651885,0.0,0.0,0.0,2.0
+mqtt_malformed,mqtt_invalid_ratio,windows_with_mqtt,902,1,0.0011086474501108647,1.788141048565911e-05,0.0,0.0,0.0,0.016129032258064516
+mqtt_malformed,mqtt_incomplete_ratio,windows_with_mqtt,902,3,0.0033259423503325942,0.00014338590677155422,0.0,0.0,0.0,0.05263157894736842
+mqtt_malformed,mqtt_invalid_fixed_header_count,windows_with_mqtt,902,0,0.0,0.0,0.0,0.0,0.0,0.0
+mqtt_malformed,mqtt_invalid_remaining_length_count,windows_with_mqtt,902,0,0.0,0.0,0.0,0.0,0.0,0.0
+mqtt_malformed,mqtt_invalid_publish_qos_count,windows_with_mqtt,902,0,0.0,0.0,0.0,0.0,0.0,0.0
+mqtt_malformed,mqtt_publish_wildcard_topic_count,windows_with_mqtt,902,0,0.0,0.0,0.0,0.0,0.0,0.0
+mqtt_malformed,mqtt_invalid_publish_topic_count,windows_with_mqtt,902,1,0.0011086474501108647,0.0011086474501108647,0.0,0.0,0.0,1.0
+mqtt_malformed,mqtt_invalid_connect_count,windows_with_mqtt,902,0,0.0,0.0,0.0,0.0,0.0,0.0
+profiling benign,mqtt_invalid_count,windows_with_mqtt,96895,48,0.0004953815986377006,0.0035915165901233294,0.0,0.0,0.0,18.0
+profiling benign,mqtt_incomplete_count,windows_with_mqtt,96895,67,0.0006914701480984571,0.0010733267970483512,0.0,0.0,0.0,3.0
+profiling benign,mqtt_invalid_ratio,windows_with_mqtt,96895,48,0.0004953815986377006,0.0001334932536630157,0.0,0.0,0.0,0.9411764705882353
+profiling benign,mqtt_incomplete_ratio,windows_with_mqtt,96895,67,0.0006914701480984571,7.836259333836639e-05,0.0,0.0,0.0,1.0
+profiling benign,mqtt_invalid_fixed_header_count,windows_with_mqtt,96895,44,0.00045409979875122555,0.002693637442592497,0.0,0.0,0.0,14.0
+profiling benign,mqtt_invalid_remaining_length_count,windows_with_mqtt,96895,0,0.0,0.0,0.0,0.0,0.0,0.0
+profiling benign,mqtt_invalid_publish_qos_count,windows_with_mqtt,96895,5,5.1602249858093815e-05,5.1602249858093815e-05,0.0,0.0,0.0,1.0
+profiling benign,mqtt_publish_wildcard_topic_count,windows_with_mqtt,96895,0,0.0,0.0,0.0,0.0,0.0,0.0
+profiling benign,mqtt_invalid_publish_topic_count,windows_with_mqtt,96895,37,0.0003818566489498942,0.0008978791475308324,0.0,0.0,0.0,6.0
+profiling benign,mqtt_invalid_connect_count,windows_with_mqtt,96895,5,5.1602249858093815e-05,5.1602249858093815e-05,0.0,0.0,0.0,1.0
+publisher benign,mqtt_invalid_count,windows_with_mqtt,68850,30,0.00043572984749455336,0.0032098765432098763,0.0,0.0,0.0,18.0
+publisher benign,mqtt_incomplete_count,windows_with_mqtt,68850,41,0.0005954974582425563,0.0008714596949891067,0.0,0.0,0.0,3.0
+publisher benign,mqtt_invalid_ratio,windows_with_mqtt,68850,30,0.00043572984749455336,0.00011190444863131926,0.0,0.0,0.0,0.5625
+publisher benign,mqtt_incomplete_ratio,windows_with_mqtt,68850,41,0.0005954974582425563,3.604565151666571e-05,0.0,0.0,0.0,0.2
+publisher benign,mqtt_invalid_fixed_header_count,windows_with_mqtt,68850,29,0.00042120551924473495,0.00261437908496732,0.0,0.0,0.0,17.0
+publisher benign,mqtt_invalid_remaining_length_count,windows_with_mqtt,68850,0,0.0,0.0,0.0,0.0,0.0,0.0
+publisher benign,mqtt_invalid_publish_qos_count,windows_with_mqtt,68850,3,4.3572984749455335e-05,4.3572984749455335e-05,0.0,0.0,0.0,1.0
+publisher benign,mqtt_publish_wildcard_topic_count,windows_with_mqtt,68850,0,0.0,0.0,0.0,0.0,0.0,0.0
+publisher benign,mqtt_invalid_publish_topic_count,windows_with_mqtt,68850,22,0.0003195352214960058,0.0005954974582425563,0.0,0.0,0.0,4.0
+publisher benign,mqtt_invalid_connect_count,windows_with_mqtt,68850,2,2.9048656499636893e-05,2.9048656499636893e-05,0.0,0.0,0.0,1.0

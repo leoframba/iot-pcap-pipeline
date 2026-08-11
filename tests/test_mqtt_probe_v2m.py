@@ -126,11 +126,13 @@ def test_extract_mqtt_structural_features_counts_invalid(tmp_path: Path) -> None
         packets=packets,
     )
     feats = extract_mqtt_structural_features(window)
-    assert feats.mqtt_packet_count == 2
+    assert feats.mqtt_control_packet_count == 2
+    assert feats.mqtt_frame_count == 2
     assert feats.mqtt_invalid_count == 1
     assert feats.mqtt_valid_count == 1
     assert feats.mqtt_publish_wildcard_topic_count == 1
     assert feats.mqtt_invalid_ratio == 0.5
+    assert feats.mqtt_frame_ratio == 2 / 25
 
 
 def test_run_mqtt_fit_probe_smoke(tmp_path: Path) -> None:

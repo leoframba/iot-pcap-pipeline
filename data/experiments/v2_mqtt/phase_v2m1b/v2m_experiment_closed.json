@@ -1,0 +1,33 @@
+{
+  "status": "closed",
+  "phase": "v2m1b",
+  "strategy_version": "v2m1b_mqtt_structural_probe_port_gated",
+  "closed_at_reason": "stop_mqtt_structural_features",
+  "decision": "Do not add MQTT structural-violation features to V1 and do not train a V2 MQTT-structure model from this corpus. After port-gating to plaintext MQTT :1883, MQTT_Malformed_Data shows essentially no structural INVALID signal vs benign.",
+  "parent_attempt": "data/experiments/v2_mqtt/phase_v2m1/attempt1",
+  "evidence": {
+    "attempt1_bug": "Parsed all TCP payloads; HTTP/TLS-like bytes falsely became INVALID MQTT and contaminated benign baselines.",
+    "v2m1b_port_gate": [
+      1883
+    ],
+    "mqtt_invalid_ratio_given_mqtt": {
+      "mqtt_malformed": 1.788141048565911e-05,
+      "publisher_benign": 0.00011190444863131926,
+      "profiling_benign": 0.0001334932536630157
+    },
+    "mqtt_invalid_nonzero_windows_given_mqtt": {
+      "mqtt_malformed": 0.0011086474501108647,
+      "publisher_benign": 0.00043572984749455336,
+      "profiling_benign": 0.0004953815986377006
+    },
+    "wildcard_topics": "mqtt_publish_wildcard_topic_count is zero on malformed and benign — no on-wire PUBLISH wildcard evidence in FIT.",
+    "incomplete_after_gate": "INCOMPLETE rates collapse to ~0 after the port gate; segmentation was not the dominant issue once false MQTT detection was removed."
+  },
+  "artifacts": {
+    "attempt1": "data/experiments/v2_mqtt/phase_v2m1/attempt1/",
+    "v2m1b_probe": "data/experiments/v2_mqtt/phase_v2m1b/mqtt_probe_complete.json",
+    "writeup": "data/experiments/v2_mqtt/phase_v2m1b/MQTT_STRUCTURAL_LIMITATION.md"
+  },
+  "v1_unchanged": true,
+  "recommended_next": "Document MQTT_Malformed_Data as a detection limitation of the current pipeline + captures, or pursue non-structural approaches only with new evidence. Do not deepen CONNECT validation for this corpus based on v2m1b."
+}

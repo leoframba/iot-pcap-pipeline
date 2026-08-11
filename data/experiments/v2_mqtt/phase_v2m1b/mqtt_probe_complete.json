@@ -1,0 +1,66 @@
+{
+  "status": "complete",
+  "strategy_version": "v2m1b_mqtt_structural_probe_port_gated",
+  "phase": "v2m1b",
+  "parent_attempt": "data/experiments/v2_mqtt/phase_v2m1/attempt1",
+  "completed_at_utc": "2026-08-11T22:26:23.162392+00:00",
+  "windowing": {
+    "window_size": 25,
+    "tcp_reassembly": false,
+    "mqtt_plaintext_ports": [
+      1883
+    ]
+  },
+  "model_training": false,
+  "data_access": {
+    "development_data": "FIT only",
+    "v1_final_test_access": false,
+    "pcap_count": 4,
+    "pcaps": [
+      {
+        "probe_group": "mqtt_malformed",
+        "pcap_id": "MQTT-Malformed_Data_train-047bd795e609d53a",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/MQTT-Malformed_Data_train.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "Active-75691db1b5d9bcb7",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Active/Active.pcap"
+      },
+      {
+        "probe_group": "profiling benign",
+        "pcap_id": "ActiveBroker-773ce2fbdc89f2e6",
+        "pcap_path": "data/raw/WiFI_and_MQTT/profiling/PCAP/Broker/ActiveBroker.pcap"
+      },
+      {
+        "probe_group": "publisher benign",
+        "pcap_id": "Benign_train-afa71a594c44d5e9",
+        "pcap_path": "data/raw/WiFI_and_MQTT/attacks/pcap/train/Benign_train.pcap"
+      }
+    ]
+  },
+  "hypothesis": {
+    "statement": "MQTT_Malformed_Data contains protocol-structural violations observable from raw TCP payloads and uncommon in benign MQTT",
+    "mqtt_invalid_ratio_given_mqtt": {
+      "mqtt_malformed": 1.788141048565911e-05,
+      "publisher_benign": 0.00011190444863131926,
+      "profiling_benign": 0.0001334932536630157
+    },
+    "mqtt_invalid_nonzero_rate_given_mqtt": {
+      "mqtt_malformed": 0.0011086474501108647,
+      "publisher_benign": 0.00043572984749455336,
+      "profiling_benign": 0.0004953815986377006
+    },
+    "notes": [
+      "hypothesis_failed: mqtt_invalid_ratio|mqtt malformed=0.0000 not clearly above benign_max=0.0001"
+    ],
+    "recommended_next_step": "stop_mqtt_structural_features"
+  },
+  "artifacts": {
+    "mqtt_feature_summary": "data/experiments/v2_mqtt/phase_v2m1b/mqtt_feature_summary.csv",
+    "mqtt_feature_by_pcap": "data/experiments/v2_mqtt/phase_v2m1b/mqtt_feature_by_pcap.csv",
+    "mqtt_violation_summary": "data/experiments/v2_mqtt/phase_v2m1b/mqtt_violation_summary.csv",
+    "mqtt_probe_complete": "data/experiments/v2_mqtt/phase_v2m1b/mqtt_probe_complete.json"
+  },
+  "max_windows_per_pcap": null
+}

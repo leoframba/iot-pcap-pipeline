@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from iot_pcap_pipeline.features.mqtt_v2 import (
+    MQTT_PLAINTEXT_PORTS,
     MQTT_V2_FEATURE_NAMES,
     MQTT_V2_STRATEGY_VERSION,
     extract_mqtt_structural_features,
@@ -25,7 +26,7 @@ from iot_pcap_pipeline.windowing.policy import WINDOW_SIZE, frozen_window_policy
 from iot_pcap_pipeline.windowing.stream import iter_windows
 
 DEFAULT_MQTT_PROBE_DIR = (
-    PROJECT_ROOT / "data" / "experiments" / "v2_mqtt" / "phase_v2m1"
+    PROJECT_ROOT / "data" / "experiments" / "v2_mqtt" / "phase_v2m1b"
 )
 
 PROBE_GROUP_MQTT_MALFORMED = "mqtt_malformed"
@@ -160,8 +161,8 @@ class _ValueBucket:
         return _stats(self.values[name])
 
     def conditional_mqtt_stats(self, name: str) -> dict[str, float | int]:
-        """Stats restricted to windows with mqtt_packet_count > 0."""
-        counts = self.values["mqtt_packet_count"]
+        """Stats restricted to windows with mqtt_frame_count > 0."""
+        counts = self.values["mqtt_frame_count"]
         vals = self.values[name]
         filtered = [v for c, v in zip(counts, vals, strict=True) if c > 0.0]
         return _stats(filtered)
@@ -223,7 +224,7 @@ def run_mqtt_fit_probe(
             "pcap_path": rel,
         }
         if progress_file is not None:
-            mqtt_windows = sum(1 for c in bucket.values["mqtt_packet_count"] if c > 0)
+            mqtt_windows = sum(1 for c in bucket.values["mqtt_frame_count"] if c > 0)
             print(
                 f"  windows={n_windows} mqtt_windows={mqtt_windows}",
                 file=progress_file,
@@ -410,9 +411,14 @@ def run_mqtt_fit_probe(
     complete = {
         "status": "complete",
         "strategy_version": MQTT_V2_STRATEGY_VERSION,
-        "phase": "v2m1",
+        "phase": "v2m1b",
+        "parent_attempt": "data/experiments/v2_mqtt/phase_v2m1/attempt1",
         "completed_at_utc": datetime.now(timezone.utc).isoformat(),
-        "windowing": {"window_size": WINDOW_SIZE, "tcp_reassembly": False},
+        "windowing": {
+            "window_size": WINDOW_SIZE,
+            "tcp_reassembly": False,
+            "mqtt_plaintext_ports": sorted(MQTT_PLAINTEXT_PORTS),
+        },
         "model_training": False,
         "data_access": {
             "development_data": "FIT only",

@@ -41,6 +41,15 @@ ARP Spoofing recall is **56 / 698 = 8.02%**. That single family drives minimum-f
 
 Aggregate 99.826% attack recall is misleading: ~5.9M TEST attack windows are DDoS/DoS, where performance is nearly perfect. A binary-IDS claim based only on aggregate recall would hide the spoofing failure.
 
+#### V2A follow-up (FIT only) — closed as a limitation
+
+After V1 freeze, experiment `v2a1` tested whether ARP IP↔MAC *relationship* features could recover spoofing without touching TEST or altering the V1 package.
+
+- **Stateless (25-packet windows):** conflict features fire on only **7 / 6,423** spoofing FIT windows. Benign has equal/higher `arp_ratio`, so this is not rediscovering “more ARP.”
+- **Stateful (whole-PCAP feasibility):** only **1** spoofing sender IP ever claims two SHAs (**~4.9%** of spoof ARP observations). Publisher/profiling benign show **higher** multi-MAC rates (**~43% / ~26%**).
+
+**Decision:** do not add ARP-identity features or train a V2 ARP-identity model on this corpus. Document spoofing as a detection limitation. Write-up: `data/experiments/v2_arp/phase_v2a1/ARP_SPOOFING_LIMITATION.md` (closure marker: `v2a_experiment_closed.json`).
+
 ### Attack-type heterogeneity
 
 MQTT family average is excellent (**99.48%**), but **MQTT_Malformed_Data** is only **160 / 698 = 22.92%**.
@@ -78,4 +87,5 @@ A fair statement is:
 - Phase 2D evaluation: **complete**
 - Frozen model / threshold / 22-feature selector / hashes: **unchanged**
 - No threshold adjustment, feature experiment, or retraining against this TEST set
-- Further work (if any) belongs to a later version (V2+), designed without using TEST for selection
+- V2A ARP-identity follow-up on FIT: **closed** — spoofing remains a documented limitation (`data/experiments/v2_arp/phase_v2a1/`)
+- Further work (if any) belongs to a later version (V2+), designed without using TEST for selection; prefer other blind spots on this corpus rather than ARP IP↔MAC identity features

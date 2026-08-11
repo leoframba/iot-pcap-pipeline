@@ -1,0 +1,30 @@
+{
+  "status": "closed",
+  "phase": "v2a1",
+  "strategy_version": "v2a1_arp_stateless",
+  "closed_at_reason": "document_spoofing_as_limitation",
+  "decision": "Do not add ARP IP↔MAC identity features to the V1 package and do not train a V2 ARP-identity model from this corpus. ARP Spoofing remains a documented detection limitation.",
+  "v1_unchanged": {
+    "extractor": true,
+    "feature_schema_27": true,
+    "hgb22_artifact": true,
+    "threshold": true,
+    "final_test_artifacts": true
+  },
+  "evidence": {
+    "v1_test_spoofing_recall": 0.08022922636103152,
+    "a5_stateless_fit_probe": {
+      "artifact": "data/experiments/v2_arp/phase_v2a1/arp_probe_complete.json",
+      "finding": "Within frozen 25-packet windows, sender-IP conflict features fire on only 7/6423 spoofing FIT windows (~0.11%). Benign has equal or higher arp_ratio than spoofing, so the gap is not explained by more ARP."
+    },
+    "a6_stateful_fit_probe": {
+      "artifact": "data/experiments/v2_arp/phase_v2a1/arp_stateful_feasibility_complete.json",
+      "finding": "Whole-PCAP state finds only 1 spoofing sender IP with >1 SHA (conflict_obs_ratio≈4.9%; first dual claim ~5464 packets / ~109s later). Publisher benign and profiling (especially ActiveBroker) show higher retrospective multi-MAC rates (≈43% / ≈26%) than spoofing — multi-MAC history is not spoof-specific on FIT."
+    }
+  },
+  "writeups": [
+    "data/experiments/v2_arp/phase_v2a1/ARP_SPOOFING_LIMITATION.md",
+    "data/modeling/v1/V1_ASSESSMENT.md"
+  ],
+  "recommended_next": "Keep V1 deployment statement unchanged regarding ARP spoofing. Future work should target other blind spots (e.g. MQTT malformed-data) or a different dataset/capture regime if IP↔MAC spoof evidence is required."
+}

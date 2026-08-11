@@ -663,6 +663,12 @@ Fair deployment statement: strong on DDoS / DoS / MQTT floods / most Recon at
 low-volume recon types. See `data/modeling/v1/V1_ASSESSMENT.md` and
 `data/modeling/v1/v1_evaluation_complete.json`.
 
+**ARP spoofing limitation (V2A closed):** FIT-only stateless and whole-PCAP
+ARP-identity probes did not yield a spoof-specific IP↔MAC conflict signal
+worth modeling. Do not add ARP-identity features or train a V2 ARP-identity
+model on this corpus. See
+`data/experiments/v2_arp/phase_v2a1/ARP_SPOOFING_LIMITATION.md`.
+
 Do **not** change the model, features, or threshold using TEST.
 
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

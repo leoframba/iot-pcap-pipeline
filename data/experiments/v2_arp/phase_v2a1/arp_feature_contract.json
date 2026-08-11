@@ -2,8 +2,15 @@
   "strategy_version": "v2a1_arp_stateless",
   "phase": "v2a1",
   "experiment_namespace": "data/experiments/v2_arp/phase_v2a1",
-  "status": "contract_frozen",
+  "status": "closed_as_limitation",
   "purpose": "V2A ARP semantic feature experiment: derive counts/ratios from ARP identity relationships inside each existing V1 25-packet window, without altering the frozen V1 package.",
+  "closure": {
+    "decision": "document_spoofing_as_limitation",
+    "marker": "data/experiments/v2_arp/phase_v2a1/v2a_experiment_closed.json",
+    "writeup": "data/experiments/v2_arp/phase_v2a1/ARP_SPOOFING_LIMITATION.md",
+    "do_not_train_v2_arp_identity_model": true,
+    "do_not_modify_v1_package": true
+  },
   "windowing": {
     "policy": "existing_frozen_v1",
     "window_size": 25,
@@ -85,6 +92,6 @@
   "notes": [
     "First experiment is intentionally stateless within each existing 25-packet window for determinism and deployment compatibility.",
     "Raw MAC/IP strings must never appear as model input features; only relationship-derived counts/ratios.",
-    "Characterize all 11 candidates on FIT; retain only those with signal before any V1 package change."
+    "A5/A6 FIT probes found no spoof-specific IP↔MAC conflict signal; experiment closed as a documented limitation (no V2 ARP-identity training)."
   ]
 }

@@ -35,6 +35,7 @@
   "known_limitations": [
     "Aggregate attack recall is dominated by high-volume DDoS/DoS windows and overstates Spoofing / low-volume type performance.",
     "ARP Spoofing recall is ~8% on TEST; V1 features do not encode IP-MAC identity consistency.",
+    "V2A FIT probes (stateless 25-packet + whole-PCAP stateful feasibility) found no spoof-specific IP↔MAC conflict signal worth modeling; ARP spoofing is a closed documented limitation (data/experiments/v2_arp/phase_v2a1/).",
     "MQTT_Malformed_Data recall is ~23% despite strong MQTT flood detection.",
     "Recon types are heterogeneous (Port Scan strong; VulScan weak).",
     "Profiling benign TEST support is only 60 windows; zero profiling FPs is not strong device-generalization evidence."
@@ -48,6 +49,8 @@
   ],
   "artifacts": {
     "assessment_writeup": "data/modeling/v1/V1_ASSESSMENT.md",
+    "arp_spoofing_limitation": "data/experiments/v2_arp/phase_v2a1/ARP_SPOOFING_LIMITATION.md",
+    "v2a_experiment_closed": "data/experiments/v2_arp/phase_v2a1/v2a_experiment_closed.json",
     "final_test_complete": "data/modeling/v1/final_test/phase2d_v1/final_test_complete.json",
     "test_global_metrics": "data/modeling/v1/final_test/phase2d_v1/test_global_metrics.json",
     "test_attack_family_metrics": "data/modeling/v1/final_test/phase2d_v1/test_attack_family_metrics.csv",
@@ -55,5 +58,5 @@
     "validation_vs_test": "data/modeling/v1/final_test/phase2d_v1/validation_vs_test.csv",
     "v1_model_package": "data/modeling/v1/v1_model_package.json"
   },
-  "next": "V1 is closed for selection and evaluation. Any successor (V2+) must be designed without using this TEST set for model, feature, or threshold decisions."
+  "next": "V1 is closed for selection and evaluation. V2A ARP-identity follow-up is closed as a limitation. Any successor must be designed without using the V1 TEST set for model, feature, or threshold decisions; prefer non-ARP blind spots on this corpus."
 }

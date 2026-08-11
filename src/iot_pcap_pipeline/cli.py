@@ -20,6 +20,9 @@ from iot_pcap_pipeline.features.arp_v2_probe import (
     DEFAULT_ARP_PROBE_DIR,
     run_arp_fit_probe,
 )
+from iot_pcap_pipeline.features.arp_v2_stateful_probe import (
+    run_arp_stateful_feasibility_probe,
+)
 from iot_pcap_pipeline.features.build import (
     DEFAULT_MAX_WINDOWS_PER_PCAP,
     DEFAULT_SMOKE_FEATURES_CSV,
@@ -1127,6 +1130,26 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional per-PCAP window cap (smoke only; omit for full FIT probe)",
     )
+
+    arp_stateful_cmd = subparsers.add_parser(
+        "probe-arp-stateful-fit",
+        help=(
+            "V2A A6: FIT-only whole-PCAP ARP conflict feasibility probe "
+            "(no production stateful extractor; no TEST; no training)"
+        ),
+    )
+    arp_stateful_cmd.add_argument(
+        "--split-manifest",
+        type=Path,
+        default=DEFAULT_SPLIT_MANIFEST_PATH,
+        help=f"modeling_split_manifest.csv (default: {DEFAULT_SPLIT_MANIFEST_PATH})",
+    )
+    arp_stateful_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_ARP_PROBE_DIR,
+        help=f"Experiment output directory (default: {DEFAULT_ARP_PROBE_DIR})",
+    )
     return parser
 
 
@@ -1700,6 +1723,36 @@ def main(argv: list[str] | None = None) -> int:
             "arp_feature_nonzero_rates",
             "arp_vs_arp_ratio",
             "arp_probe_complete",
+        ):
+            print(f"Wrote {arts[key]}")
+        return 0
+
+    if args.command == "probe-arp-stateful-fit":
+        try:
+            payload = run_arp_stateful_feasibility_probe(
+                split_manifest_path=args.split_manifest,
+                output_dir=args.output_dir,
+                progress_file=sys.stderr,
+            )
+        except (FeatureExtractionError, FileNotFoundError, ValueError) as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        arts = payload["artifacts"]
+        print("ARP stateful feasibility probe complete")
+        print(f"  PCAPs: {payload['data_access']['pcap_count']}")
+        print(f"  verdict: {payload['verdict']}")
+        print(f"  next: {payload['recommended_next_step']}")
+        for g, row in (payload.get("group_summary") or {}).items():
+            print(
+                f"  {g}: conflict_obs_ratio={float(row['conflict_obs_ratio']):.4f} "
+                f"conflict_ips={row['conflict_ip_count']} "
+                f"valid_arp={row['valid_identity_obs']} "
+                f"transitions={row['mapping_transition_count']}"
+            )
+        for key in (
+            "arp_stateful_by_pcap",
+            "arp_stateful_by_group",
+            "arp_stateful_feasibility_complete",
         ):
             print(f"Wrote {arts[key]}")
         return 0

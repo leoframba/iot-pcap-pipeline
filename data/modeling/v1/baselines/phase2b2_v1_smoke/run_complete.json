@@ -7,10 +7,18 @@
   "class_weights": "none",
   "decision_threshold": 0.5,
   "fit": {
-    "attack_rows": 6423,
-    "benign_rows": 1577,
-    "pcaps": 2,
-    "rows": 8000
+    "attack_rows": 3750,
+    "benign_rows": 750,
+    "pcaps": 7,
+    "rows": 4500,
+    "smoke_groups_loaded": [
+      "benign",
+      "DDoS",
+      "DoS",
+      "MQTT",
+      "Recon",
+      "Spoofing"
+    ]
   },
   "issues": [],
   "label_mapping": {
@@ -21,7 +29,7 @@
     "logistic_regression",
     "hist_gradient_boosting"
   ],
-  "next": "Review benign FP/FPR, Recon/MQTT/DDoS/DoS holdout recall, and LR vs HGB gap. Do not pick a winner, tune thresholds, add weights, or consult TEST.",
+  "next": "Smoke only \u2014 not real baseline evidence. Re-run without --smoke.",
   "smoke_only": true,
   "status": "passed",
   "strategy_version": "phase2b2_v1",
@@ -29,9 +37,28 @@
   "test_pcaps_read": 0,
   "threshold_tuning": false,
   "validation": {
-    "pcaps": 20,
-    "rows_inventory": 4944060,
-    "rows_scored": 4000,
-    "sampling": "never"
+    "rows_scored": 4540,
+    "sampling": "never",
+    "validation_groups_scored": [
+      "DDoS|DDoS_TCP",
+      "DoS|DoS_TCP",
+      "MQTT|MQTT_DoS_Publish_Flood",
+      "Recon|OS_Scan",
+      "owltron_interaction",
+      "owltron_power",
+      "profiling_idle"
+    ],
+    "validation_pcaps_inventory": 20,
+    "validation_pcaps_scored": [
+      "Idle-d722d61af6fa2e4f",
+      "MQTT-DoS-Publish_Flood_train-710a8c2e0fd3ccf2",
+      "Owltron_Camera_LAN_MIC-513871f21444e330",
+      "Owltron_Camera_Power-e29ebcb4aba84f5c",
+      "Recon-OS_Scan_train-374d28e87069ff50",
+      "TCP_IP-DDoS-TCP1_train-4bd6e516680531ed",
+      "TCP_IP-DoS-TCP1_train-6a08fbf1e5b3072a"
+    ],
+    "validation_pcaps_scored_count": 7,
+    "validation_rows_inventory": 4944060
   }
 }

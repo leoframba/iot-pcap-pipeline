@@ -27,14 +27,16 @@ from iot_pcap_pipeline.modeling.baselines.constants import (
     LABEL_MAPPING,
 )
 from iot_pcap_pipeline.modeling.baselines.contract import (
+    DEFAULT_BASELINE_CONTRACT_PATH,
     DEFAULT_BASELINES_ROOT,
-    build_baseline_contract_payload,
+    load_frozen_baseline_contract,
     require_fit_view_ready,
     verify_pinned_hashes,
     write_baseline_contract,
 )
 from iot_pcap_pipeline.modeling.baselines.data import (
     assert_fit_val_disjoint,
+    build_smoke_validation_budgets,
     iter_validation_batches,
     load_fit_arrays,
     load_fit_manifest_rows,
@@ -62,9 +64,6 @@ from iot_pcap_pipeline.modeling.view import (
 )
 from iot_pcap_pipeline.paths import PROJECT_ROOT, to_repo_relative
 from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
-
-SMOKE_MAX_FIT_ROWS = 8_000
-SMOKE_MAX_VAL_ROWS = 4_000
 
 
 @dataclass
@@ -121,7 +120,8 @@ def evaluate_model_on_validation(
     *,
     project_root: Path,
     expected_rows: int,
-    max_rows: int | None,
+    max_rows: int | None = None,
+    row_budget_by_pcap: dict[str, int] | None = None,
     threshold: float = DECISION_THRESHOLD,
     progress_file: TextIO | None = None,
 ) -> dict[str, Any]:
@@ -137,11 +137,14 @@ def evaluate_model_on_validation(
     benign_groups: dict[str, GroupAccumulator] = {}
     pcap_acc: dict[str, GroupAccumulator] = {}
     pcap_meta: dict[str, dict[str, str]] = {}
+    scored_pcap_ids: set[str] = set()
+    scored_groups: set[str] = set()
 
     for batch in iter_validation_batches(
         val_specs,
         project_root=project_root,
         max_rows=max_rows,
+        row_budget_by_pcap=row_budget_by_pcap,
     ):
         spec = batch.spec
         if cursor + batch.X.shape[0] > y_true.shape[0]:
@@ -160,6 +163,7 @@ def evaluate_model_on_validation(
         scores[cursor : cursor + n] = batch_scores
         cursor += n
         global_counts.update(batch.y, batch_pred)
+        scored_pcap_ids.add(spec.pcap_id)
 
         if spec.pcap_id not in pcap_acc:
             pcap_acc[spec.pcap_id] = GroupAccumulator(
@@ -181,6 +185,7 @@ def evaluate_model_on_validation(
 
         if spec.binary_label == "ATTACK":
             gkey = spec.modeling_group_key
+            scored_groups.add(gkey)
             if gkey in attack_groups:
                 attack_groups[gkey].update(
                     pcap_id=spec.pcap_id,
@@ -191,6 +196,7 @@ def evaluate_model_on_validation(
         else:
             bkey = benign_group_key(spec.benign_category, spec.modeling_group_key)
             if bkey is not None:
+                scored_groups.add(bkey)
                 if bkey not in benign_groups:
                     benign_groups[bkey] = GroupAccumulator(
                         key=bkey, kind="benign_group", binary_label="BENIGN"
@@ -240,6 +246,8 @@ def evaluate_model_on_validation(
         "n_rows": cursor,
         "n_attack": int((y_true == 1).sum()),
         "n_benign": int((y_true == 0).sum()),
+        "validation_pcaps_scored": sorted(scored_pcap_ids),
+        "validation_groups_scored": sorted(scored_groups),
         "global": {
             **ranking,
             **threshold_metrics,
@@ -265,9 +273,10 @@ def _train_one(
     model_dir: Path,
     project_root: Path,
     smoke_only: bool,
-    max_val_rows: int | None,
     expected_val_rows: int,
-    progress_file: TextIO | None,
+    max_val_rows: int | None = None,
+    row_budget_by_pcap: dict[str, int] | None = None,
+    progress_file: TextIO | None = None,
 ) -> dict[str, Any]:
     model_id = str(spec["model_id"])
     if progress_file is not None:
@@ -311,6 +320,7 @@ def _train_one(
         project_root=project_root,
         expected_rows=expected_val_rows,
         max_rows=max_val_rows,
+        row_budget_by_pcap=row_budget_by_pcap,
         progress_file=progress_file,
     )
     val_seconds = time.perf_counter() - t1
@@ -452,9 +462,15 @@ def train_baselines(
     fit_complete_path: Path | str | None = None,
     fit_manifest_path: Path | str | None = None,
     split_manifest_path: Path | str | None = None,
+    baseline_contract_path: Path | str | None = None,
     progress_file: TextIO | None = None,
 ) -> BaselineRunResult:
-    """Train LR + HGB on FIT view; evaluate on unsampled TRAIN-validation."""
+    """Train LR + HGB on FIT view; evaluate on unsampled TRAIN-validation.
+
+    Full runs require a pre-frozen ``baseline_contract.json`` from
+    ``prepare-baseline-run`` and never rewrite it. Smoke writes an ephemeral
+    smoke contract under the smoke output directory only.
+    """
     root = (project_root or PROJECT_ROOT).resolve()
     smoke_only = bool(smoke)
     out = Path(
@@ -481,51 +497,107 @@ def train_baselines(
     if not split_path.is_absolute():
         split_path = root / split_path
 
-    contract_path = out / "baseline_contract.json"
     # Drop stale complete marker until acceptance.
     (out / "run_complete.json").unlink(missing_ok=True)
 
-    write_baseline_contract(
-        contract_path,
-        project_root=root,
-        smoke_only=smoke_only,
-        fit_view_manifest_path=fit_man,
-        split_manifest_path=split_path,
-    )
-    contract = json.loads(contract_path.read_text(encoding="utf-8"))
-    verify_pinned_hashes(contract, project_root=root)
+    if smoke_only:
+        contract_path = out / "baseline_contract.json"
+        write_baseline_contract(
+            contract_path,
+            project_root=root,
+            smoke_only=True,
+            status="smoke",
+            fit_view_manifest_path=fit_man,
+            split_manifest_path=split_path,
+        )
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+        verify_pinned_hashes(contract, project_root=root)
+    else:
+        contract_path = Path(baseline_contract_path or DEFAULT_BASELINE_CONTRACT_PATH)
+        if not contract_path.is_absolute():
+            contract_path = root / contract_path
+        # Full run must load the committed frozen contract — never rewrite.
+        contract = load_frozen_baseline_contract(
+            contract_path, project_root=root
+        )
 
     if progress_file is not None:
         progress_file.write("Loading FIT arrays...\n")
         progress_file.flush()
 
-    max_fit = SMOKE_MAX_FIT_ROWS if smoke_only else None
+    fit_manifest_rows = load_fit_manifest_rows(fit_man)
+    require_all_fit_smoke = False
+    if smoke_only:
+        from iot_pcap_pipeline.modeling.baselines.data import _fit_smoke_bucket
+        from iot_pcap_pipeline.modeling.baselines.constants import SMOKE_FIT_BUCKETS
+
+        available_fit = {
+            b
+            for b in (_fit_smoke_bucket(r) for r in fit_manifest_rows)
+            if b is not None
+        }
+        require_all_fit_smoke = set(SMOKE_FIT_BUCKETS).issubset(available_fit)
+
     fit = load_fit_arrays(
         fit_man,
         project_root=root,
         expected_rows=None if smoke_only else EXPECTED_FIT_ROWS,
-        max_rows=max_fit,
         smoke_only=smoke_only,
+        require_all_smoke_groups=require_all_fit_smoke,
     )
+
     val_specs = load_validation_specs(split_path, project_root=root)
     val_inventory = validate_validation_inventory(val_specs, smoke_only=smoke_only)
     assert_fit_val_disjoint(fit.pcap_ids, val_specs)
 
-    # Ensure no validation PCAP is in the fit manifest.
-    fit_rows = load_fit_manifest_rows(fit_man)
-    fit_ids = {r["pcap_id"] for r in fit_rows}
+    fit_ids = {r["pcap_id"] for r in fit_manifest_rows}
     val_ids = {s.pcap_id for s in val_specs}
     if fit_ids & val_ids:
         raise FeatureExtractionError(
             f"FIT/VAL pcap_id overlap: {sorted(fit_ids & val_ids)[:5]}"
         )
 
-    max_val = SMOKE_MAX_VAL_ROWS if smoke_only else None
-    expected_val = (
-        min(SMOKE_MAX_VAL_ROWS, val_inventory["validation_rows"])
-        if smoke_only
-        else EXPECTED_VAL_ROWS
-    )
+    row_budget_by_pcap: dict[str, int] | None = None
+    if smoke_only:
+        row_budget_by_pcap = build_smoke_validation_budgets(val_specs)
+        if not row_budget_by_pcap:
+            raise FeatureExtractionError("smoke validation budget is empty")
+        required_val = set(ATTACK_VAL_GROUPS) | {
+            "profiling_idle",
+            "owltron_interaction",
+            "owltron_power",
+        }
+        inventory_groups: set[str] = set()
+        for spec in val_specs:
+            if spec.binary_label == "ATTACK":
+                inventory_groups.add(spec.modeling_group_key)
+            else:
+                bkey = benign_group_key(
+                    spec.benign_category, spec.modeling_group_key
+                )
+                if bkey:
+                    inventory_groups.add(bkey)
+        if required_val.issubset(inventory_groups):
+            present = set()
+            for spec in val_specs:
+                if spec.pcap_id not in row_budget_by_pcap:
+                    continue
+                if spec.binary_label == "ATTACK":
+                    present.add(spec.modeling_group_key)
+                else:
+                    bkey = benign_group_key(
+                        spec.benign_category, spec.modeling_group_key
+                    )
+                    if bkey:
+                        present.add(bkey)
+            missing = sorted(required_val - present)
+            if missing:
+                raise FeatureExtractionError(
+                    f"smoke validation missing required groups: {missing}"
+                )
+        expected_val = int(sum(row_budget_by_pcap.values()))
+    else:
+        expected_val = EXPECTED_VAL_ROWS
 
     comparison_rows: list[dict[str, Any]] = []
     model_results: list[dict[str, Any]] = []
@@ -541,8 +613,8 @@ def train_baselines(
                 model_dir=model_dir,
                 project_root=root,
                 smoke_only=smoke_only,
-                max_val_rows=max_val,
                 expected_val_rows=expected_val,
+                row_budget_by_pcap=row_budget_by_pcap,
                 progress_file=progress_file,
             )
             model_results.append(result)
@@ -577,7 +649,14 @@ def train_baselines(
         ],
     )
 
-    # Acceptance (full run only enforces frozen totals).
+    scored_pcaps: list[str] = []
+    scored_groups: list[str] = []
+    if model_results:
+        scored_pcaps = list(model_results[0]["eval"].get("validation_pcaps_scored") or [])
+        scored_groups = list(
+            model_results[0]["eval"].get("validation_groups_scored") or []
+        )
+
     if not smoke_only:
         if fit.n_rows != EXPECTED_FIT_ROWS:
             issues.append(f"FIT rows {fit.n_rows} != {EXPECTED_FIT_ROWS}")
@@ -585,10 +664,8 @@ def train_baselines(
             issues.append(f"FIT attack {fit.n_attack} != {EXPECTED_FIT_ATTACK}")
         if fit.n_benign != EXPECTED_FIT_BENIGN:
             issues.append(f"FIT benign {fit.n_benign} != {EXPECTED_FIT_BENIGN}")
-        if len(fit.pcap_ids) != EXPECTED_FIT_PCAPS:
-            # smoke may truncate pcaps list early; full must load all shards
-            if len(load_fit_manifest_rows(fit_man)) != EXPECTED_FIT_PCAPS:
-                issues.append("FIT PCAP count mismatch")
+        if len(load_fit_manifest_rows(fit_man)) != EXPECTED_FIT_PCAPS:
+            issues.append("FIT PCAP count mismatch")
         if val_inventory["validation_pcaps"] != EXPECTED_VAL_PCAPS:
             issues.append("validation PCAP count mismatch")
         if val_inventory["validation_rows"] != EXPECTED_VAL_ROWS:
@@ -601,6 +678,12 @@ def train_baselines(
                 )
         if len(model_results) != len(MODEL_SPECS):
             issues.append("not all models trained successfully")
+    else:
+        if model_results:
+            if int(model_results[0]["eval"]["n_attack"]) == 0:
+                issues.append("smoke scored zero ATTACK validation rows")
+            if int(model_results[0]["eval"]["n_benign"]) == 0:
+                issues.append("smoke scored zero BENIGN validation rows")
 
     passed = not issues
     run_complete = {
@@ -614,14 +697,22 @@ def train_baselines(
         "test_access": False,
         "test_pcaps_read": 0,
         "fit": {
-            "pcaps": len(load_fit_manifest_rows(fit_man)) if not smoke_only else len(fit.pcap_ids),
+            "pcaps": (
+                len(load_fit_manifest_rows(fit_man))
+                if not smoke_only
+                else len(fit.pcap_ids)
+            ),
             "rows": fit.n_rows,
             "attack_rows": fit.n_attack,
             "benign_rows": fit.n_benign,
+            "smoke_groups_loaded": list(fit.smoke_groups_loaded),
         },
         "validation": {
-            "pcaps": val_inventory["validation_pcaps"],
-            "rows_inventory": val_inventory["validation_rows"],
+            "validation_pcaps_inventory": val_inventory["validation_pcaps"],
+            "validation_rows_inventory": val_inventory["validation_rows"],
+            "validation_pcaps_scored": scored_pcaps,
+            "validation_pcaps_scored_count": len(scored_pcaps),
+            "validation_groups_scored": scored_groups,
             "rows_scored": (
                 model_results[0]["eval"]["n_rows"] if model_results else 0
             ),
@@ -638,14 +729,12 @@ def train_baselines(
             "Review benign FP/FPR, Recon/MQTT/DDoS/DoS holdout recall, and LR vs "
             "HGB gap. Do not pick a winner, tune thresholds, add weights, or "
             "consult TEST."
+            if not smoke_only
+            else "Smoke only — not real baseline evidence. Re-run without --smoke."
         ),
     }
     complete_path = out / "run_complete.json"
-    if passed:
-        _atomic_json(complete_path, run_complete)
-    else:
-        # Still write a failed marker for debugging, but status=failed.
-        _atomic_json(complete_path, run_complete)
+    _atomic_json(complete_path, run_complete)
 
     return BaselineRunResult(
         passed=passed,

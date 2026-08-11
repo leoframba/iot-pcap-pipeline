@@ -55,3 +55,20 @@ ATTACK_VAL_GROUPS: tuple[str, ...] = (
     "MQTT|MQTT_DoS_Publish_Flood",
     "Recon|OS_Scan",
 )
+
+# Real-corpus smoke: small fixed slices per FIT/VAL group (not a global row cap).
+SMOKE_ROWS_PER_GROUP = 750
+SMOKE_FIT_BUCKETS: tuple[str, ...] = (
+    "benign",
+    "DDoS",
+    "DoS",
+    "MQTT",
+    "Recon",
+    "Spoofing",
+)
+SMOKE_VAL_ATTACK_GROUPS: tuple[str, ...] = ATTACK_VAL_GROUPS
+SMOKE_VAL_BENIGN_GROUPS: tuple[str, ...] = (
+    "profiling_idle",
+    "owltron_interaction",
+    "owltron_power",
+)

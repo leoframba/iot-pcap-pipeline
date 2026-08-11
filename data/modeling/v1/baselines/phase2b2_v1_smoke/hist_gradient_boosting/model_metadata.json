@@ -34,10 +34,10 @@
     "unique_ip_count",
     "unique_port_count"
   ],
-  "fit_attack_rows": 6423,
-  "fit_benign_rows": 1577,
-  "fit_duration_seconds": 2.5235793329775333,
-  "fit_rows": 8000,
+  "fit_attack_rows": 3750,
+  "fit_benign_rows": 750,
+  "fit_duration_seconds": 2.506963707972318,
+  "fit_rows": 4500,
   "hyperparameters": {
     "early_stopping": false,
     "l2_regularization": 1.0,
@@ -51,7 +51,7 @@
     "BENIGN": 0
   },
   "model_artifact": "data/modeling/v1/baselines/phase2b2_v1_smoke/hist_gradient_boosting/models/hist_gradient_boosting.joblib",
-  "model_artifact_sha256": "e8a363a631abcbd3ca78359c1120053321ffefa68a11333575b3675a7b93b003",
+  "model_artifact_sha256": "680f74a748abcc35188caa37f15bb2d127e16d6603251e0f8d6ff4c53f73ab52",
   "model_id": "hist_gradient_boosting",
   "random_seed": 42,
   "score_note": "Attack-class predict_proba score is not a calibrated real-world probability under the resampled FIT view.",
@@ -59,7 +59,7 @@
   "strategy_version": "phase2b2_v1",
   "test_access": false,
   "threshold_tuning": false,
-  "validation_duration_seconds": 0.049063750077039,
+  "validation_duration_seconds": 0.2428828328847885,
   "versions": {
     "numpy": "2.4.6",
     "platform": "macOS-26.5.1-arm64-arm-64bit",

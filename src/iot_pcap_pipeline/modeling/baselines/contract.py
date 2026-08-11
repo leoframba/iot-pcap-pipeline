@@ -53,6 +53,7 @@ def build_baseline_contract_payload(
     split_manifest_path: Path | None = None,
     feature_schema_path: Path | None = None,
     smoke_only: bool = False,
+    status: str | None = None,
 ) -> dict[str, Any]:
     root = (project_root or PROJECT_ROOT).resolve()
     fit_man = Path(fit_view_manifest_path or DEFAULT_FIT_VIEW_MANIFEST_PATH)
@@ -70,7 +71,11 @@ def build_baseline_contract_payload(
     if not schema_path.is_absolute():
         schema_path = root / schema_path
 
+    if status is None:
+        status = "smoke" if smoke_only else "frozen"
+
     return {
+        "status": status,
         "strategy_version": BASELINE_STRATEGY_VERSION,
         "task": "binary_classification",
         "positive_class": POSITIVE_CLASS,
@@ -121,6 +126,7 @@ def write_baseline_contract(
     *,
     project_root: Path | None = None,
     smoke_only: bool = False,
+    status: str | None = None,
     **kwargs: Any,
 ) -> Path:
     root = (project_root or PROJECT_ROOT).resolve()
@@ -128,13 +134,99 @@ def write_baseline_contract(
     if not out.is_absolute():
         out = root / out
     payload = build_baseline_contract_payload(
-        project_root=root, smoke_only=smoke_only, **kwargs
+        project_root=root,
+        smoke_only=smoke_only,
+        status=status,
+        **kwargs,
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(out.suffix + ".tmp")
     tmp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     tmp.replace(out)
     return out
+
+
+def prepare_baseline_run(
+    *,
+    project_root: Path | None = None,
+    contract_path: Path | str | None = None,
+    fit_complete_path: Path | str | None = None,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Freeze and write the full-run baseline_contract.json (no training)."""
+    root = (project_root or PROJECT_ROOT).resolve()
+    require_fit_view_ready(
+        fit_complete_path=fit_complete_path,
+        project_root=root,
+        smoke_only=False,
+    )
+    out = Path(contract_path or DEFAULT_BASELINE_CONTRACT_PATH)
+    if not out.is_absolute():
+        out = root / out
+    write_baseline_contract(
+        out,
+        project_root=root,
+        smoke_only=False,
+        status="frozen",
+        **kwargs,
+    )
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    verify_pinned_hashes(payload, project_root=root)
+    return payload
+
+
+def load_frozen_baseline_contract(
+    path: Path | str | None = None,
+    *,
+    project_root: Path | None = None,
+) -> dict[str, Any]:
+    """Load a pre-frozen full-run contract and refuse if pins drifted."""
+    root = (project_root or PROJECT_ROOT).resolve()
+    contract_file = Path(path or DEFAULT_BASELINE_CONTRACT_PATH)
+    if not contract_file.is_absolute():
+        contract_file = root / contract_file
+    if not contract_file.is_file():
+        raise FeatureExtractionError(
+            f"frozen baseline_contract.json missing: {contract_file}. "
+            "Run prepare-baseline-run first and commit the contract."
+        )
+    payload = json.loads(contract_file.read_text(encoding="utf-8"))
+    if payload.get("status") != "frozen":
+        raise FeatureExtractionError(
+            f"baseline contract status must be 'frozen', got {payload.get('status')!r}"
+        )
+    if payload.get("smoke_only") is True:
+        raise FeatureExtractionError(
+            "refusing smoke_only baseline contract for a full train-baselines run"
+        )
+    if payload.get("strategy_version") != BASELINE_STRATEGY_VERSION:
+        raise FeatureExtractionError(
+            "baseline contract strategy_version mismatch: "
+            f"{payload.get('strategy_version')!r}"
+        )
+    verify_pinned_hashes(payload, project_root=root)
+    return payload
+
+
+def format_prepare_baseline_summary(payload: dict[str, Any], path: Path) -> str:
+    pins = payload.get("pins") or {}
+    lines = [
+        "Phase 2B.2 — baseline contract FROZEN",
+        f"status: {payload.get('status')}",
+        f"strategy_version: {payload.get('strategy_version')}",
+        f"smoke_only: {payload.get('smoke_only')}",
+        f"path: {path}",
+        f"fit_rows: {payload.get('fit_rows')}",
+        f"validation_rows: {payload.get('validation_rows')}",
+        "pins:",
+    ]
+    for key in sorted(pins):
+        lines.append(f"  {key}: {pins[key]}")
+    lines.append(
+        "next: commit baseline_contract.json, then "
+        "uv run iot-pcap-pipeline train-baselines"
+    )
+    return "\n".join(lines) + "\n"
 
 
 def require_fit_view_ready(

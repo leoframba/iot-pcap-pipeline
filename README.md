@@ -446,8 +446,13 @@ unsampled TRAIN-validation split (20 PCAPs / 4,944,060 windows). Threshold
 fixed at 0.5. No class weights, no search, no TEST.
 
 ```bash
+# 1) Freeze + commit the baseline contract (pins input hashes)
+uv run iot-pcap-pipeline prepare-baseline-run
+
+# 2) Full run (loads the frozen contract; does not rewrite it)
 uv run iot-pcap-pipeline train-baselines
-# implementation smoke only (capped rows; smoke_only=true):
+
+# Implementation smoke only (stratified FIT/VAL slices; smoke_only=true):
 uv run iot-pcap-pipeline train-baselines --smoke
 ```
 

@@ -96,6 +96,11 @@ from iot_pcap_pipeline.modeling.baselines import (
     format_baselines_summary,
     train_baselines,
 )
+from iot_pcap_pipeline.modeling.baselines.contract import (
+    DEFAULT_BASELINE_CONTRACT_PATH,
+    format_prepare_baseline_summary,
+    prepare_baseline_run,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -833,16 +838,32 @@ def build_parser() -> argparse.ArgumentParser:
         "train-baselines",
         help=(
             "Phase 2B.2: train unweighted LR + HistGradientBoosting on FIT view; "
-            "evaluate on unsampled TRAIN-validation (TEST sealed)"
+            "evaluate on unsampled TRAIN-validation (TEST sealed). "
+            "Full runs require a frozen baseline_contract.json from "
+            "prepare-baseline-run."
         ),
     )
     baselines_cmd.add_argument(
         "--smoke",
         action="store_true",
         help=(
-            "Tiny capped FIT/VAL run for implementation verification only "
+            "Stratified tiny FIT/VAL slices for implementation verification only "
             "(marks smoke_only=true; not real baseline results)"
         ),
+    )
+
+    prepare_base_cmd = subparsers.add_parser(
+        "prepare-baseline-run",
+        help=(
+            "Freeze and write data/modeling/v1/baselines/phase2b2_v1/"
+            "baseline_contract.json (pins hashes; no training)"
+        ),
+    )
+    prepare_base_cmd.add_argument(
+        "--contract",
+        type=Path,
+        default=DEFAULT_BASELINE_CONTRACT_PATH,
+        help=f"Output contract path (default: {DEFAULT_BASELINE_CONTRACT_PATH})",
     )
     return parser
 
@@ -1191,6 +1212,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_fit_view_summary(result))
         return 0 if result.passed else 1
+
+    if args.command == "prepare-baseline-run":
+        try:
+            payload = prepare_baseline_run(contract_path=args.contract)
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_prepare_baseline_summary(payload, Path(args.contract)))
+        return 0
 
     if args.command == "train-baselines":
         try:

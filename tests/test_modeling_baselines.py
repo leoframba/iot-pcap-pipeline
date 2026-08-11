@@ -301,3 +301,155 @@ def test_validation_never_uses_fit_view_path(tmp_path: Path) -> None:
     )
     with pytest.raises(FeatureExtractionError, match="unsampled TRAIN"):
         load_validation_specs(split, project_root=tmp_path)
+
+
+def test_smoke_validation_budgets_cover_all_groups() -> None:
+    from iot_pcap_pipeline.modeling.baselines.data import (
+        ValidationPcapSpec,
+        build_smoke_validation_budgets,
+    )
+
+    specs = [
+        ValidationPcapSpec(
+            pcap_id="ddos1",
+            pcap_path="a",
+            feature_parquet_path="data/features/v1/train/a.parquet",
+            modeling_group_key="DDoS|DDoS_TCP",
+            binary_label="ATTACK",
+            attack_family="DDoS",
+            attack_type="DDoS_TCP",
+            benign_category="",
+            window_count=10000,
+        ),
+        ValidationPcapSpec(
+            pcap_id="dos1",
+            pcap_path="b",
+            feature_parquet_path="data/features/v1/train/b.parquet",
+            modeling_group_key="DoS|DoS_TCP",
+            binary_label="ATTACK",
+            attack_family="DoS",
+            attack_type="DoS_TCP",
+            benign_category="",
+            window_count=10000,
+        ),
+        ValidationPcapSpec(
+            pcap_id="mqtt1",
+            pcap_path="c",
+            feature_parquet_path="data/features/v1/train/c.parquet",
+            modeling_group_key="MQTT|MQTT_DoS_Publish_Flood",
+            binary_label="ATTACK",
+            attack_family="MQTT",
+            attack_type="MQTT_DoS_Publish_Flood",
+            benign_category="",
+            window_count=10000,
+        ),
+        ValidationPcapSpec(
+            pcap_id="recon1",
+            pcap_path="d",
+            feature_parquet_path="data/features/v1/train/d.parquet",
+            modeling_group_key="Recon|OS_Scan",
+            binary_label="ATTACK",
+            attack_family="Recon",
+            attack_type="OS_Scan",
+            benign_category="",
+            window_count=10000,
+        ),
+        ValidationPcapSpec(
+            pcap_id="idle1",
+            pcap_path="e",
+            feature_parquet_path="data/features/v1/train/e.parquet",
+            modeling_group_key="benign|singleton|Idle",
+            binary_label="BENIGN",
+            attack_family="",
+            attack_type="",
+            benign_category="profiling_idle",
+            window_count=13149,
+        ),
+        ValidationPcapSpec(
+            pcap_id="owl-int",
+            pcap_path="f",
+            feature_parquet_path="data/features/v1/train/f.parquet",
+            modeling_group_key="benign|device|Owltron_Camera",
+            binary_label="BENIGN",
+            attack_family="",
+            attack_type="",
+            benign_category="profiling_interaction",
+            window_count=9315,
+        ),
+        ValidationPcapSpec(
+            pcap_id="owl-pwr",
+            pcap_path="g",
+            feature_parquet_path="data/features/v1/train/g.parquet",
+            modeling_group_key="benign|device|Owltron_Camera",
+            binary_label="BENIGN",
+            attack_family="",
+            attack_type="",
+            benign_category="profiling_power",
+            window_count=40,
+        ),
+    ]
+    budgets = build_smoke_validation_budgets(specs, rows_per_group=750)
+    assert budgets["ddos1"] == 750
+    assert budgets["dos1"] == 750
+    assert budgets["mqtt1"] == 750
+    assert budgets["recon1"] == 750
+    assert budgets["idle1"] == 750
+    assert budgets["owl-int"] == 750
+    assert budgets["owl-pwr"] == 40  # keep all
+    assert sum(budgets.values()) == 750 * 6 + 40
+
+
+def test_prepare_and_full_train_requires_frozen_contract(tmp_path: Path) -> None:
+    from iot_pcap_pipeline.modeling.baselines.contract import (
+        load_frozen_baseline_contract,
+        prepare_baseline_run,
+    )
+    from iot_pcap_pipeline.modeling.view import file_sha256
+    from iot_pcap_pipeline.features.parquet import feature_schema_sha256
+
+    # Minimal tree under tmp
+    schema = tmp_path / "data" / "features" / "v1" / "feature_schema.json"
+    write_feature_schema(schema)
+    split = tmp_path / "data" / "modeling" / "v1" / "modeling_split_manifest.csv"
+    split.parent.mkdir(parents=True, exist_ok=True)
+    split.write_text("pcap_path\n", encoding="utf-8")
+    fit_man = (
+        tmp_path
+        / "data"
+        / "modeling"
+        / "v1"
+        / "views"
+        / "group_balanced"
+        / "fit_view_manifest.csv"
+    )
+    fit_man.parent.mkdir(parents=True, exist_ok=True)
+    fit_man.write_text("pcap_id\n", encoding="utf-8")
+    train_c = tmp_path / "data" / "modeling" / "v1" / "training_view_contract.json"
+    train_c.write_text("{}\n", encoding="utf-8")
+    complete = fit_man.parent / "fit_view_complete.json"
+    # prepare requires full totals — use smoke_only path via direct write instead
+    with pytest.raises(FeatureExtractionError):
+        load_frozen_baseline_contract(
+            tmp_path / "missing.json", project_root=tmp_path
+        )
+
+    # Write a frozen contract manually and verify load + hash refuse on drift
+    from iot_pcap_pipeline.modeling.baselines.contract import write_baseline_contract
+
+    out = tmp_path / "data" / "modeling" / "v1" / "baselines" / "phase2b2_v1" / "baseline_contract.json"
+    write_baseline_contract(
+        out,
+        project_root=tmp_path,
+        smoke_only=False,
+        status="frozen",
+        fit_view_manifest_path=fit_man,
+        split_manifest_path=split,
+        training_view_contract_path=train_c,
+        feature_schema_path=schema,
+    )
+    loaded = load_frozen_baseline_contract(out, project_root=tmp_path)
+    assert loaded["status"] == "frozen"
+    assert loaded["smoke_only"] is False
+    split.write_text("pcap_path\nx\n", encoding="utf-8")
+    with pytest.raises(FeatureExtractionError, match="mismatch"):
+        load_frozen_baseline_contract(out, project_root=tmp_path)

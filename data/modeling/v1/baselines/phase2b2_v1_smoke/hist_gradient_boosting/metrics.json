@@ -1,34 +1,34 @@
 {
   "decision_threshold": 0.5,
   "global": {
-    "accuracy": 0.974,
-    "attack_recall": null,
-    "balanced_accuracy": null,
-    "benign_fp_count": 104,
-    "benign_fpr": 0.026,
-    "benign_support": 4000,
+    "accuracy": 0.9845814977973568,
+    "attack_recall": 0.9913333333333333,
+    "balanced_accuracy": 0.9813809523809524,
+    "benign_fp_count": 44,
+    "benign_fpr": 0.02857142857142857,
+    "benign_support": 1540,
     "confusion_matrix": {
-      "fn": 0,
-      "fp": 104,
-      "tn": 3896,
-      "tp": 0
+      "fn": 26,
+      "fp": 44,
+      "tn": 1496,
+      "tp": 2974
     },
-    "f1": null,
-    "false_positives_per_10k_benign": 260.0,
-    "pr_auc": null,
-    "precision": 0.0,
-    "roc_auc": null,
-    "specificity": 0.974,
+    "f1": 0.9883682286473912,
+    "false_positives_per_10k_benign": 285.7142857142857,
+    "pr_auc": 0.9988795831735596,
+    "precision": 0.9854208084824387,
+    "roc_auc": 0.9979006493506494,
+    "specificity": 0.9714285714285714,
     "threshold": 0.5
   },
   "macros": {
-    "macro_attack_group_recall": null,
-    "macro_benign_pcap_fpr": 0.026,
-    "macro_pcap_attack_recall": null
+    "macro_attack_group_recall": 0.9913333333333334,
+    "macro_benign_pcap_fpr": 0.12211111111111111,
+    "macro_pcap_attack_recall": 0.9913333333333334
   },
   "model_id": "hist_gradient_boosting",
   "smoke_only": true,
-  "validation_attack_rows": 0,
-  "validation_benign_rows": 4000,
-  "validation_rows": 4000
+  "validation_attack_rows": 3000,
+  "validation_benign_rows": 1540,
+  "validation_rows": 4540
 }

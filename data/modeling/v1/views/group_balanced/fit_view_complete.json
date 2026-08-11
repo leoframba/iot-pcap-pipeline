@@ -1,0 +1,46 @@
+{
+  "artifacts": {
+    "fit_dir": "data/modeling/v1/views/group_balanced/fit",
+    "fit_view_complete": "data/modeling/v1/views/group_balanced/fit_view_complete.json",
+    "fit_view_manifest": "data/modeling/v1/views/group_balanced/fit_view_manifest.csv"
+  },
+  "base_seed": 42,
+  "expected": {
+    "attack_by_family": {
+      "DDoS": 180000,
+      "DoS": 180000,
+      "MQTT": 92053,
+      "Recon": 34759,
+      "Spoofing": 6423
+    },
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "fit_pcaps": 65,
+    "fit_rows": 704305
+  },
+  "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+  "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+  "modeling_split_strategy_version": "phase2a_v1",
+  "next": "Inspect fit_view_manifest.csv + totals, then Phase 2B.2 model training on this view only. Do not consult TEST.",
+  "phase": "2b1_fit_view",
+  "sampling_plan_id": "group_balanced",
+  "status": "passed",
+  "totals": {
+    "attack_by_family": {
+      "DDoS": 180000,
+      "DoS": 180000,
+      "MQTT": 92053,
+      "Recon": 34759,
+      "Spoofing": 6423
+    },
+    "attack_rows": 493235,
+    "benign_rows": 211070,
+    "fit_pcaps": 65,
+    "test_pcaps_touched": 0,
+    "total_rows": 704305,
+    "validation_pcaps_touched": 0
+  },
+  "training_view_contract": "data/modeling/v1/training_view_contract.json",
+  "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552",
+  "validation_sampling": "never"
+}

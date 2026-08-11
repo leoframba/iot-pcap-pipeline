@@ -1,0 +1,66 @@
+Loading FIT arrays (27 features)...
+
+=== A_27_unweighted ===
+  reusing 2B.3A cache /Users/lframba/cs_projects/iot-pcap-pipeline/data/modeling/v1/baselines/phase2b3a_v1/predictions/hist_gradient_boosting_val_scores.npz
+
+=== B_27_balanced ===
+  fitting HGB features=27 class_weight='balanced'...
+/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py:131: UserWarning: Could not find the number of physical cores for the following reason:
+invalid literal for int() with base 10: ''
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 249, in _count_physical_cores
+    cpu_count_physical = _count_physical_cores_darwin()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 318, in _count_physical_cores_darwin
+    return int(cpu_info)
+           ^^^^^^^^^^^^^
+  scoring TRAIN-validation for B_27_balanced...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+
+=== C_22_unweighted ===
+  fitting HGB features=22 class_weight=None...
+  scoring TRAIN-validation for C_22_unweighted...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+
+=== D_22_balanced ===
+  fitting HGB features=22 class_weight='balanced'...
+  scoring TRAIN-validation for D_22_balanced...
+  scored 534183 validation rows
+  scored 1015447 validation rows
+  scored 1539735 validation rows
+  scored 2000084 validation rows
+  scored 2524372 validation rows
+  scored 3012676 validation rows
+  scored 3554172 validation rows
+  scored 4001215 validation rows
+  scored 4514227 validation rows
+Phase 2B.3B — HGB feature / weight ablations
+status: passed
+strategy_version: phase2b3b_v1
+balanced_weights: BENIGN=1.6684 ATTACK=0.7140
+A_27_unweighted: features=27 weight=None fit_s=0.0 score_s=0.0
+B_27_balanced: features=27 weight='balanced' fit_s=8.3 score_s=10.9
+C_22_unweighted: features=22 weight=None fit_s=8.8 score_s=11.2
+D_22_balanced: features=22 weight='balanced' fit_s=7.5 score_s=11.8
+decision_preview: keep_A_provisional_0_95
+  note: No variant meets the coarse heuristic vs A at 1% or 0.5% FPR targets; default path is keep A (27 unweighted) and provisional ~0.95.
+low_fpr: data/modeling/v1/baselines/phase2b3b_v1/comparison_low_fpr.csv
+next: Review comparison_low_fpr.csv. Replace A only if Recon improves materially at <=0.5–1% benign FPR without a substantial MQTT hit; otherwise keep 27-feature unweighted HGB and provisionally use ~0.95. Do not touch TEST.
+

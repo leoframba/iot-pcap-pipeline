@@ -46,14 +46,19 @@ def encode_labels(labels: list[str] | np.ndarray) -> np.ndarray:
     return out
 
 
-def assert_feature_columns(columns: list[str] | tuple[str, ...]) -> None:
+def assert_feature_columns(
+    columns: list[str] | tuple[str, ...],
+    *,
+    expected: tuple[str, ...] | list[str] | None = None,
+) -> None:
     """Refuse if feature order drifts or metadata leaks into X."""
     names = list(columns)
-    if names != _FEATURE_LIST:
+    want = list(expected) if expected is not None else _FEATURE_LIST
+    if names != want:
         raise FeatureExtractionError(
             "feature column order mismatch: "
             f"got {names[:5]}... (n={len(names)}); "
-            f"expected {list(V1_FEATURE_NAMES)[:5]}... (n={len(V1_FEATURE_NAMES)})"
+            f"expected {want[:5]}... (n={len(want)})"
         )
     leaked = sorted(FORBIDDEN_MODEL_COLUMNS & set(names))
     if leaked:
@@ -434,6 +439,7 @@ def iter_validation_batches(
     batch_rows: int = 65_536,
     max_rows: int | None = None,
     row_budget_by_pcap: dict[str, int] | None = None,
+    feature_names: tuple[str, ...] | list[str] | None = None,
 ) -> Iterator[ValidationBatch]:
     """Yield feature/label batches from unsampled TRAIN-validation PCAPs.
 
@@ -441,6 +447,8 @@ def iter_validation_batches(
     each is capped independently — not a single global FIFO cap.
     """
     root = (project_root or PROJECT_ROOT).resolve()
+    feats = list(feature_names) if feature_names is not None else _FEATURE_LIST
+    read_cols = feats + ["binary_label"]
     emitted = 0
     for spec in specs:
         if row_budget_by_pcap is not None:
@@ -460,12 +468,11 @@ def iter_validation_batches(
             raise FeatureExtractionError(f"validation shard missing: {path}")
         pf = pq.ParquetFile(path)
         pcap_emitted = 0
-        for batch in pf.iter_batches(batch_size=batch_rows, columns=_READ_COLUMNS):
+        for batch in pf.iter_batches(batch_size=batch_rows, columns=read_cols):
             cols = [c for c in batch.schema.names if c != "binary_label"]
-            assert_feature_columns(cols)
+            assert_feature_columns(cols, expected=feats)
             arrays = [
-                batch.column(name).to_numpy(zero_copy_only=False)
-                for name in _FEATURE_LIST
+                batch.column(name).to_numpy(zero_copy_only=False) for name in feats
             ]
             X = np.column_stack(arrays).astype(np.float32, copy=False)
             y = encode_labels(batch.column("binary_label").to_pylist())

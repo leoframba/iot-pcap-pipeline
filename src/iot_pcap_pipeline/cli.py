@@ -105,6 +105,10 @@ from iot_pcap_pipeline.modeling.baselines.threshold_sweep import (
     format_threshold_sweep_summary,
     run_threshold_sweep,
 )
+from iot_pcap_pipeline.modeling.baselines.ablations import (
+    format_ablation_summary,
+    run_hgb_ablations,
+)
 from iot_pcap_pipeline.paths import (
     DEFAULT_AUDIT_DIR,
     DEFAULT_MANIFEST_DIR,
@@ -882,6 +886,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force rescoring even if predictions/*.npz caches exist",
     )
+
+    abl_cmd = subparsers.add_parser(
+        "run-hgb-ablations",
+        help=(
+            "Phase 2B.3B: HGB 27/22 × unweighted/balanced ablations + "
+            "low-FPR threshold comparison (no TEST)"
+        ),
+    )
+    abl_cmd.add_argument(
+        "--no-cache-scores",
+        action="store_true",
+        help="Force rescoring even if predictions/*.npz caches exist",
+    )
     return parser
 
 
@@ -1261,6 +1278,18 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAILED: {exc}", file=sys.stderr)
             return 1
         print(format_threshold_sweep_summary(payload))
+        return 0 if payload.get("status") == "passed" else 1
+
+    if args.command == "run-hgb-ablations":
+        try:
+            payload = run_hgb_ablations(
+                progress_file=sys.stderr,
+                cache_scores=not args.no_cache_scores,
+            )
+        except FeatureExtractionError as exc:
+            print(f"FAILED: {exc}", file=sys.stderr)
+            return 1
+        print(format_ablation_summary(payload))
         return 0 if payload.get("status") == "passed" else 1
 
     parser.error(f"unknown command: {args.command}")

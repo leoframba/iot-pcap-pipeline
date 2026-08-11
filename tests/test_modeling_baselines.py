@@ -497,3 +497,21 @@ def test_threshold_sweep_math_synthetic() -> None:
     fixed, fpr_rows = sweep_model(tape, model_id="toy")
     assert len(fixed) >= 11
     assert len(fpr_rows) == 6
+
+
+def test_ablation_feature_sets_and_balanced_weights() -> None:
+    from iot_pcap_pipeline.modeling.baselines.ablations import (
+        DROPPED_TEMPORAL_FEATURES,
+        FEATURES_22,
+        balanced_class_weight_map,
+    )
+    from iot_pcap_pipeline.features.schema import V1_FEATURE_NAMES
+
+    assert len(FEATURES_22) == 22
+    assert set(DROPPED_TEMPORAL_FEATURES).isdisjoint(FEATURES_22)
+    assert len(V1_FEATURE_NAMES) - len(DROPPED_TEMPORAL_FEATURES) == 22
+
+    y = np.array([0] * 211_070 + [1] * 493_235, dtype=np.uint8)
+    weights = balanced_class_weight_map(y)
+    assert weights[0] == pytest.approx(704_305 / (2 * 211_070), rel=1e-6)
+    assert weights[1] == pytest.approx(704_305 / (2 * 493_235), rel=1e-6)

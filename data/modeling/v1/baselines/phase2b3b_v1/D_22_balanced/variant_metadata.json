@@ -1,0 +1,58 @@
+{
+  "balanced_weights_applied": {
+    "0": 1.6684156914767612,
+    "1": 0.7139649457155312
+  },
+  "class_weight": "balanced",
+  "display_name": "HGB 22 features (no timing), balanced weights",
+  "dropped_features": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds"
+  ],
+  "feature_count": 22,
+  "feature_names": [
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "fit_attack_rows": 493235,
+  "fit_benign_rows": 211070,
+  "fit_rows": 704305,
+  "fit_seconds": 7.508161874953657,
+  "hgb_params": {
+    "early_stopping": false,
+    "l2_regularization": 1.0,
+    "learning_rate": 0.1,
+    "max_iter": 200,
+    "max_leaf_nodes": 31,
+    "random_state": 42
+  },
+  "model_artifact": "data/modeling/v1/baselines/phase2b3b_v1/models/D_22_balanced.joblib",
+  "model_artifact_sha256": "d41852c3f65806a5c751f25b80577c7239e3933dd441aa36b67f43f9147389f1",
+  "reuse_from_2b2": false,
+  "score_seconds": 11.841145291924477,
+  "sweep_seconds": 0.4879724173806608,
+  "variant_id": "D_22_balanced"
+}

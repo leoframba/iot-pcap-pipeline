@@ -473,4 +473,20 @@ Writes `data/modeling/v1/baselines/phase2b3a_v1/` with fixed-threshold and
 benign-FPR-target tables (HGB + LR). Score caches under `predictions/` are
 gitignored.
 
+## Phase 2B.3B — HGB feature / weight ablations
+
+Four HGB configurations on the same FIT view (A reused from 2B.2):
+
+- A: 27 features, unweighted
+- B: 27 features, balanced class weights
+- C: 22 features (timing dropped), unweighted
+- D: 22 features, balanced class weights
+
+```bash
+uv run iot-pcap-pipeline run-hgb-ablations
+```
+
+Compare `comparison_low_fpr.csv` at 1% / 0.5% / 0.1% benign FPR. Replace A
+only if Recon improves materially without a substantial MQTT hit.
+
 Raw PCAPs under `data/raw/` are immutable source data and must not be modified.

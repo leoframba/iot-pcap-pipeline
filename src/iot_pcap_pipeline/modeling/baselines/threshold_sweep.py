@@ -206,6 +206,7 @@ def score_validation_tape(
     project_root: Path,
     split_manifest_path: Path,
     expected_rows: int = EXPECTED_VAL_ROWS,
+    feature_names: tuple[str, ...] | list[str] | None = None,
     progress_file: TextIO | None = None,
 ) -> ValidationScoreTape:
     """Score the full unsampled TRAIN-validation set once (no thresholding)."""
@@ -217,7 +218,11 @@ def score_validation_tape(
     group_code = np.empty(expected_rows, dtype=np.uint8)
     cursor = 0
 
-    for batch in iter_validation_batches(specs, project_root=project_root):
+    for batch in iter_validation_batches(
+        specs,
+        project_root=project_root,
+        feature_names=feature_names,
+    ):
         n = batch.X.shape[0]
         if cursor + n > y_true.shape[0]:
             need = cursor + n - y_true.shape[0]

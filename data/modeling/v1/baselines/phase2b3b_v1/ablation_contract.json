@@ -1,0 +1,116 @@
+{
+  "balanced_class_weights_on_fit": {
+    "ATTACK": 0.7139649457155312,
+    "BENIGN": 1.6684156914767612,
+    "approx_expected": {
+      "ATTACK": 0.7139649457155312,
+      "BENIGN": 1.6684156914767612
+    },
+    "formula": "n_samples / (n_classes * n_class)"
+  },
+  "baseline_contract_pins": {
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "fit_view_manifest_sha256": "a8dc0f791c05381ccecef2604873ad08970b2f11b3f22121725b82a7057ad23f",
+    "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+    "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552"
+  },
+  "dropped_temporal_features": [
+    "window_span_seconds",
+    "iat_mean_seconds",
+    "iat_std_seconds",
+    "iat_p50_seconds",
+    "iat_p95_seconds"
+  ],
+  "features_22": [
+    "frame_length_mean",
+    "frame_length_std",
+    "frame_length_min",
+    "frame_length_max",
+    "ipv4_ratio",
+    "ipv6_ratio",
+    "arp_ratio",
+    "llc_ratio",
+    "other_protocol_ratio",
+    "tcp_ratio",
+    "udp_ratio",
+    "icmp_ratio",
+    "icmpv6_ratio",
+    "igmp_ratio",
+    "tcp_syn_ratio",
+    "tcp_ack_ratio",
+    "tcp_fin_ratio",
+    "tcp_rst_ratio",
+    "tcp_psh_ratio",
+    "tcp_urg_ratio",
+    "unique_ip_count",
+    "unique_port_count"
+  ],
+  "fixed_thresholds": [
+    0.5,
+    0.75,
+    0.85,
+    0.9,
+    0.925,
+    0.94,
+    0.95,
+    0.97,
+    0.98,
+    0.99,
+    0.995
+  ],
+  "hgb_params": {
+    "early_stopping": false,
+    "l2_regularization": 1.0,
+    "learning_rate": 0.1,
+    "max_iter": 200,
+    "max_leaf_nodes": 31,
+    "random_state": 42
+  },
+  "improvement_rule": "Replace A only if another variant materially improves Recon recall while staying around <=0.5\u20131% benign FPR without a substantial MQTT hit.",
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.001
+  ],
+  "model_family": "HistGradientBoostingClassifier",
+  "parent_baseline_strategy": "phase2b2_v1",
+  "parent_threshold_sweep": "phase2b3a_v1",
+  "random_state": 42,
+  "reference_hgb_at_0_95": {
+    "benign_fpr": 0.000844294,
+    "ddos_tcp_recall": 0.998639,
+    "dos_tcp_recall": 0.997767,
+    "mqtt_publish_recall": 0.986201,
+    "recon_os_scan_recall": 0.861194,
+    "threshold": 0.95
+  },
+  "strategy_version": "phase2b3b_v1",
+  "test_access": false,
+  "validation_sampling": "never",
+  "variants": [
+    {
+      "class_weight": null,
+      "feature_count": 27,
+      "reuse_from_2b2": true,
+      "variant_id": "A_27_unweighted"
+    },
+    {
+      "class_weight": "balanced",
+      "feature_count": 27,
+      "reuse_from_2b2": false,
+      "variant_id": "B_27_balanced"
+    },
+    {
+      "class_weight": null,
+      "feature_count": 22,
+      "reuse_from_2b2": false,
+      "variant_id": "C_22_unweighted"
+    },
+    {
+      "class_weight": "balanced",
+      "feature_count": 22,
+      "reuse_from_2b2": false,
+      "variant_id": "D_22_balanced"
+    }
+  ]
+}

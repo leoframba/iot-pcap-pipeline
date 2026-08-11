@@ -1,0 +1,129 @@
+{
+  "artifacts": {
+    "ablation_contract": "data/modeling/v1/baselines/phase2b3b_v1/ablation_contract.json",
+    "comparison_fixed_thresholds": "data/modeling/v1/baselines/phase2b3b_v1/comparison_fixed_thresholds.csv",
+    "comparison_fpr_targets": "data/modeling/v1/baselines/phase2b3b_v1/comparison_fpr_targets.csv",
+    "comparison_low_fpr": "data/modeling/v1/baselines/phase2b3b_v1/comparison_low_fpr.csv",
+    "output_dir": "data/modeling/v1/baselines/phase2b3b_v1"
+  },
+  "balanced_class_weights_on_fit": {
+    "ATTACK": 0.7139649457155312,
+    "BENIGN": 1.6684156914767612
+  },
+  "decision_preview": {
+    "challengers": [
+      {
+        "benign_fpr": 0.009998222538215428,
+        "fpr_target": 0.01,
+        "meets_heuristic": false,
+        "mqtt_delta": -0.00620546871033445,
+        "mqtt_publish_recall": 0.9830139397392574,
+        "recon_gain": -0.00608669833729214,
+        "recon_os_scan_recall": 0.857185273159145,
+        "variant_id": "B_27_balanced"
+      },
+      {
+        "benign_fpr": 0.004932456452186278,
+        "fpr_target": 0.005,
+        "meets_heuristic": false,
+        "mqtt_delta": -0.008084033329008311,
+        "mqtt_publish_recall": 0.9808194603498757,
+        "recon_gain": -0.008165083135391882,
+        "recon_os_scan_recall": 0.8548099762470309,
+        "variant_id": "B_27_balanced"
+      },
+      {
+        "benign_fpr": 0.0021773906861002486,
+        "fpr_target": 0.01,
+        "meets_heuristic": false,
+        "mqtt_delta": 0.004061761337673331,
+        "mqtt_publish_recall": 0.9932811697872652,
+        "recon_gain": 0.009352731591448893,
+        "recon_os_scan_recall": 0.872624703087886,
+        "variant_id": "C_22_unweighted"
+      },
+      {
+        "benign_fpr": 0.0021773906861002486,
+        "fpr_target": 0.005,
+        "meets_heuristic": false,
+        "mqtt_delta": 0.0043776761083812454,
+        "mqtt_publish_recall": 0.9932811697872652,
+        "recon_gain": 0.009649643705463173,
+        "recon_os_scan_recall": 0.872624703087886,
+        "variant_id": "C_22_unweighted"
+      },
+      {
+        "benign_fpr": 0.01004265908282972,
+        "fpr_target": 0.01,
+        "meets_heuristic": false,
+        "mqtt_delta": 0.0038248252596424503,
+        "mqtt_publish_recall": 0.9930442337092343,
+        "recon_gain": 0.0065320665083135054,
+        "recon_os_scan_recall": 0.8698040380047506,
+        "variant_id": "D_22_balanced"
+      },
+      {
+        "benign_fpr": 0.00502132954141486,
+        "fpr_target": 0.005,
+        "meets_heuristic": false,
+        "mqtt_delta": 0.003080169014402223,
+        "mqtt_publish_recall": 0.9919836626932862,
+        "recon_gain": 0.004156769596199483,
+        "recon_os_scan_recall": 0.8671318289786223,
+        "variant_id": "D_22_balanced"
+      }
+    ],
+    "notes": [
+      "No variant meets the coarse heuristic vs A at 1% or 0.5% FPR targets; default path is keep A (27 unweighted) and provisional ~0.95."
+    ],
+    "recommendation": "keep_A_provisional_0_95"
+  },
+  "low_fpr_targets": [
+    0.01,
+    0.005,
+    0.001
+  ],
+  "next": "Review comparison_low_fpr.csv. Replace A only if Recon improves materially at <=0.5\u20131% benign FPR without a substantial MQTT hit; otherwise keep 27-feature unweighted HGB and provisionally use ~0.95. Do not touch TEST.",
+  "status": "passed",
+  "strategy_version": "phase2b3b_v1",
+  "test_access": false,
+  "validation_sampling": "never",
+  "variants": [
+    {
+      "class_weight": null,
+      "feature_count": 27,
+      "fit_seconds": 0.0,
+      "reused_2b2": true,
+      "score_seconds": 0.0,
+      "sweep_seconds": 0.4570013750344515,
+      "variant_id": "A_27_unweighted"
+    },
+    {
+      "class_weight": "balanced",
+      "feature_count": 27,
+      "fit_seconds": 8.287232500035316,
+      "reused_2b2": false,
+      "score_seconds": 10.926609666086733,
+      "sweep_seconds": 0.4622006672434509,
+      "variant_id": "B_27_balanced"
+    },
+    {
+      "class_weight": null,
+      "feature_count": 22,
+      "fit_seconds": 8.771960583981127,
+      "reused_2b2": false,
+      "score_seconds": 11.176595292054117,
+      "sweep_seconds": 0.4682970829308033,
+      "variant_id": "C_22_unweighted"
+    },
+    {
+      "class_weight": "balanced",
+      "feature_count": 22,
+      "fit_seconds": 7.508161874953657,
+      "reused_2b2": false,
+      "score_seconds": 11.841145291924477,
+      "sweep_seconds": 0.4879724173806608,
+      "variant_id": "D_22_balanced"
+    }
+  ]
+}

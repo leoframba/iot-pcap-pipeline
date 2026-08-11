@@ -1,0 +1,39 @@
+Phase 2D — sealed TEST evaluation (frozen H0 + threshold; no overrides)
+/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py:131: UserWarning: Could not find the number of physical cores for the following reason:
+invalid literal for int() with base 10: ''
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 249, in _count_physical_cores
+    cpu_count_physical = _count_physical_cores_darwin()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lframba/cs_projects/iot-pcap-pipeline/.venv/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 318, in _count_physical_cores_darwin
+    return int(cpu_info)
+           ^^^^^^^^^^^^^
+  scored 537401 TEST rows
+  scored 1022122 TEST rows
+  scored 1546410 TEST rows
+  scored 2001143 TEST rows
+  scored 2559407 TEST rows
+  scored 3018159 TEST rows
+  scored 3551658 TEST rows
+  scored 4046278 TEST rows
+  scored 4505030 TEST rows
+  scored 5065265 TEST rows
+  scored 5524986 TEST rows
+  scored 6049850 TEST rows
+Phase 2D — One-shot sealed TEST evaluation
+status: passed
+strategy_version: phase2d_v1
+threshold: 0.9490790963172913
+pcaps: 29
+rows: 6206674
+confusion: tp=6180714 fp=12 tn=15149 fn=10799
+attack_recall: 0.998255838274102
+benign_fpr: 0.0007915045181716246
+macro_family_recall: 0.7972817807150315
+min_family_recall: 0.08022922636103152
+roc_auc: 0.9998135334302584 pr_auc: 0.9999995435357149
+measurement_only: True
+complete: data/modeling/v1/final_test/phase2d_v1/final_test_complete.json
+next: TEST evaluation complete. Do not change the model, features, hyperparameters, sampling, or threshold based on these results.
+

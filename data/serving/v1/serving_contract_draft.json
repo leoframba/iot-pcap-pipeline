@@ -1,0 +1,122 @@
+{
+  "serving_contract_version": "v1",
+  "status": "draft",
+  "phase": "D0",
+  "note": "Draft only. K and R are unset until TRAIN-validation candidate review (Commit 3). Window model and threshold remain frozen.",
+  "score_semantics": {
+    "window_score_name": "window_attack_score",
+    "window_score_semantics": "uncalibrated_model_score",
+    "pcap_score_name": "pcap_attack_score",
+    "pcap_score_definition": "attack_windows / total_complete_windows",
+    "pcap_score_semantics": "observed_fraction_of_attack_like_windows",
+    "documentation": "Model scores are uncalibrated decision scores and must not be interpreted as probabilities.",
+    "forbidden_aliases": [
+      "attack_probability",
+      "confidence",
+      "probability"
+    ]
+  },
+  "windowing": {
+    "window_size": 25,
+    "inactivity_timeout_seconds": 5.0,
+    "backward_reset_seconds": 1.0,
+    "strategy_version": "phase1c1_v2",
+    "complete_windows_only": true
+  },
+  "window_decision": {
+    "rule": "ATTACK if window_attack_score >= window_attack_threshold",
+    "window_attack_threshold": 0.9490790963172913,
+    "inequality": ">="
+  },
+  "pcap_decision": {
+    "rule": "ATTACK iff attack_windows >= K AND pcap_attack_score >= R",
+    "pcap_min_attack_windows": null,
+    "pcap_attack_rate_threshold": null,
+    "status": "pending_validation_selection",
+    "candidate_grid": "data/serving/v1/pcap_aggregation_candidates.json"
+  },
+  "prediction_labels": {
+    "ok": ["ATTACK", "BENIGN"],
+    "non_ok_status": [
+      "INSUFFICIENT_DATA",
+      "INVALID_INPUT",
+      "UNSUPPORTED_INPUT"
+    ],
+    "zero_complete_windows": "INSUFFICIENT_DATA",
+    "note": "prediction is set only when status is OK. Never map processing failure or zero windows to BENIGN."
+  },
+  "response_schema": {
+    "status": "OK | INSUFFICIENT_DATA | INVALID_INPUT | UNSUPPORTED_INPUT",
+    "prediction": "ATTACK | BENIGN | null when status != OK",
+    "pcap_attack_score": "float in [0,1] when status == OK; null otherwise",
+    "window_summary": {
+      "total_windows": "int",
+      "attack_windows": "int",
+      "benign_windows": "int",
+      "max_window_attack_score": "float | null",
+      "mean_window_attack_score": "float | null"
+    },
+    "decision": {
+      "window_attack_threshold": "float",
+      "pcap_min_attack_windows": "int (frozen later)",
+      "pcap_attack_rate_threshold": "float (frozen later)"
+    },
+    "model": {
+      "model_version": "v1_hgb22_nontemporal",
+      "serving_contract_version": "v1",
+      "score_semantics": "uncalibrated_model_score"
+    }
+  },
+  "model": {
+    "model_family": "HistGradientBoostingClassifier",
+    "model_version": "v1_hgb22_nontemporal",
+    "hyperparameter_config_id": "H0",
+    "model_artifact": "artifacts/v1/H0_full_fit.joblib",
+    "model_artifact_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
+    "feature_schema": "artifacts/v1/feature_schema.json",
+    "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
+    "model_input_contract": "artifacts/v1/v1_hgb22_nontemporal.json",
+    "feature_names": [
+      "frame_length_mean",
+      "frame_length_std",
+      "frame_length_min",
+      "frame_length_max",
+      "ipv4_ratio",
+      "ipv6_ratio",
+      "arp_ratio",
+      "llc_ratio",
+      "other_protocol_ratio",
+      "tcp_ratio",
+      "udp_ratio",
+      "icmp_ratio",
+      "icmpv6_ratio",
+      "igmp_ratio",
+      "tcp_syn_ratio",
+      "tcp_ack_ratio",
+      "tcp_fin_ratio",
+      "tcp_rst_ratio",
+      "tcp_psh_ratio",
+      "tcp_urg_ratio",
+      "unique_ip_count",
+      "unique_port_count"
+    ],
+    "feature_count": 22
+  },
+  "diagnostics_tracked": [
+    "total_windows",
+    "attack_windows",
+    "benign_windows",
+    "pcap_attack_score",
+    "max_window_attack_score",
+    "mean_window_attack_score"
+  ],
+  "diagnostics_deferred": ["p95_window_attack_score"],
+  "out_of_scope_for_d0": [
+    "classify_pcap",
+    "FastAPI",
+    "Docker",
+    "model_retrain",
+    "window_threshold_change",
+    "TEST_based_K_R_selection"
+  ]
+}

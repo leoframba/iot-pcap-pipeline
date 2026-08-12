@@ -1,0 +1,74 @@
+{
+  "phase": "D0.3",
+  "status": "candidates_declared",
+  "purpose": "Predeclared PCAP-level aggregation policy grid. Selection uses TRAIN-validation PCAPs only. TEST must not influence K or R.",
+  "scope_locked": [
+    "window_model",
+    "window_attack_threshold",
+    "model_input_features",
+    "score_semantics"
+  ],
+  "window_decision": {
+    "score_name": "window_attack_score",
+    "score_semantics": "uncalibrated_model_score",
+    "forbidden_aliases": [
+      "attack_probability",
+      "confidence",
+      "probability"
+    ],
+    "rule": "ATTACK if window_attack_score >= window_attack_threshold",
+    "window_attack_threshold": 0.9490790963172913,
+    "note": "Model scores are uncalibrated decision scores and must not be interpreted as probabilities."
+  },
+  "pcap_score": {
+    "name": "pcap_attack_score",
+    "definition": "attack_windows / total_complete_windows",
+    "semantics": "observed_fraction_of_attack_like_windows",
+    "bounded": [0.0, 1.0],
+    "note": "Not an attack probability. Incomplete trailing windows are excluded."
+  },
+  "pcap_decision_family": {
+    "rule": "ATTACK iff attack_windows >= K AND pcap_attack_score >= R",
+    "inequalities": ">=",
+    "zero_windows": "INSUFFICIENT_DATA (no prediction)",
+    "K_candidates": [1, 3, 5],
+    "R_candidates": [0.005, 0.01, 0.025, 0.05],
+    "policy_count": 12
+  },
+  "policies": [
+    {"policy_id": "K1_R0.005", "K": 1, "R": 0.005},
+    {"policy_id": "K1_R0.01", "K": 1, "R": 0.01},
+    {"policy_id": "K1_R0.025", "K": 1, "R": 0.025},
+    {"policy_id": "K1_R0.05", "K": 1, "R": 0.05},
+    {"policy_id": "K3_R0.005", "K": 3, "R": 0.005},
+    {"policy_id": "K3_R0.01", "K": 3, "R": 0.01},
+    {"policy_id": "K3_R0.025", "K": 3, "R": 0.025},
+    {"policy_id": "K3_R0.05", "K": 3, "R": 0.05},
+    {"policy_id": "K5_R0.005", "K": 5, "R": 0.005},
+    {"policy_id": "K5_R0.01", "K": 5, "R": 0.01},
+    {"policy_id": "K5_R0.025", "K": 5, "R": 0.025},
+    {"policy_id": "K5_R0.05", "K": 5, "R": 0.05}
+  ],
+  "selection_split": "TRAIN-validation",
+  "selection_forbidden": ["TEST", "fit_view_sampling", "threshold_retune", "model_retrain"],
+  "selection_priority": [
+    "Minimize benign-PCAP false positives.",
+    "Among remaining policies, maximize attack-PCAP recall.",
+    "Break ties using macro family recall (mean of per-family recalls over attack families present in VAL).",
+    "If still tied, prefer lower K then lower R (simpler / lower threshold)."
+  ],
+  "selection_metrics": [
+    "benign_pcap_false_positives",
+    "attack_pcap_recall",
+    "macro_family_recall",
+    "min_family_recall"
+  ],
+  "caveat": "Validation PCAP count is small. This selects a reasonable operating rule, not a precise production PCAP-level FPR estimate.",
+  "parents": {
+    "model_artifact": "artifacts/v1/H0_full_fit.joblib",
+    "model_artifact_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
+    "model_input_version": "v1_hgb22_nontemporal",
+    "v1_model_package": "artifacts/v1/v1_model_package.json",
+    "modeling_split_manifest": "data/modeling/v1/modeling_split_manifest.csv"
+  }
+}

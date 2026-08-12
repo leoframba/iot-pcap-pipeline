@@ -36,19 +36,39 @@ jobs:
           root = Path(".")
           model = root / "artifacts/v1/H0_full_fit.joblib"
           pkg_path = root / "artifacts/v1/v1_model_package.json"
+          contract_path = root / "artifacts/v1/serving_contract.json"
           if not model.is_file():
               raise SystemExit(f"missing model artifact: {model}")
           if not pkg_path.is_file():
               raise SystemExit(f"missing package json: {pkg_path}")
+          if not contract_path.is_file():
+              raise SystemExit(f"missing serving contract: {contract_path}")
 
           digest = hashlib.sha256(model.read_bytes()).hexdigest()
-          expected = json.loads(pkg_path.read_text())["model_artifact_sha256"]
+          pkg = json.loads(pkg_path.read_text())
+          contract = json.loads(contract_path.read_text())
+          expected = pkg["model_artifact_sha256"]
           if digest != expected:
               raise SystemExit(
-                  f"model SHA mismatch:\n  got:      {digest}\n  expected: {expected}"
+                  f"model SHA mismatch vs v1_model_package:\n  got:      {digest}\n  expected: {expected}"
               )
+          serving_sha = contract["model"]["model_artifact_sha256"]
+          if digest != serving_sha:
+              raise SystemExit(
+                  f"model SHA mismatch vs serving_contract:\n  got:      {digest}\n  expected: {serving_sha}"
+              )
+          if contract.get("status") != "frozen":
+              raise SystemExit(f"serving_contract status={contract.get('status')!r}")
+          pcap = contract["pcap_decision"]
+          assert pcap["pcap_min_attack_windows"] == 3
+          assert pcap["pcap_attack_rate_threshold"] == 0.005
+          assert pcap["minimum_complete_windows"] == 3
           print(f"ok artifacts/v1/H0_full_fit.joblib == {digest}")
+          print("ok serving_contract.json frozen K=3 R=0.005 min_windows=3")
           PY
+
+      - name: Verify serving contract module
+        run: uv run python -c "from iot_pcap_pipeline.serving.contract import verify_serving_contract; verify_serving_contract(); print('ok')"
 
       - name: Unit / synthetic tests (exclude corpus)
         run: uv run pytest -m "not corpus" -q --tb=short

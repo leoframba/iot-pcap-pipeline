@@ -1,0 +1,57 @@
+{
+  "phase": "D0",
+  "status": "complete",
+  "serving_contract_version": "v1",
+  "serving_contract": "artifacts/v1/serving_contract.json",
+  "frozen_policy": {
+    "policy_id": "K3_R0.005",
+    "K": 3,
+    "R": 0.005,
+    "minimum_complete_windows": 3,
+    "window_attack_threshold": 0.9490790963172913,
+    "pcap_score": "attack_windows / total_complete_windows",
+    "pcap_attack_rule": "ATTACK iff attack_windows >= 3 AND pcap_attack_score >= 0.005",
+    "insufficient_data_rule": "total_complete_windows < 3 → INSUFFICIENT_DATA"
+  },
+  "selection_justification": {
+    "type": "engineering_operating_policy",
+    "selection_split": "TRAIN-validation",
+    "note": "All 12 predeclared (K,R) cells were validation-equivalent (0 benign-PCAP FPs, 10/10 attack-PCAP recall). K=3, R=0.005 was chosen as an engineering operating policy for small-vs-large capture protection, not because validation proved it superior.",
+    "minimum_complete_windows_rationale": "Aligned with K=3 so one-/two-window PCAPs cannot be silently labeled BENIGN when they cannot satisfy the count gate."
+  },
+  "score_semantics": {
+    "window_attack_score": "uncalibrated_model_score",
+    "pcap_attack_score": "observed_fraction_of_attack_like_windows",
+    "documentation": "Model scores are uncalibrated decision scores and must not be interpreted as probabilities."
+  },
+  "model": {
+    "model_version": "v1_hgb22_nontemporal",
+    "model_artifact": "artifacts/v1/H0_full_fit.joblib",
+    "model_artifact_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb"
+  },
+  "artifacts": {
+    "serving_contract": "artifacts/v1/serving_contract.json",
+    "candidates": "data/serving/v1/pcap_aggregation_candidates.json",
+    "by_pcap": "data/serving/v1/pcap_aggregation_by_pcap.csv",
+    "summary": "data/serving/v1/pcap_aggregation_summary.csv",
+    "review": "data/serving/v1/pcap_aggregation_review.json",
+    "draft_superseded": "data/serving/v1/serving_contract_draft.json"
+  },
+  "implemented": {
+    "aggregate_window_scores": "src/iot_pcap_pipeline/serving/aggregate.py",
+    "verify_serving_contract": "src/iot_pcap_pipeline/serving/contract.py",
+    "unit_tests": [
+      "tests/test_serving_aggregate.py",
+      "tests/test_serving_contract.py"
+    ]
+  },
+  "out_of_scope": [
+    "classify_pcap",
+    "FastAPI",
+    "Docker",
+    "model_retrain",
+    "window_threshold_change",
+    "TEST_based_K_R_selection"
+  ],
+  "next": "D1 inference core may implement classify_pcap() against this frozen contract. Optional retrospective TEST PCAP characterization must not change K/R."
+}

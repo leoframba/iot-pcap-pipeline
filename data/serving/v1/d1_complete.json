@@ -1,0 +1,29 @@
+{
+  "phase": "D1",
+  "status": "complete",
+  "serving_contract_version": "v1",
+  "serving_contract": "artifacts/v1/serving_contract.json",
+  "model_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
+  "feature_count": 22,
+  "window_size": 25,
+  "score_batch_size": 1024,
+  "accepted_linktype": 1,
+  "accepted_linktype_name": "DLT_EN10MB",
+  "parity_status": "passed",
+  "parity": {
+    "synthetic_independent_reference": "tests/test_serving_parity.py::test_classify_pcap_matches_independent_synthetic_reference",
+    "corpus_fit_shard_parity": "tests/test_serving_parity.py::test_classify_pcap_matches_fit_feature_shard_scores",
+    "note": "Corpus FIT parity is optional (@pytest.mark.corpus) and skipped when local CICIoMT data is absent."
+  },
+  "response_model_block": [
+    "model_version",
+    "serving_contract_version",
+    "score_semantics"
+  ],
+  "implemented": {
+    "classify_pcap": "src/iot_pcap_pipeline/serving/classify.py",
+    "V1InferenceEngine": "src/iot_pcap_pipeline/serving/model.py",
+    "contract": "src/iot_pcap_pipeline/serving/contract.py"
+  },
+  "next": "D2 HTTP/FastAPI serving may expose model SHA via /health; prediction responses stay contract-shaped. Do not reopen K/R or the window threshold."
+}

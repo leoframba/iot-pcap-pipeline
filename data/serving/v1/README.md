@@ -12,6 +12,7 @@ Frozen checkout-ready contract: `artifacts/v1/serving_contract.json`
 | `pcap_aggregation_summary.csv` | Policy-level summary metrics (ranked) |
 | `pcap_aggregation_review.json` | Recommended policy + freeze gate status |
 | `d0_complete.json` | D0 closure marker (engineering justification recorded) |
+| `d1_complete.json` | D1 local inference closure + parity status |
 
 ```bash
 uv run iot-pcap-pipeline evaluate-pcap-aggregation
@@ -19,6 +20,10 @@ uv run iot-pcap-pipeline evaluate-pcap-aggregation
 
 **Frozen policy:** K=3, R=0.005, `minimum_complete_windows=3`  
 (see `artifacts/v1/serving_contract.json`)
+
+**Local inference:** `classify_pcap()` / `V1InferenceEngine.load_default()` under
+`src/iot_pcap_pipeline/serving/`. Prediction `model` block matches the frozen
+schema (`model_version`, `serving_contract_version`, `score_semantics` only).
 
 **Rules**
 

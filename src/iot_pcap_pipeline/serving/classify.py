@@ -99,7 +99,6 @@ def _model_block(engine: V1InferenceEngine) -> dict[str, Any]:
         "model_version": (engine.contract.get("model") or {}).get("model_version"),
         "serving_contract_version": engine.contract.get("serving_contract_version"),
         "score_semantics": "uncalibrated_model_score",
-        "model_artifact_sha256": engine.model_sha256,
     }
 
 

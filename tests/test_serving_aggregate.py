@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from iot_pcap_pipeline.serving.aggregate import (
+    StreamingWindowAggregator,
     aggregate_window_scores,
     window_is_attack,
 )
@@ -144,3 +145,33 @@ def test_decision_block_echoes_frozen_knobs() -> None:
     assert result.decision.pcap_min_attack_windows == FROZEN_MIN_ATTACK_WINDOWS
     assert result.decision.pcap_attack_rate_threshold == FROZEN_ATTACK_RATE_THRESHOLD
     assert result.decision.window_attack_threshold == THR
+
+
+@pytest.mark.parametrize(
+    "scores",
+    [
+        [],
+        [0.1],
+        [0.99, 0.99],
+        [0.1] * 10,
+        [0.99] * 10,
+        [0.99] * 3 + [0.1] * 597,
+        [0.99999] + [0.01] * 999,
+        [0.2, 0.4, 0.6, THR, 0.1, 0.1],
+    ],
+)
+@pytest.mark.parametrize("batch_size", [1, 2, 3, 7, 64])
+def test_streaming_aggregator_matches_aggregate_window_scores(
+    scores: list[float],
+    batch_size: int,
+) -> None:
+    expected = aggregate_window_scores(scores)
+    agg = StreamingWindowAggregator()
+    for i in range(0, len(scores), batch_size):
+        agg.observe_many(scores[i : i + batch_size])
+    got = agg.finalize()
+    assert got.status == expected.status
+    assert got.prediction == expected.prediction
+    assert got.pcap_attack_score == expected.pcap_attack_score
+    assert got.window_summary == expected.window_summary
+    assert got.decision == expected.decision

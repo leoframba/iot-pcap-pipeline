@@ -137,3 +137,43 @@ def test_classify_missing_file(tmp_path: Path) -> None:
     engine = V1InferenceEngine.load_default()
     result = classify_pcap(tmp_path / "missing.pcap", engine=engine)
     assert result.status == STATUS_INVALID_INPUT
+
+
+def _libpcap_global_header(*, linktype: int = DLT_EN10MB) -> bytes:
+    # Classic libpcap little-endian global header (24 bytes).
+    import struct
+
+    return struct.pack("<IHHIIII", 0xA1B2C3D4, 2, 4, 0, 0, 65535, int(linktype))
+
+
+def _libpcap_packet_header(*, caplen: int, origlen: int | None = None) -> bytes:
+    import struct
+
+    return struct.pack("<IIII", 0, 0, int(caplen), int(origlen if origlen is not None else caplen))
+
+
+def test_classify_truncated_packet_header_is_invalid_input(tmp_path: Path) -> None:
+    """Valid global header + truncated per-packet header → INVALID_INPUT."""
+    engine = V1InferenceEngine.load_default()
+    path = tmp_path / "trunc_hdr.pcap"
+    # 8 of 16 packet-header bytes.
+    path.write_bytes(_libpcap_global_header() + b"\x00" * 8)
+    result = classify_pcap(path, engine=engine)
+    assert result.status == STATUS_INVALID_INPUT
+    assert result.prediction is None
+
+
+def test_classify_truncated_packet_body_is_invalid_input(tmp_path: Path) -> None:
+    """Valid packet header claiming N bytes + short body → INVALID_INPUT."""
+    engine = V1InferenceEngine.load_default()
+    path = tmp_path / "trunc_body.pcap"
+    frame = eth_ip_tcp(flags=dpkt.tcp.TH_SYN)
+    # Claim full frame length but only write 10 body bytes.
+    path.write_bytes(
+        _libpcap_global_header()
+        + _libpcap_packet_header(caplen=len(frame), origlen=len(frame))
+        + frame[:10]
+    )
+    result = classify_pcap(path, engine=engine)
+    assert result.status == STATUS_INVALID_INPUT
+    assert result.prediction is None

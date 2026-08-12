@@ -209,7 +209,12 @@ def classify_pcap(
         flush()
     except FeatureExtractionError as exc:
         return _non_ok(status=STATUS_INVALID_INPUT, engine=eng, detail=str(exc))
-    except (ValueError, OSError) as exc:
+    except (
+        ValueError,
+        OSError,
+        dpkt.dpkt.NeedData,
+        dpkt.dpkt.UnpackError,
+    ) as exc:
         return _non_ok(status=STATUS_INVALID_INPUT, engine=eng, detail=str(exc))
 
     return _from_aggregation(aggregator.finalize(), engine=eng)

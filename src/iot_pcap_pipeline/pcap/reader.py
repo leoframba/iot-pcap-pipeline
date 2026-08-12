@@ -88,6 +88,9 @@ def iter_packets(
 
     Read-only: opens the PCAP for binary reading and never writes back.
     Parsing failures become PacketRecords with an explicit parse_status.
+
+    Truncated / corrupt libpcap records (header or body) raise ``ValueError``
+    so callers can map them to INVALID_INPUT rather than leaking DPKT errors.
     """
     path = Path(pcap_path)
     if not path.is_file():
@@ -100,15 +103,56 @@ def iter_packets(
             raise ValueError(f"failed to open PCAP {path}: {exc}") from exc
 
         linktype = int(reader.datalink())
-        for index, (timestamp, buf) in enumerate(reader):
-            if max_packets is not None and index >= max_packets:
-                break
-            yield decode_frame(
-                buf,
-                packet_index=index,
-                timestamp=float(timestamp),
-                linktype=linktype,
+        try:
+            for index, (timestamp, buf) in enumerate(
+                _iter_pcap_records_strict(reader)
+            ):
+                if max_packets is not None and index >= max_packets:
+                    break
+                yield decode_frame(
+                    buf,
+                    packet_index=index,
+                    timestamp=float(timestamp),
+                    linktype=linktype,
+                )
+        except (ValueError, OSError, dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError) as exc:
+            raise ValueError(f"failed to read PCAP {path}: {exc}") from exc
+
+
+def _iter_pcap_records_strict(
+    reader: dpkt.pcap.Reader,
+) -> Iterator[tuple[float, bytes]]:
+    """Iterate packets like ``dpkt.pcap.Reader``, but refuse truncated bodies.
+
+    DPKT's default iterator returns a short buffer when the file ends mid-body
+    without raising. Serving treats that as INVALID_INPUT, so we enforce
+    ``len(body) == caplen``.
+    """
+    # DPKT stores these after parsing the global header (endian-aware).
+    fileobj = getattr(reader, "_Reader__f", None)
+    pkt_hdr_cls = getattr(reader, "_Reader__ph", None)
+    divisor = float(getattr(reader, "_divisor", 1_000_000.0))
+    if fileobj is None or pkt_hdr_cls is None:
+        # Fallback: preserve prior behavior if DPKT internals change.
+        yield from reader
+        return
+
+    hdr_len = int(pkt_hdr_cls.__hdr_len__)
+    while True:
+        hdr_buf = fileobj.read(hdr_len)
+        if not hdr_buf:
+            return
+        if len(hdr_buf) < hdr_len:
+            raise dpkt.dpkt.NeedData(f"got {len(hdr_buf)}, {hdr_len} needed at least")
+        hdr = pkt_hdr_cls(hdr_buf)
+        caplen = int(hdr.caplen)
+        body = fileobj.read(caplen)
+        if len(body) < caplen:
+            raise ValueError(
+                f"truncated packet body: got {len(body)} bytes, expected caplen={caplen}"
             )
+        timestamp = float(hdr.tv_sec) + (float(hdr.tv_usec) / divisor)
+        yield timestamp, body
 
 
 def summarize_pcap(

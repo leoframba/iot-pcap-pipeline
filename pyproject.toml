@@ -7,26 +7,33 @@ authors = [
     { name = "leoframba", email = "89568350+leoframba@users.noreply.github.com" }
 ]
 requires-python = ">=3.11"
+# Minimal runtime shared by local classify + container serving.
+# Pin scikit-learn to the exact version that produced artifacts/v1/H0_full_fit.joblib.
 dependencies = [
-    "catboost>=1.2.10",
     "dpkt>=1.9.8",
     "joblib>=1.5.3",
-    "matplotlib>=3.11.1",
-    "pandas>=3.0.5",
-    "pyarrow>=25.0.0",
-    "scikit-learn>=1.9.0",
-    "seaborn>=0.13.2",
-    "xgboost>=3.2.0",
+    "numpy>=2.0.0",
+    "scikit-learn==1.9.0",
 ]
 
 [project.scripts]
 iot-pcap-pipeline = "iot_pcap_pipeline.cli:main"
 
 [project.optional-dependencies]
+# Container / API runtime: uv sync --extra serving
 serving = [
     "fastapi",
     "uvicorn",
     "google-cloud-storage",
+]
+# Research / offline training & evaluation: uv sync --extra research
+research = [
+    "catboost>=1.2.10",
+    "matplotlib>=3.11.1",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.0",
+    "seaborn>=0.13.2",
+    "xgboost>=3.2.0",
 ]
 
 [build-system]

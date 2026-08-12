@@ -24,7 +24,9 @@ jobs:
           python-version: "3.11"
 
       - name: Sync locked dependencies
-        run: uv sync --locked --extra serving
+        # Full research + serving + dev so unit tests and CLI smoke can import
+        # Parquet / modeling paths. Docker installs only: uv sync --extra serving
+        run: uv sync --locked --extra serving --extra research
 
       - name: Verify frozen V1 model SHA-256
         run: |

@@ -1,0 +1,26 @@
+# Docker build context for the serving image.
+# Whitelist only what the container needs: project metadata, package source,
+# and frozen artifacts/v1/. Everything else stays out of the build context.
+
+# Deny all by default
+*
+
+# Project metadata / lock (serving install)
+!pyproject.toml
+!uv.lock
+!README.md
+
+# Application source (serving imports pcap/features/windowing/serving/api)
+!src/
+!src/iot_pcap_pipeline/
+!src/iot_pcap_pipeline/**
+
+# Frozen V1 model + serving contract
+!artifacts/
+!artifacts/v1/
+!artifacts/v1/**
+
+# Keep bytecode / caches out even under allowed trees
+**/__pycache__/
+**/*.py[cod]
+**/.DS_Store

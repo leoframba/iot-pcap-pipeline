@@ -886,19 +886,23 @@ name = "iot-pcap-pipeline"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "catboost" },
     { name = "dpkt" },
     { name = "joblib" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "scikit-learn" },
+]
+
+[package.optional-dependencies]
+research = [
+    { name = "catboost" },
     { name = "matplotlib" },
     { name = "pandas" },
     { name = "pyarrow" },
-    { name = "scikit-learn" },
     { name = "seaborn" },
     { name = "xgboost", version = "3.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "xgboost", version = "3.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
-
-[package.optional-dependencies]
 serving = [
     { name = "fastapi" },
     { name = "google-cloud-storage" },
@@ -916,20 +920,21 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "catboost", specifier = ">=1.2.10" },
+    { name = "catboost", marker = "extra == 'research'", specifier = ">=1.2.10" },
     { name = "dpkt", specifier = ">=1.9.8" },
     { name = "fastapi", marker = "extra == 'serving'" },
     { name = "google-cloud-storage", marker = "extra == 'serving'" },
     { name = "joblib", specifier = ">=1.5.3" },
-    { name = "matplotlib", specifier = ">=3.11.1" },
-    { name = "pandas", specifier = ">=3.0.5" },
-    { name = "pyarrow", specifier = ">=25.0.0" },
-    { name = "scikit-learn", specifier = ">=1.9.0" },
-    { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "matplotlib", marker = "extra == 'research'", specifier = ">=3.11.1" },
+    { name = "numpy", specifier = ">=2.0.0" },
+    { name = "pandas", marker = "extra == 'research'", specifier = ">=3.0.5" },
+    { name = "pyarrow", marker = "extra == 'research'", specifier = ">=25.0.0" },
+    { name = "scikit-learn", specifier = "==1.9.0" },
+    { name = "seaborn", marker = "extra == 'research'", specifier = ">=0.13.2" },
     { name = "uvicorn", marker = "extra == 'serving'" },
-    { name = "xgboost", specifier = ">=3.2.0" },
+    { name = "xgboost", marker = "extra == 'research'", specifier = ">=3.2.0" },
 ]
-provides-extras = ["serving"]
+provides-extras = ["serving", "research"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -36,7 +36,10 @@
     "candidate_grid": "data/serving/v1/pcap_aggregation_candidates.json"
   },
   "prediction_labels": {
-    "ok": ["ATTACK", "BENIGN"],
+    "ok": [
+      "ATTACK",
+      "BENIGN"
+    ],
     "non_ok_status": [
       "INSUFFICIENT_DATA",
       "INVALID_INPUT",
@@ -110,7 +113,9 @@
     "max_window_attack_score",
     "mean_window_attack_score"
   ],
-  "diagnostics_deferred": ["p95_window_attack_score"],
+  "diagnostics_deferred": [
+    "p95_window_attack_score"
+  ],
   "out_of_scope_for_d0": [
     "classify_pcap",
     "FastAPI",

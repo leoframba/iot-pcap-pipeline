@@ -118,10 +118,10 @@
   "pins": {
     "feature_schema_sha256": "d3ee4f40f9e2a3da8f2821ea41d5115a8117b1cd921e7a9fb8558026aa02e69b",
     "fit_view_manifest_sha256": "a8dc0f791c05381ccecef2604873ad08970b2f11b3f22121725b82a7057ad23f",
-    "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+    "modeling_split_manifest_sha256": "997736ba84b38c983e3c69137c3961c96f33863b156e5f4edae035f11d35a1f7",
     "parent_hgb_model_artifact_sha256": "edbcec54de1062fd929b54e62f0e45e208b31981f1cc40936fe1c9910fb15c4e",
     "parent_model_family_complete_status": "passed",
-    "training_view_contract_sha256": "d0777fb350f91c66899a341ec4b1d1ff544cbf0c0ad4725bc9dcb05c60677552"
+    "training_view_contract_sha256": "c9fa3cb261975ae6fafeb632b38e34dc96e539f225536734f5279cccf90d6c3b"
   },
   "purpose": "external_boosting_challengers",
   "ranking_criteria": [

@@ -29,7 +29,7 @@
     "modeling_group_key",
     "pcap_path"
   ],
-  "modeling_split_manifest_sha256": "a8f812e23cd9cc463e1aea589ef1862384254aec456a95014ef3a0861fada1f3",
+  "modeling_split_manifest_sha256": "997736ba84b38c983e3c69137c3961c96f33863b156e5f4edae035f11d35a1f7",
   "modeling_split_strategy_version": "phase2a_v1",
   "output_columns": [
     "pcap_id",

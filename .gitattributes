@@ -1,0 +1,21 @@
+# Keep text artifacts byte-stable across macOS / Linux / CI.
+# Hash pins (SHA-256 of file bytes) must match the Git blob / clean-clone content.
+
+* text=auto eol=lf
+
+*.joblib binary
+*.parquet binary
+*.npz binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.zip binary
+*.gz binary
+*.bz2 binary
+*.xz binary
+*.7z binary
+*.pkl binary
+*.pickle binary
+*.npy binary

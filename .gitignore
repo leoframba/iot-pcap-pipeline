@@ -94,3 +94,6 @@ data/modeling/v1/**/*.npz
 data/modeling/v1/baselines/**/models/
 data/modeling/v1/baselines/**/predictions/
 data/modeling/v1/.work/
+
+# Local tests
+data/test/

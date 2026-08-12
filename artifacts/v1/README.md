@@ -67,6 +67,12 @@ engine = V1InferenceEngine.load_default()  # once per process
 result = classify_pcap("capture.pcap", engine=engine)
 ```
 
+Or via CLI (local smoke before FastAPI):
+
+```bash
+uv run iot-pcap-pipeline classify-pcap path/to/capture.pcap
+```
+
 `serving/contract.py` depends only on stdlib + `artifacts/v1/*.json` (no PyArrow).
 
 The CLI entrypoint is `iot_pcap_pipeline.cli:main` (research only).

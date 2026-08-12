@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import sys
 from pathlib import Path
 
@@ -205,11 +206,13 @@ from iot_pcap_pipeline.windowing.policy import (
     DEFAULT_BACKWARD_RESET_SECONDS,
     candidate_policies,
 )
+from iot_pcap_pipeline.serving.classify import DEFAULT_SCORE_BATCH_SIZE, classify_pcap
 from iot_pcap_pipeline.serving.evaluate_aggregation import (
     DEFAULT_SERVING_DIR,
     format_review_summary,
     write_aggregation_evaluation,
 )
+from iot_pcap_pipeline.serving.model import V1InferenceEngine
 from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
 
 
@@ -1200,6 +1203,25 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_SERVING_DIR,
         help=f"Selection evidence directory (default: {DEFAULT_SERVING_DIR})",
     )
+
+    classify_cmd = subparsers.add_parser(
+        "classify-pcap",
+        help=(
+            "D1 local smoke: run frozen V1 inference on one Ethernet PCAP "
+            "(no HTTP; prints JSON prediction)"
+        ),
+    )
+    classify_cmd.add_argument(
+        "pcap",
+        type=Path,
+        help="Path to a classic libpcap capture (DLT_EN10MB / Ethernet)",
+    )
+    classify_cmd.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_SCORE_BATCH_SIZE,
+        help=f"Window scoring batch size (default: {DEFAULT_SCORE_BATCH_SIZE})",
+    )
     return parser
 
 
@@ -1841,6 +1863,22 @@ def main(argv: list[str] | None = None) -> int:
         for key in ("by_pcap", "summary", "review"):
             if arts.get(key):
                 print(f"Wrote {arts[key]}")
+        return 0
+
+    if args.command == "classify-pcap":
+        pcap_path = args.pcap if args.pcap.is_absolute() else (PROJECT_ROOT / args.pcap)
+        engine = V1InferenceEngine.load_default()
+        result = classify_pcap(
+            pcap_path,
+            engine=engine,
+            batch_size=args.batch_size,
+        )
+        payload = result.to_dict()
+        payload["pcap"] = str(pcap_path)
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        # Non-zero only for input failures; INSUFFICIENT_DATA / ATTACK / BENIGN → 0.
+        if result.status in {"INVALID_INPUT", "UNSUPPORTED_INPUT"}:
+            return 1
         return 0
 
     parser.error(f"unknown command: {args.command}")

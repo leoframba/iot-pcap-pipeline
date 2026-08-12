@@ -24,7 +24,6 @@ from iot_pcap_pipeline.modeling.baselines.data import (
 )
 from iot_pcap_pipeline.modeling.baselines.model_input import V1_MODEL_INPUT_FEATURES
 from iot_pcap_pipeline.modeling.baselines.models import attack_score_from_estimator
-from iot_pcap_pipeline.modeling.view import file_sha256
 from iot_pcap_pipeline.paths import (
     DEFAULT_MODELING_DIR,
     PROJECT_ROOT,
@@ -34,6 +33,7 @@ from iot_pcap_pipeline.serving.contract import (
     FROZEN_ATTACK_RATE_THRESHOLD,
     FROZEN_MIN_ATTACK_WINDOWS,
     FROZEN_MIN_COMPLETE_WINDOWS,
+    sha256_file,
 )
 from iot_pcap_pipeline.serving.candidates import (
     AggregationPolicy,
@@ -115,7 +115,7 @@ def score_validation_pcaps(
     model_file = Path(model_path or DEFAULT_MODEL_PATH)
     if not model_file.is_absolute():
         model_file = root / model_file
-    digest = file_sha256(model_file)
+    digest = sha256_file(model_file)
     if digest != expected_model_sha256:
         raise FeatureExtractionError(
             f"model SHA mismatch: actual={digest} expected={expected_model_sha256}"

@@ -9,11 +9,13 @@ from iot_pcap_pipeline.serving.contract import (
     FROZEN_ATTACK_RATE_THRESHOLD,
     FROZEN_MIN_ATTACK_WINDOWS,
     FROZEN_MIN_COMPLETE_WINDOWS,
+    WINDOW_ATTACK_THRESHOLD,
 )
-from iot_pcap_pipeline.serving.candidates import WINDOW_ATTACK_THRESHOLD
+from iot_pcap_pipeline.serving.errors import (
+    STATUS_INSUFFICIENT_DATA,
+    STATUS_OK,
+)
 
-STATUS_OK = "OK"
-STATUS_INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 PREDICTION_ATTACK = "ATTACK"
 PREDICTION_BENIGN = "BENIGN"
 
@@ -64,6 +66,89 @@ def window_is_attack(
     return float(score) >= float(window_threshold)
 
 
+@dataclass
+class StreamingWindowAggregator:
+    """Constant-memory aggregator for complete-window attack scores."""
+
+    window_threshold: float = WINDOW_ATTACK_THRESHOLD
+    minimum_complete_windows: int = FROZEN_MIN_COMPLETE_WINDOWS
+    min_attack_windows: int = FROZEN_MIN_ATTACK_WINDOWS
+    attack_rate_threshold: float = FROZEN_ATTACK_RATE_THRESHOLD
+    _total: int = 0
+    _attack: int = 0
+    _score_sum: float = 0.0
+    _score_max: float = float("-inf")
+
+    def observe(self, score: float) -> None:
+        s = float(score)
+        self._total += 1
+        self._score_sum += s
+        if s > self._score_max:
+            self._score_max = s
+        if window_is_attack(s, window_threshold=self.window_threshold):
+            self._attack += 1
+
+    def observe_many(self, scores: Sequence[float]) -> None:
+        for score in scores:
+            self.observe(score)
+
+    def finalize(self) -> AggregationResult:
+        decision = AggregationDecision(
+            window_attack_threshold=float(self.window_threshold),
+            minimum_complete_windows=int(self.minimum_complete_windows),
+            pcap_min_attack_windows=int(self.min_attack_windows),
+            pcap_attack_rate_threshold=float(self.attack_rate_threshold),
+        )
+        total = int(self._total)
+        attack_windows = int(self._attack)
+        if total == 0:
+            summary = WindowSummary(
+                total_windows=0,
+                attack_windows=0,
+                benign_windows=0,
+                max_window_attack_score=None,
+                mean_window_attack_score=None,
+            )
+            return AggregationResult(
+                status=STATUS_INSUFFICIENT_DATA,
+                prediction=None,
+                pcap_attack_score=None,
+                window_summary=summary,
+                decision=decision,
+            )
+
+        summary = WindowSummary(
+            total_windows=total,
+            attack_windows=attack_windows,
+            benign_windows=total - attack_windows,
+            max_window_attack_score=self._score_max,
+            mean_window_attack_score=self._score_sum / total,
+        )
+        if total < int(self.minimum_complete_windows):
+            return AggregationResult(
+                status=STATUS_INSUFFICIENT_DATA,
+                prediction=None,
+                pcap_attack_score=None,
+                window_summary=summary,
+                decision=decision,
+            )
+
+        rate = attack_windows / total
+        if attack_windows >= int(self.min_attack_windows) and rate >= float(
+            self.attack_rate_threshold
+        ):
+            prediction = PREDICTION_ATTACK
+        else:
+            prediction = PREDICTION_BENIGN
+        return AggregationResult(
+            status=STATUS_OK,
+            prediction=prediction,
+            pcap_attack_score=rate,
+            window_summary=summary,
+            decision=decision,
+        )
+
+
 def aggregate_window_scores(
     scores: Sequence[float],
     *,
@@ -77,64 +162,11 @@ def aggregate_window_scores(
     ``scores`` must contain one uncalibrated window_attack_score per complete
     window. Incomplete trailing windows must not be included by the caller.
     """
-    vals = [float(s) for s in scores]
-    total = len(vals)
-    decision = AggregationDecision(
-        window_attack_threshold=float(window_threshold),
-        minimum_complete_windows=int(minimum_complete_windows),
-        pcap_min_attack_windows=int(min_attack_windows),
-        pcap_attack_rate_threshold=float(attack_rate_threshold),
+    agg = StreamingWindowAggregator(
+        window_threshold=window_threshold,
+        minimum_complete_windows=minimum_complete_windows,
+        min_attack_windows=min_attack_windows,
+        attack_rate_threshold=attack_rate_threshold,
     )
-
-    if total == 0:
-        summary = WindowSummary(
-            total_windows=0,
-            attack_windows=0,
-            benign_windows=0,
-            max_window_attack_score=None,
-            mean_window_attack_score=None,
-        )
-        return AggregationResult(
-            status=STATUS_INSUFFICIENT_DATA,
-            prediction=None,
-            pcap_attack_score=None,
-            window_summary=summary,
-            decision=decision,
-        )
-
-    attack_flags = [window_is_attack(s, window_threshold=window_threshold) for s in vals]
-    attack_windows = int(sum(1 for flag in attack_flags if flag))
-    benign_windows = total - attack_windows
-    score_max = max(vals)
-    score_mean = sum(vals) / total
-    rate = attack_windows / total
-
-    summary = WindowSummary(
-        total_windows=total,
-        attack_windows=attack_windows,
-        benign_windows=benign_windows,
-        max_window_attack_score=score_max,
-        mean_window_attack_score=score_mean,
-    )
-
-    if total < int(minimum_complete_windows):
-        return AggregationResult(
-            status=STATUS_INSUFFICIENT_DATA,
-            prediction=None,
-            pcap_attack_score=None,
-            window_summary=summary,
-            decision=decision,
-        )
-
-    if attack_windows >= int(min_attack_windows) and rate >= float(attack_rate_threshold):
-        prediction = PREDICTION_ATTACK
-    else:
-        prediction = PREDICTION_BENIGN
-
-    return AggregationResult(
-        status=STATUS_OK,
-        prediction=prediction,
-        pcap_attack_score=rate,
-        window_summary=summary,
-        decision=decision,
-    )
+    agg.observe_many(scores)
+    return agg.finalize()

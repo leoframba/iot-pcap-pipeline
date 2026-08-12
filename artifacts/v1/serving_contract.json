@@ -42,7 +42,7 @@
     "pcap_min_attack_windows": 3,
     "pcap_attack_rate_threshold": 0.005,
     "inequalities": ">=",
-    "insufficient_data_rule": "total_complete_windows < minimum_complete_windows → INSUFFICIENT_DATA (no prediction)",
+    "insufficient_data_rule": "total_complete_windows < minimum_complete_windows \u2192 INSUFFICIENT_DATA (no prediction)",
     "status": "frozen"
   },
   "prediction_labels": {
@@ -128,11 +128,18 @@
     "p95_window_attack_score"
   ],
   "out_of_scope_for_d0": [
-    "classify_pcap",
     "FastAPI",
     "Docker",
     "model_retrain",
     "window_threshold_change",
     "TEST_based_K_R_selection"
-  ]
+  ],
+  "input_support": {
+    "accepted_container": "classic_libpcap",
+    "accepted_linktype": 1,
+    "accepted_linktype_name": "DLT_EN10MB",
+    "unsupported_linktype_status": "UNSUPPORTED_INPUT",
+    "invalid_pcap_status": "INVALID_INPUT",
+    "note": "V1 corpus was Ethernet-only. Other linktypes are unsupported even if the decoder can parse them. Unsupported EtherTypes inside Ethernet frames remain in-stream and contribute to other_protocol_ratio."
+  }
 }

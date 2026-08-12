@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from iot_pcap_pipeline.modeling.baselines.phase2c_freeze import FROZEN_V1_THRESHOLD
 from iot_pcap_pipeline.paths import PROJECT_ROOT
+from iot_pcap_pipeline.serving.contract import WINDOW_ATTACK_THRESHOLD
 
 DEFAULT_CANDIDATES_PATH = (
     PROJECT_ROOT / "data" / "serving" / "v1" / "pcap_aggregation_candidates.json"
@@ -16,9 +16,6 @@ DEFAULT_CANDIDATES_PATH = (
 DEFAULT_DRAFT_CONTRACT_PATH = (
     PROJECT_ROOT / "data" / "serving" / "v1" / "serving_contract_draft.json"
 )
-
-# Locked window operating point (must match v1_model_package.json).
-WINDOW_ATTACK_THRESHOLD = FROZEN_V1_THRESHOLD
 
 K_CANDIDATES: tuple[int, ...] = (1, 3, 5)
 R_CANDIDATES: tuple[float, ...] = (0.005, 0.01, 0.025, 0.05)

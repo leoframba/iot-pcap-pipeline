@@ -57,13 +57,16 @@ resolve to this exact digest before packaging.
 
 ## Serving import guidance
 
-Import decoder / windowing / extractor modules directly. Do **not** import
-`iot_pcap_pipeline.cli` or research Parquet builders in the serving image:
+Import decoder / windowing / extractor / serving modules directly. Do **not**
+import `iot_pcap_pipeline.cli` or research Parquet builders in the serving image:
 
 ```python
-from iot_pcap_pipeline.pcap.decode import ...
-from iot_pcap_pipeline.windowing.stream import ...
-from iot_pcap_pipeline.features.extractor import extract_features
+from iot_pcap_pipeline.serving import V1InferenceEngine, classify_pcap
+
+engine = V1InferenceEngine.load_default()  # once per process
+result = classify_pcap("capture.pcap", engine=engine)
 ```
+
+`serving/contract.py` depends only on stdlib + `artifacts/v1/*.json` (no PyArrow).
 
 The CLI entrypoint is `iot_pcap_pipeline.cli:main` (research only).

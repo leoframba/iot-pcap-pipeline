@@ -5,8 +5,6 @@ from __future__ import annotations
 import pytest
 
 from iot_pcap_pipeline.serving.aggregate import (
-    STATUS_INSUFFICIENT_DATA,
-    STATUS_OK,
     aggregate_window_scores,
     window_is_attack,
 )
@@ -15,6 +13,10 @@ from iot_pcap_pipeline.serving.contract import (
     FROZEN_ATTACK_RATE_THRESHOLD,
     FROZEN_MIN_ATTACK_WINDOWS,
     FROZEN_MIN_COMPLETE_WINDOWS,
+)
+from iot_pcap_pipeline.serving.errors import (
+    STATUS_INSUFFICIENT_DATA,
+    STATUS_OK,
 )
 
 THR = WINDOW_ATTACK_THRESHOLD

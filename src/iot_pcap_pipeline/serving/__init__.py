@@ -1,4 +1,7 @@
-"""D0/D1 serving semantics. Import-light; no research CLI / Parquet / FastAPI."""
+"""D0/D1 serving semantics. Import-light; no research CLI / Parquet / FastAPI.
+
+HTTP surface lives in ``iot_pcap_pipeline.api`` (optional ``serving`` extra).
+"""
 
 from __future__ import annotations
 

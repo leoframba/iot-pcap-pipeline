@@ -24,7 +24,7 @@ jobs:
           python-version: "3.11"
 
       - name: Sync locked dependencies
-        run: uv sync --locked
+        run: uv sync --locked --extra serving
 
       - name: Verify frozen V1 model SHA-256
         run: |

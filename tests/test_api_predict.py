@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from iot_pcap_pipeline.api.app import MAX_CONCURRENT_PREDICTIONS, create_app
 from iot_pcap_pipeline.api.settings import ServingSettings
-from iot_pcap_pipeline.api.storage import FakePcapFetcher
+from iot_pcap_pipeline.api.storage import FakePcapFetcher, PcapFetchError
 from iot_pcap_pipeline.serving.classify import classify_pcap
 from iot_pcap_pipeline.serving.contract import EXPECTED_MODEL_SHA256
 from iot_pcap_pipeline.serving.model import V1InferenceEngine
@@ -311,6 +311,29 @@ def test_predict_rejects_extra_fields(tmp_path: Path) -> None:
             ).status_code
             == 422
         )
+
+
+def test_predict_internal_fetch_500_is_sanitized(tmp_path: Path) -> None:
+    """GCS/internal fetch failures must not leak exception text to clients."""
+
+    class _BoomFetcher:
+        def fetch(self, gcs_uri: str, destination: Path) -> Path:
+            raise PcapFetchError(
+                "GCS request failed: secret-bucket /path/to/artifact sha=abc",
+                status_code=500,
+            )
+
+    settings = _settings()
+    app = create_app(settings=settings, pcap_fetcher=_BoomFetcher())  # type: ignore[arg-type]
+    with TestClient(app) as client:
+        response = client.post(
+            "/predict",
+            json={"instances": [{"gcs_uri": "gs://iomt-input/pcaps/x.pcap"}]},
+        )
+    assert response.status_code == 500
+    assert response.json()["detail"] == "internal serving error"
+    assert "secret-bucket" not in response.text
+    assert "artifact" not in response.text
 
 
 def test_d2_complete_artifact_present() -> None:

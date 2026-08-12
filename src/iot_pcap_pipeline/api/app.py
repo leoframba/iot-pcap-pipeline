@@ -30,6 +30,7 @@ logger = logging.getLogger("iot_pcap_pipeline.api")
 
 # D2.12 / D2.13: single in-process prediction at a time until D4 benchmarking.
 MAX_CONCURRENT_PREDICTIONS = 1
+INTERNAL_SERVING_ERROR_DETAIL = "internal serving error"
 
 _HTTP_INFERENCE_ERROR_STATUSES = frozenset(
     {STATUS_INVALID_INPUT, STATUS_UNSUPPORTED_INPUT}
@@ -129,6 +130,19 @@ def create_app(
                 try:
                     fetcher.fetch(gcs_uri, destination)
                 except PcapFetchError as exc:
+                    http_status = int(exc.status_code)
+                    detail = (
+                        INTERNAL_SERVING_ERROR_DETAIL
+                        if http_status >= 500
+                        else str(exc)
+                    )
+                    if http_status >= 500:
+                        logger.error(
+                            "predict fetch internal error request_id=%s: %s",
+                            request_id,
+                            exc,
+                            exc_info=exc,
+                        )
                     _log_predict(
                         request_id=request_id,
                         status="FETCH_ERROR",
@@ -138,11 +152,9 @@ def create_app(
                         inference_seconds=None,
                         total_seconds=time.perf_counter() - t0,
                         total_windows=None,
-                        http_status=exc.status_code,
+                        http_status=http_status,
                     )
-                    raise HTTPException(
-                        status_code=exc.status_code, detail=str(exc)
-                    ) from exc
+                    raise HTTPException(status_code=http_status, detail=detail) from exc
                 download_seconds = time.perf_counter() - t_dl0
                 pcap_bytes = destination.stat().st_size
 
@@ -150,6 +162,12 @@ def create_app(
                 try:
                     result = classify_pcap(destination, engine=eng)
                 except ServingError as exc:
+                    logger.error(
+                        "predict serving error request_id=%s: %s",
+                        request_id,
+                        exc,
+                        exc_info=exc,
+                    )
                     _log_predict(
                         request_id=request_id,
                         status="SERVING_ERROR",
@@ -161,8 +179,16 @@ def create_app(
                         total_windows=None,
                         http_status=500,
                     )
-                    raise HTTPException(status_code=500, detail=str(exc)) from exc
+                    raise HTTPException(
+                        status_code=500, detail=INTERNAL_SERVING_ERROR_DETAIL
+                    ) from exc
                 except Exception as exc:  # noqa: BLE001 - map unexpected to 500
+                    logger.error(
+                        "predict unexpected error request_id=%s: %s",
+                        request_id,
+                        exc,
+                        exc_info=exc,
+                    )
                     _log_predict(
                         request_id=request_id,
                         status="UNEXPECTED_ERROR",
@@ -175,7 +201,7 @@ def create_app(
                         http_status=500,
                     )
                     raise HTTPException(
-                        status_code=500, detail="unexpected serving failure"
+                        status_code=500, detail=INTERNAL_SERVING_ERROR_DETAIL
                     ) from exc
                 inference_seconds = time.perf_counter() - t_inf0
 
@@ -201,6 +227,11 @@ def create_app(
                     )
 
                 if status not in _HTTP_SUCCESS_STATUSES:
+                    logger.error(
+                        "predict unexpected classify status request_id=%s status=%s",
+                        request_id,
+                        status,
+                    )
                     _log_predict(
                         request_id=request_id,
                         status=status,
@@ -214,7 +245,7 @@ def create_app(
                     )
                     raise HTTPException(
                         status_code=500,
-                        detail=f"unexpected classify status: {status}",
+                        detail=INTERNAL_SERVING_ERROR_DETAIL,
                     )
 
                 _log_predict(

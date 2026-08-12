@@ -98,6 +98,8 @@ def _translate_gcs_api_error(exc: BaseException) -> PcapFetchError:
         return GcsNotFoundError(message)
     if name in {"Forbidden", "PermissionDenied", "Unauthorized"}:
         return GcsPermissionDeniedError(message)
+    # Keep the detailed Google message for server logs via __cause__; callers of
+    # fetch() should map status_code >= 500 to a generic HTTP detail.
     return PcapFetchError(f"GCS request failed: {message}", status_code=500)
 
 

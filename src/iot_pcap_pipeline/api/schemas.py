@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class PredictInstance(BaseModel):
     """Single prediction instance: GCS object reference only."""
+
+    model_config = ConfigDict(extra="forbid")
 
     gcs_uri: str = Field(..., min_length=1)
 
@@ -25,6 +27,8 @@ class PredictInstance(BaseModel):
 
 class PredictRequest(BaseModel):
     """Vertex-compatible predict body: exactly one instance."""
+
+    model_config = ConfigDict(extra="forbid")
 
     instances: list[PredictInstance]
 

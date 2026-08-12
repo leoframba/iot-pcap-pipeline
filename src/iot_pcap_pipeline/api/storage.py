@@ -5,11 +5,40 @@ from __future__ import annotations
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Protocol
+from typing import Iterable, Mapping, Protocol
 
 
-class PcapFetchError(ValueError):
-    """Raised when a GCS URI is rejected or a download fails policy checks."""
+class PcapFetchError(Exception):
+    """Base fetch / GCS policy error with an HTTP status mapping."""
+
+    status_code: int = 500
+
+    def __init__(self, message: str, *, status_code: int | None = None) -> None:
+        super().__init__(message)
+        if status_code is not None:
+            self.status_code = int(status_code)
+
+
+class GcsUriInvalidError(PcapFetchError):
+    status_code = 422
+
+
+class GcsNotAllowedError(PcapFetchError):
+    """Disallowed bucket/prefix (application allowlist)."""
+
+    status_code = 403
+
+
+class GcsNotFoundError(PcapFetchError):
+    status_code = 404
+
+
+class GcsPermissionDeniedError(PcapFetchError):
+    status_code = 403
+
+
+class PcapTooLargeError(PcapFetchError):
+    status_code = 413
 
 
 @dataclass(frozen=True)
@@ -25,29 +54,29 @@ class GcsObjectRef:
 def parse_gcs_uri(gcs_uri: str) -> GcsObjectRef:
     """Parse ``gs://bucket/object`` into bucket + object name."""
     if not isinstance(gcs_uri, str) or not gcs_uri.startswith("gs://"):
-        raise PcapFetchError("gcs_uri must start with gs://")
+        raise GcsUriInvalidError("gcs_uri must start with gs://")
     rest = gcs_uri[len("gs://") :]
     if not rest or "/" not in rest:
-        raise PcapFetchError("gcs_uri must include bucket and object name")
+        raise GcsUriInvalidError("gcs_uri must include bucket and object name")
     bucket, object_name = rest.split("/", 1)
     if not bucket or not object_name:
-        raise PcapFetchError("gcs_uri must include bucket and object name")
+        raise GcsUriInvalidError("gcs_uri must include bucket and object name")
     if "\\" in object_name or object_name.startswith("/"):
-        raise PcapFetchError(f"rejected gcs object path: {object_name!r}")
+        raise GcsUriInvalidError(f"rejected gcs object path: {object_name!r}")
     parts = object_name.split("/")
     if any(part in {"", ".", ".."} for part in parts):
-        raise PcapFetchError(f"rejected gcs object path: {object_name!r}")
+        raise GcsUriInvalidError(f"rejected gcs object path: {object_name!r}")
     return GcsObjectRef(bucket=bucket, object_name=object_name)
 
 
 def ensure_uri_allowed(ref: GcsObjectRef, *, input_bucket: str, input_prefix: str) -> None:
     """Application allowlist: exact bucket + object prefix (in addition to IAM)."""
     if ref.bucket != input_bucket:
-        raise PcapFetchError(
+        raise GcsNotAllowedError(
             f"gcs bucket not allowed: {ref.bucket!r} (expected {input_bucket!r})"
         )
     if not ref.object_name.startswith(input_prefix):
-        raise PcapFetchError(
+        raise GcsNotAllowedError(
             f"gcs object prefix not allowed: {ref.object_name!r} "
             f"(expected prefix {input_prefix!r})"
         )
@@ -55,11 +84,21 @@ def ensure_uri_allowed(ref: GcsObjectRef, *, input_bucket: str, input_prefix: st
 
 def ensure_size_allowed(size_bytes: int, *, max_pcap_bytes: int, where: str) -> None:
     if size_bytes < 0:
-        raise PcapFetchError(f"invalid object size ({where}): {size_bytes}")
+        raise PcapFetchError(f"invalid object size ({where}): {size_bytes}", status_code=500)
     if size_bytes > max_pcap_bytes:
-        raise PcapFetchError(
+        raise PcapTooLargeError(
             f"PCAP too large ({where}): {size_bytes} bytes > max {max_pcap_bytes}"
         )
+
+
+def _translate_gcs_api_error(exc: BaseException) -> PcapFetchError:
+    name = type(exc).__name__
+    message = str(exc) or name
+    if name in {"NotFound", "NotFoundError"}:
+        return GcsNotFoundError(message)
+    if name in {"Forbidden", "PermissionDenied", "Unauthorized"}:
+        return GcsPermissionDeniedError(message)
+    return PcapFetchError(f"GCS request failed: {message}", status_code=500)
 
 
 class PcapFetcher(Protocol):
@@ -95,11 +134,20 @@ class GcsPcapFetcher:
         destination.parent.mkdir(parents=True, exist_ok=True)
 
         blob = self.client.bucket(ref.bucket).blob(ref.object_name)
-        blob.reload()
+        try:
+            blob.reload()
+        except Exception as exc:  # noqa: BLE001 - translate GCS client errors
+            raise _translate_gcs_api_error(exc) from exc
+
         size = int(blob.size) if blob.size is not None else -1
         ensure_size_allowed(size, max_pcap_bytes=self.max_pcap_bytes, where="metadata")
 
-        blob.download_to_filename(str(destination))
+        try:
+            blob.download_to_filename(str(destination))
+        except Exception as exc:  # noqa: BLE001 - translate GCS client errors
+            destination.unlink(missing_ok=True)
+            raise _translate_gcs_api_error(exc) from exc
+
         actual = destination.stat().st_size
         try:
             ensure_size_allowed(
@@ -121,28 +169,34 @@ class FakePcapFetcher:
         input_bucket: str,
         input_prefix: str,
         max_pcap_bytes: int,
+        denied_uris: Iterable[str] | None = None,
     ):
         self.mapping = {str(k): Path(v) for k, v in mapping.items()}
         self.input_bucket = input_bucket
         self.input_prefix = input_prefix
         self.max_pcap_bytes = int(max_pcap_bytes)
+        self.denied_uris = {str(u) for u in (denied_uris or ())}
+        self.last_destination: Path | None = None
 
     def fetch(self, gcs_uri: str, destination: Path) -> Path:
         ref = parse_gcs_uri(gcs_uri)
         ensure_uri_allowed(
             ref, input_bucket=self.input_bucket, input_prefix=self.input_prefix
         )
+        if gcs_uri in self.denied_uris:
+            raise GcsPermissionDeniedError(f"fake GCS permission denied: {gcs_uri}")
         if gcs_uri not in self.mapping:
-            raise PcapFetchError(f"fake GCS object not found: {gcs_uri}")
+            raise GcsNotFoundError(f"fake GCS object not found: {gcs_uri}")
         src = self.mapping[gcs_uri]
         if not src.is_file():
-            raise PcapFetchError(f"fake GCS source missing on disk: {src}")
+            raise GcsNotFoundError(f"fake GCS source missing on disk: {src}")
 
         size = src.stat().st_size
         ensure_size_allowed(size, max_pcap_bytes=self.max_pcap_bytes, where="metadata")
 
         destination = Path(destination)
         destination.parent.mkdir(parents=True, exist_ok=True)
+        self.last_destination = destination
         shutil.copyfile(src, destination)
         actual = destination.stat().st_size
         try:

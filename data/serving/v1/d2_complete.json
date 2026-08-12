@@ -1,0 +1,45 @@
+{
+  "phase": "D2",
+  "status": "complete",
+  "serving_contract_version": "v1",
+  "serving_contract": "artifacts/v1/serving_contract.json",
+  "model_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
+  "routes": {
+    "GET /health": "model identity including model_sha256",
+    "POST /predict": "Vertex-compatible single GCS URI prediction"
+  },
+  "request_shape": "Vertex predict compatible",
+  "input": "one GCS URI (gs://bucket/object)",
+  "local_paths": "disabled",
+  "model_loaded_once_via_lifespan": true,
+  "max_concurrent_predictions": 1,
+  "uvicorn_workers": 1,
+  "http_error_mapping": {
+    "bad_request_shape": 422,
+    "invalid_gs_uri": 422,
+    "disallowed_bucket_prefix": 403,
+    "gcs_object_missing": 404,
+    "gcs_permission_denied": 403,
+    "object_too_large": 413,
+    "corrupt_non_pcap": 422,
+    "unsupported_linktype": 422,
+    "unexpected_serving_failure": 500,
+    "insufficient_data": "HTTP 200 + status INSUFFICIENT_DATA"
+  },
+  "http_direct_inference_parity": "passed",
+  "temporary_cleanup": "passed",
+  "ci": "passed",
+  "ci_note": "GitHub Actions uses FakePcapFetcher; no Google Cloud credentials required",
+  "implemented": {
+    "api": "src/iot_pcap_pipeline/api/app.py",
+    "schemas": "src/iot_pcap_pipeline/api/schemas.py",
+    "settings": "src/iot_pcap_pipeline/api/settings.py",
+    "storage": "src/iot_pcap_pipeline/api/storage.py",
+    "tests": [
+      "tests/test_api_health.py",
+      "tests/test_api_predict.py",
+      "tests/test_api_storage.py"
+    ]
+  },
+  "next": "D3 Docker / Vertex packaging. Do not reopen K/R, window threshold, or model inputs. D4 decides concurrency and max PCAP size."
+}

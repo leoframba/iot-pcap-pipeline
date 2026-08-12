@@ -1,0 +1,35 @@
+{
+  "artifacts": {
+    "by_pcap": "data/serving/v1/pcap_aggregation_by_pcap.csv",
+    "candidates": "data/serving/v1/pcap_aggregation_candidates.json",
+    "review": "data/serving/v1/pcap_aggregation_review.json",
+    "summary": "data/serving/v1/pcap_aggregation_summary.csv"
+  },
+  "model_artifact": "artifacts/v1/H0_full_fit.joblib",
+  "model_artifact_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
+  "n_attack_pcaps": 10,
+  "n_benign_pcaps": 10,
+  "n_insufficient_data": 0,
+  "n_validation_pcaps": 20,
+  "next": "Review pcap_aggregation_summary.csv. Freeze K/R into artifacts/v1/serving_contract.json only after explicit approval. Do not use TEST to choose K/R.",
+  "policies_evaluated": 12,
+  "recommended_policy": {
+    "K": 1,
+    "R": 0.005,
+    "attack_pcap_recall": 1.0,
+    "benign_pcap_false_positives": 0,
+    "macro_family_recall": 1.0,
+    "min_family_recall": 1.0,
+    "note": "Recommendation only. Do not freeze without human review.",
+    "policy_id": "K1_R0.005"
+  },
+  "selection_priority": [
+    "Minimize benign-PCAP false positives.",
+    "Among remaining policies, maximize attack-PCAP recall.",
+    "Break ties using macro family recall (mean of per-family recalls over attack families present in VAL).",
+    "If still tied, prefer lower K then lower R (simpler / lower threshold)."
+  ],
+  "selection_split": "TRAIN-validation",
+  "status": "candidates_evaluated_pending_freeze",
+  "window_attack_threshold": 0.9490790963172913
+}

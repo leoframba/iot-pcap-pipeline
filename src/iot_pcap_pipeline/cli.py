@@ -205,6 +205,11 @@ from iot_pcap_pipeline.windowing.policy import (
     DEFAULT_BACKWARD_RESET_SECONDS,
     candidate_policies,
 )
+from iot_pcap_pipeline.serving.evaluate_aggregation import (
+    DEFAULT_SERVING_DIR,
+    format_review_summary,
+    write_aggregation_evaluation,
+)
 from iot_pcap_pipeline.windowing.stream import FeatureExtractionError
 
 
@@ -1180,6 +1185,21 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional per-PCAP window cap (smoke only; omit for full FIT probe)",
     )
+
+    agg_cmd = subparsers.add_parser(
+        "evaluate-pcap-aggregation",
+        help=(
+            "D0: score frozen H0 on TRAIN-validation PCAPs and evaluate the "
+            "predeclared (K,R) PCAP aggregation grid (does not freeze K/R; "
+            "never reads TEST)"
+        ),
+    )
+    agg_cmd.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_SERVING_DIR,
+        help=f"Selection evidence directory (default: {DEFAULT_SERVING_DIR})",
+    )
     return parser
 
 
@@ -1812,6 +1832,15 @@ def main(argv: list[str] | None = None) -> int:
             "mqtt_probe_complete",
         ):
             print(f"Wrote {arts[key]}")
+        return 0
+
+    if args.command == "evaluate-pcap-aggregation":
+        payload = write_aggregation_evaluation(out_dir=args.output_dir)
+        print(format_review_summary(payload))
+        arts = payload.get("artifacts") or {}
+        for key in ("by_pcap", "summary", "review"):
+            if arts.get(key):
+                print(f"Wrote {arts[key]}")
         return 0
 
     parser.error(f"unknown command: {args.command}")

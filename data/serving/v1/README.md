@@ -8,9 +8,14 @@ The checkout-ready freeze will be `artifacts/v1/serving_contract.json`
 |------|------|
 | `serving_contract_draft.json` | Draft semantics (K/R pending) |
 | `pcap_aggregation_candidates.json` | Predeclared 12-policy grid + selection priority |
-| `pcap_aggregation_by_pcap.csv` | Per-VAL-PCAP window counts + policy predictions (Commit 2) |
-| `pcap_aggregation_summary.csv` | Policy-level summary metrics (Commit 2) |
+| `pcap_aggregation_by_pcap.csv` | Per-VAL-PCAP window counts + policy predictions |
+| `pcap_aggregation_summary.csv` | Policy-level summary metrics (ranked) |
+| `pcap_aggregation_review.json` | Recommended policy + freeze gate status |
 | `d0_complete.json` | Closure marker after freeze + tests (Commit 4) |
+
+```bash
+uv run iot-pcap-pipeline evaluate-pcap-aggregation
+```
 
 **Rules**
 

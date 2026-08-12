@@ -7,12 +7,14 @@ from iot_pcap_pipeline.api.settings import ServingSettings
 from iot_pcap_pipeline.api.storage import (
     FakePcapFetcher,
     GcsPcapFetcher,
+    LocalDirectoryPcapFetcher,
     PcapFetchError,
 )
 
 __all__ = [
     "FakePcapFetcher",
     "GcsPcapFetcher",
+    "LocalDirectoryPcapFetcher",
     "MAX_CONCURRENT_PREDICTIONS",
     "PcapFetchError",
     "ServingSettings",

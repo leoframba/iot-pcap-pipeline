@@ -41,6 +41,9 @@ RUN python -c "from iot_pcap_pipeline.serving.contract import EXPECTED_MODEL_SHA
 #   IOMT_INPUT_BUCKET
 #   IOMT_INPUT_PREFIX
 #   IOMT_MAX_PCAP_BYTES
+# Docker/CI smoke without GCP:
+#   IOMT_PCAP_FETCHER=local
+#   IOMT_LOCAL_PCAP_ROOT=/fixtures
 # Do not set GOOGLE_APPLICATION_CREDENTIALS to a baked-in key path.
 
 EXPOSE 8080

@@ -97,3 +97,6 @@ data/modeling/v1/.work/
 
 # Local tests
 data/test/
+
+# Ephemeral Docker smoke fixture mount
+.docker-smoke-fixtures/

@@ -15,7 +15,12 @@ from fastapi import FastAPI, HTTPException, Request
 
 from iot_pcap_pipeline.api.schemas import PredictRequest, PredictResponse
 from iot_pcap_pipeline.api.settings import ServingSettings
-from iot_pcap_pipeline.api.storage import GcsPcapFetcher, PcapFetchError, PcapFetcher
+from iot_pcap_pipeline.api.storage import (
+    GcsPcapFetcher,
+    LocalDirectoryPcapFetcher,
+    PcapFetchError,
+    PcapFetcher,
+)
 from iot_pcap_pipeline.serving.classify import classify_pcap
 from iot_pcap_pipeline.serving.errors import (
     STATUS_INSUFFICIENT_DATA,
@@ -64,6 +69,13 @@ def create_app(
     resolved_fetcher: PcapFetcher
     if pcap_fetcher is not None:
         resolved_fetcher = pcap_fetcher
+    elif resolved_settings.pcap_fetcher == "local":
+        resolved_fetcher = LocalDirectoryPcapFetcher(
+            resolved_settings.local_pcap_root or "",
+            input_bucket=resolved_settings.input_bucket,
+            input_prefix=resolved_settings.input_prefix,
+            max_pcap_bytes=resolved_settings.max_pcap_bytes,
+        )
     else:
         resolved_fetcher = GcsPcapFetcher(
             input_bucket=resolved_settings.input_bucket,

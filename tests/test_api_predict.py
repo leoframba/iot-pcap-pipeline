@@ -345,4 +345,24 @@ def test_d2_complete_artifact_present() -> None:
     assert payload["http_direct_inference_parity"] == "passed"
     assert payload["temporary_cleanup"] == "passed"
     assert payload["ci"] == "passed"
-    assert payload["local_paths"] == "disabled"
+
+
+def test_d3_complete_artifact_present() -> None:
+    path = Path(__file__).resolve().parents[1] / "data" / "serving" / "v1" / "d3_complete.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["phase"] == "D3"
+    assert payload["status"] == "complete"
+    assert payload["python_version"] == "3.11"
+    assert payload["scikit_learn_version"] == "1.9.0"
+    assert payload["docker_base_image"] == "python:3.11-slim-bookworm"
+    assert payload["container_port"] == 8080
+    assert payload["uvicorn_workers"] == 1
+    assert payload["non_root_uid"] == 10001
+    assert payload["model_sha256"] == EXPECTED_MODEL_SHA256
+    assert payload["serving_contract_version"] == "v1"
+    assert payload["docker_smoke"] == "passed"
+    assert payload["http_direct_inference_parity"] == "passed"
+    assert payload["startup_determinism"] == "passed"
+    assert payload["image_tag"].startswith("iomt-ids:v1-")
+    assert "Artifact Registry" in payload["image_digest_note"]
+    assert "Vertex endpoint IDs" in payload["out_of_scope"]

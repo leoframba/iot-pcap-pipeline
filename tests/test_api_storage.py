@@ -14,6 +14,7 @@ from iot_pcap_pipeline.api.storage import (
     GcsPcapFetcher,
     GcsPermissionDeniedError,
     GcsUriInvalidError,
+    LocalDirectoryPcapFetcher,
     PcapFetchError,
     PcapTooLargeError,
     ensure_uri_allowed,
@@ -113,11 +114,51 @@ def test_fake_fetcher_copies_allowed_object(tmp_path: Path) -> None:
     assert fetcher.last_destination == dest
 
 
+def test_local_directory_fetcher_maps_gs_uri(tmp_path: Path) -> None:
+    root = tmp_path / "fixtures"
+    src = root / "pcaps" / "ok.pcap"
+    src.parent.mkdir(parents=True)
+    src.write_bytes(b"pcap-bytes")
+    fetcher = LocalDirectoryPcapFetcher(
+        root,
+        input_bucket="iomt-input",
+        input_prefix="pcaps/",
+        max_pcap_bytes=1024,
+    )
+    dest = tmp_path / "out.pcap"
+    out = fetcher.fetch("gs://iomt-input/pcaps/ok.pcap", dest)
+    assert out == dest
+    assert dest.read_bytes() == b"pcap-bytes"
+
+
+def test_local_directory_fetcher_missing_and_traversal(tmp_path: Path) -> None:
+    root = tmp_path / "fixtures"
+    root.mkdir()
+    fetcher = LocalDirectoryPcapFetcher(
+        root,
+        input_bucket="iomt-input",
+        input_prefix="pcaps/",
+        max_pcap_bytes=1024,
+    )
+    with pytest.raises(GcsNotFoundError):
+        fetcher.fetch("gs://iomt-input/pcaps/missing.pcap", tmp_path / "out.pcap")
+
+
 def test_settings_normalizes_prefix_slash() -> None:
     settings = ServingSettings(
         input_bucket="iomt-input", input_prefix="pcaps", max_pcap_bytes=10
     )
     assert settings.input_prefix == "pcaps/"
+
+
+def test_settings_local_fetcher_requires_root() -> None:
+    with pytest.raises(ValueError, match="IOMT_LOCAL_PCAP_ROOT"):
+        ServingSettings(
+            input_bucket="iomt-input",
+            input_prefix="pcaps/",
+            max_pcap_bytes=10,
+            pcap_fetcher="local",
+        )
 
 
 # --- GcsPcapFetcher with injected fake GCS client (no credentials) ---

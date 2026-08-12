@@ -77,3 +77,42 @@ jobs:
 
       - name: CLI / package smoke test
         run: uv run iot-pcap-pipeline --help
+
+  docker-smoke:
+    name: Docker image smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Sync host deps for direct classify parity
+        run: uv sync --locked --extra serving
+
+      - name: Build serving image
+        id: build
+        run: |
+          GIT_SHA="$(git rev-parse HEAD)"
+          IMAGE_TAG="iomt-ids:v1-${GIT_SHA}"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          docker build -t "${IMAGE_TAG}" .
+          docker image inspect "${IMAGE_TAG}" --format '{{.Id}} {{.Size}}'
+
+      - name: Run Docker smoke (local fetcher, no GCP)
+        run: |
+          export IMAGE_TAG
+          export HOST_PORT=18080
+          export REPO_ROOT="${PWD}"
+          uv run python scripts/docker_smoke.py
+
+      - name: Upload d3_complete.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: d3-complete
+          path: data/serving/v1/d3_complete.json

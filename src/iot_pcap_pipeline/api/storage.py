@@ -161,6 +161,60 @@ class GcsPcapFetcher:
         return destination
 
 
+class LocalDirectoryPcapFetcher:
+    """Smoke/test fetcher: map ``gs://bucket/object`` onto files under a local root.
+
+    Used by Docker/CI with ``IOMT_PCAP_FETCHER=local`` so predictions work without
+    Google credentials. Still enforces bucket/prefix allowlist and size limits.
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        *,
+        input_bucket: str,
+        input_prefix: str,
+        max_pcap_bytes: int,
+    ):
+        self.root = Path(root).resolve()
+        self.input_bucket = input_bucket
+        self.input_prefix = input_prefix
+        self.max_pcap_bytes = int(max_pcap_bytes)
+        self.last_destination: Path | None = None
+
+    def fetch(self, gcs_uri: str, destination: Path) -> Path:
+        ref = parse_gcs_uri(gcs_uri)
+        ensure_uri_allowed(
+            ref, input_bucket=self.input_bucket, input_prefix=self.input_prefix
+        )
+        src = (self.root / ref.object_name).resolve()
+        try:
+            src.relative_to(self.root)
+        except ValueError as exc:
+            raise GcsNotAllowedError(
+                f"local PCAP path escapes root: {ref.object_name!r}"
+            ) from exc
+        if not src.is_file():
+            raise GcsNotFoundError(f"local PCAP not found: {src}")
+
+        size = src.stat().st_size
+        ensure_size_allowed(size, max_pcap_bytes=self.max_pcap_bytes, where="metadata")
+
+        destination = Path(destination)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        self.last_destination = destination
+        shutil.copyfile(src, destination)
+        actual = destination.stat().st_size
+        try:
+            ensure_size_allowed(
+                actual, max_pcap_bytes=self.max_pcap_bytes, where="downloaded"
+            )
+        except PcapFetchError:
+            destination.unlink(missing_ok=True)
+            raise
+        return destination
+
+
 class FakePcapFetcher:
     """Test double: map fake ``gs://`` URIs to local PCAP paths (no GCP credentials)."""
 

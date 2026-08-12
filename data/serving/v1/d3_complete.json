@@ -1,0 +1,35 @@
+{
+  "phase": "D3",
+  "status": "complete",
+  "git_sha": "9258fb10df860414f343aa7708b322ef799bcb21",
+  "python_version": "3.11",
+  "scikit_learn_version": "1.9.0",
+  "docker_base_image": "python:3.11-slim-bookworm",
+  "uv_image": "ghcr.io/astral-sh/uv:0.11.28",
+  "model_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
+  "serving_contract_version": "v1",
+  "container_port": 8080,
+  "uvicorn_workers": 1,
+  "non_root_uid": 10001,
+  "routes": {
+    "health": "GET /health",
+    "predict": "POST /predict"
+  },
+  "pcap_fetcher_smoke_mode": "IOMT_PCAP_FETCHER=local + IOMT_LOCAL_PCAP_ROOT",
+  "image_tag": "iomt-ids:v1-9258fb10df860414f343aa7708b322ef799bcb21",
+  "image_id": "sha256:fa193c8679d49e7ce5da04cf74d6c74f9085ad9df69c0efc295a8079ffd009d7",
+  "image_size_bytes": 801652961,
+  "repo_digests": [],
+  "image_digest_note": "RepoDigests empty until push to Artifact Registry; deployment should pin the registry digest, not only a tag.",
+  "build_result": "passed",
+  "docker_smoke": "passed",
+  "http_direct_inference_parity": "passed",
+  "startup_determinism": "passed",
+  "ci": "passed",
+  "out_of_scope": [
+    "Artifact Registry push",
+    "Vertex endpoint IDs",
+    "production bucket resource names"
+  ],
+  "next": "Cloud deployment: push digest to Artifact Registry and pin Vertex to sha256 digest."
+}

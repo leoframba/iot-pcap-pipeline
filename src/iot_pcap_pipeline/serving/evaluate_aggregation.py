@@ -30,6 +30,11 @@ from iot_pcap_pipeline.paths import (
     PROJECT_ROOT,
     to_repo_relative,
 )
+from iot_pcap_pipeline.serving.contract import (
+    FROZEN_ATTACK_RATE_THRESHOLD,
+    FROZEN_MIN_ATTACK_WINDOWS,
+    FROZEN_MIN_COMPLETE_WINDOWS,
+)
 from iot_pcap_pipeline.serving.candidates import (
     AggregationPolicy,
     DEFAULT_CANDIDATES_PATH,
@@ -72,8 +77,14 @@ def _decide_pcap(
     total_windows: int,
     attack_windows: int,
     policy: AggregationPolicy,
+    minimum_complete_windows: int | None = None,
 ) -> str:
-    if total_windows == 0:
+    min_windows = (
+        int(minimum_complete_windows)
+        if minimum_complete_windows is not None
+        else int(policy.K)
+    )
+    if total_windows < min_windows:
         return "INSUFFICIENT_DATA"
     rate = attack_windows / total_windows
     if attack_windows >= policy.K and rate >= policy.R:
@@ -170,6 +181,32 @@ def score_validation_pcaps(
                 f"window count drift for {spec.pcap_id}: "
                 f"scored={total} manifest={spec.window_count}"
             )
+        if total < FROZEN_MIN_COMPLETE_WINDOWS:
+            tapes.append(
+                PcapWindowTape(
+                    pcap_id=spec.pcap_id,
+                    pcap_path=spec.pcap_path,
+                    binary_label=spec.binary_label,
+                    attack_family=spec.attack_family,
+                    attack_type=spec.attack_type,
+                    benign_category=spec.benign_category,
+                    modeling_group_key=spec.modeling_group_key,
+                    total_windows=total,
+                    attack_windows=atk,
+                    benign_windows=total - atk,
+                    pcap_attack_score=None,
+                    max_window_attack_score=(
+                        None
+                        if score_max[spec.pcap_id] == float("-inf")
+                        else score_max[spec.pcap_id]
+                    ),
+                    mean_window_attack_score=(
+                        None if total == 0 else score_sum[spec.pcap_id] / total
+                    ),
+                    status="INSUFFICIENT_DATA",
+                )
+            )
+            continue
         tapes.append(
             PcapWindowTape(
                 pcap_id=spec.pcap_id,

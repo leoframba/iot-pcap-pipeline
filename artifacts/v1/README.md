@@ -8,6 +8,7 @@ Frozen binary-IDS package for reproducible Docker / serving builds.
 | `v1_model_package.json` | Threshold, feature list, SHA-256, decision rule |
 | `v1_hgb22_nontemporal.json` | Model-input feature contract |
 | `feature_schema.json` | Full V1 27-feature schema (serving selects the 22) |
+| `serving_contract.json` | Frozen PCAP aggregation (K=3, R=0.005, min windows=3) |
 
 ## Immutable model identity
 
@@ -18,6 +19,12 @@ SHA-256(H0_full_fit.joblib) =
 
 Decision threshold (frozen): `0.9490790963172913`  
 Rule: ATTACK if `score >= threshold`
+
+PCAP aggregation (frozen in `serving_contract.json`):
+
+- `pcap_attack_score = attack_windows / total_complete_windows`
+- `INSUFFICIENT_DATA` if `total_complete_windows < 3`
+- ATTACK iff `attack_windows >= 3` AND `pcap_attack_score >= 0.005`
 
 Research training path (gitignored under `data/modeling/`):
 

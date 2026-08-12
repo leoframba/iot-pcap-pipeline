@@ -1,8 +1,8 @@
 # D0 — V1 serving contract (research / selection)
 
 Selection evidence for PCAP-level aggregation lives here.
-The checkout-ready freeze will be `artifacts/v1/serving_contract.json`
-(Commit 3, after TRAIN-validation review of K/R).
+Frozen checkout-ready contract: `artifacts/v1/serving_contract.json`
+(**K=3**, **R=0.005**, **minimum_complete_windows=3**).
 
 | File | Role |
 |------|------|

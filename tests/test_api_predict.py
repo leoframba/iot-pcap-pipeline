@@ -355,6 +355,7 @@ def test_d3_complete_artifact_present() -> None:
     assert payload["python_version"] == "3.11"
     assert payload["scikit_learn_version"] == "1.9.0"
     assert payload["docker_base_image"] == "python:3.11-slim-bookworm"
+    assert payload["docker_platform"] == "linux/amd64"
     assert payload["container_port"] == 8080
     assert payload["uvicorn_workers"] == 1
     assert payload["non_root_uid"] == 10001

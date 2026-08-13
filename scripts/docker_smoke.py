@@ -3,6 +3,10 @@
 
 Used by CI and local verification. Does not require GCP credentials.
 
+Build the image first (always amd64 for release reproducibility):
+
+  docker build --platform=linux/amd64 -t iomt-ids:v1-$(git rev-parse HEAD) .
+
 Environment:
   IMAGE_TAG   required image tag (e.g. iomt-ids:v1-<gitsha>)
   HOST_PORT   host port mapped to container 8080 (default 18080)
@@ -218,6 +222,7 @@ def main() -> int:
         "python_version": "3.11",
         "scikit_learn_version": "1.9.0",
         "docker_base_image": "python:3.11-slim-bookworm",
+        "docker_platform": "linux/amd64",
         "uv_image": "ghcr.io/astral-sh/uv:0.11.28",
         "model_sha256": EXPECTED_MODEL_SHA256,
         "serving_contract_version": "v1",

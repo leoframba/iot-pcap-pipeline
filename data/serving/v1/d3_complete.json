@@ -5,6 +5,7 @@
   "python_version": "3.11",
   "scikit_learn_version": "1.9.0",
   "docker_base_image": "python:3.11-slim-bookworm",
+  "docker_platform": "linux/amd64",
   "uv_image": "ghcr.io/astral-sh/uv:0.11.28",
   "model_sha256": "c07ef4088cd44523787c041db449f64429328c0a42b76dfe14de3697cbea77bb",
   "serving_contract_version": "v1",

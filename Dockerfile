@@ -1,13 +1,22 @@
 # V1 serving image for FastAPI / Vertex (port 8080, single Uvicorn worker).
-# Build: docker build -t iot-pcap-pipeline:v1 .
-# Run:  docker run --rm -p 8080:8080 \
-#         -e IOMT_INPUT_BUCKET=... -e IOMT_INPUT_PREFIX=pcaps/ \
-#         iot-pcap-pipeline:v1
+# Always build for linux/amd64 so images match Vertex / GCE and do not depend
+# on the developer machine architecture (e.g. Apple Silicon).
+#
+# Build:
+#   docker build --platform=linux/amd64 -t iomt-ids:v1-<gitsha> .
+# Run (local smoke without GCP):
+#   docker run --rm -p 8080:8080 \
+#     -e IOMT_PCAP_FETCHER=local \
+#     -e IOMT_LOCAL_PCAP_ROOT=/fixtures \
+#     -e IOMT_INPUT_BUCKET=iomt-input \
+#     -e IOMT_INPUT_PREFIX=pcaps/ \
+#     -v /path/to/fixtures:/fixtures:ro \
+#     iomt-ids:v1-<gitsha>
 #
 # No project IDs, bucket secrets, or service-account JSON are baked into this image.
 # Google ADC is discovered at runtime when deployed.
 
-FROM python:3.11-slim-bookworm
+FROM --platform=linux/amd64 python:3.11-slim-bookworm
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /usr/local/bin/uv
 

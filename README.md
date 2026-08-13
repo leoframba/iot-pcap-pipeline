@@ -125,7 +125,7 @@ The live Vertex endpoint is **not** kept running for demos (idle replicas cost m
 }
 ```
 
-![Sanitized Vertex rawPredict screenshot](docs/assets/vertex-predict-demo.svg)
+![Sanitized Vertex rawPredict screenshot](docs/assets/vertex-predict-demo.png)
 
 Local file (no HTTP):
 

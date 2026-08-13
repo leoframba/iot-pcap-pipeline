@@ -9,6 +9,7 @@
 !pyproject.toml
 !uv.lock
 !README.md
+!LICENSE
 
 # Application source (serving imports pcap/features/windowing/serving/api)
 !src/

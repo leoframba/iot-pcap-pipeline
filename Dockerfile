@@ -16,7 +16,9 @@
 # No project IDs, bucket secrets, or service-account JSON are baked into this image.
 # Google ADC is discovered at runtime when deployed.
 
-FROM --platform=linux/amd64 python:3.11-slim-bookworm
+# Platform is set by `docker build --platform=linux/amd64` (CI and release),
+# not a constant FROM --platform (BuildKit FromPlatformFlagConstDisallowed).
+FROM python:3.11-slim-bookworm
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /usr/local/bin/uv
 
@@ -26,7 +28,7 @@ WORKDIR /app
 RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser
 
 # Locked serving deps only (no research / no dev groups).
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src ./src
 COPY artifacts/v1 ./artifacts/v1
 

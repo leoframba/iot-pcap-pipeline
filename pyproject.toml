@@ -1,10 +1,22 @@
 [project]
 name = "iot-pcap-pipeline"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "End-to-end IoMT intrusion detection: raw PCAPs to frozen HGB window scores, served as PCAP-level BENIGN/ATTACK via FastAPI on Vertex AI."
 readme = "README.md"
+license = { file = "LICENSE" }
 authors = [
     { name = "leoframba", email = "89568350+leoframba@users.noreply.github.com" }
+]
+keywords = [
+    "cybersecurity",
+    "machine-learning",
+    "intrusion-detection",
+    "iomt",
+    "pcap",
+    "fastapi",
+    "docker",
+    "vertex-ai",
+    "gcp",
 ]
 requires-python = ">=3.11"
 # Minimal runtime shared by local classify + container serving.
@@ -15,6 +27,11 @@ dependencies = [
     "numpy>=2.0.0",
     "scikit-learn==1.9.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/leoframba/iot-pcap-pipeline"
+Repository = "https://github.com/leoframba/iot-pcap-pipeline"
+Issues = "https://github.com/leoframba/iot-pcap-pipeline/issues"
 
 [project.scripts]
 iot-pcap-pipeline = "iot_pcap_pipeline.cli:main"
@@ -53,3 +70,11 @@ dev = [
 markers = [
     "corpus: requires local CICIoMT raw PCAPs under data/raw/WiFI_and_MQTT/",
 ]
+
+[tool.ruff]
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+# V1 freeze: CI lint is a syntax / undefined-name gate, not a style rewrite.
+select = ["E9", "F63", "F7", "F82"]

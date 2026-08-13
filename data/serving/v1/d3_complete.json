@@ -1,6 +1,10 @@
 {
   "phase": "D3",
   "status": "complete",
+  "record_status": "historical",
+  "historical_note": "Local D3 Docker smoke recorded before the linux/amd64 Artifact Registry release. git_sha 9258fb10 and image_id are the D3-era local build, not the Vertex-pinned digest. Per-CI rebuilds write data/serving/v1/d3_ci_run.json (gitignored). Immutable cloud identity is data/serving/v1/d4_vertex_complete.json.",
+  "superseded_by": "data/serving/v1/d4_vertex_complete.json",
+  "release_image": "us-west1-docker.pkg.dev/iot-pcap-pipeline/iomt-serving/iomt-ids@sha256:68ea9a9a251cba9bdad1862ff1a90ef6947495fd1c02ce3fed3bcdb085564752",
   "git_sha": "9258fb10df860414f343aa7708b322ef799bcb21",
   "python_version": "3.11",
   "scikit_learn_version": "1.9.0",
@@ -32,5 +36,5 @@
     "Vertex endpoint IDs",
     "production bucket resource names"
   ],
-  "next": "Cloud deployment: push digest to Artifact Registry and pin Vertex to sha256 digest."
+  "next": "Closed by D4. See data/serving/v1/d4_vertex_complete.json and docs/DEPLOYMENT.md."
 }

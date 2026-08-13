@@ -367,3 +367,40 @@ def test_d3_complete_artifact_present() -> None:
     assert payload["image_tag"].startswith("iomt-ids:v1-")
     assert "Artifact Registry" in payload["image_digest_note"]
     assert "Vertex endpoint IDs" in payload["out_of_scope"]
+    assert payload["record_status"] == "historical"
+    assert payload["superseded_by"].endswith("d4_vertex_complete.json")
+    assert payload["release_image"].startswith(
+        "us-west1-docker.pkg.dev/iot-pcap-pipeline/iomt-serving/iomt-ids@sha256:"
+    )
+
+
+def test_d4_vertex_complete_artifact_present() -> None:
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "data"
+        / "serving"
+        / "v1"
+        / "d4_vertex_complete.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["phase"] == "D4"
+    assert payload["status"] == "complete"
+    assert payload["region"] == "us-west1"
+    assert payload["container_platform"] == "linux/amd64"
+    assert payload["scikit_learn_version"] == "1.9.0"
+    assert payload["model_sha256"] == EXPECTED_MODEL_SHA256
+    assert payload["serving_contract_version"] == "v1"
+    digest = payload["artifact_registry_digest"]
+    assert digest.startswith("sha256:")
+    assert payload["release_image"].endswith(digest)
+    assert payload["vertex_model_id"]
+    assert str(payload["vertex_model_version"]) == "2"
+    assert payload["vertex_endpoint_id"]
+    assert payload["endpoint_smoke"] == "passed"
+    assert payload["cloud_vs_local_parity"] == "passed"
+    blob = json.dumps(payload)
+    assert "BEGIN PRIVATE KEY" not in blob
+    assert "private_key" not in blob.lower()
+    secrets = payload.get("secrets_excluded", [])
+    assert "service_account_key" in secrets
+    assert "access_token" in secrets

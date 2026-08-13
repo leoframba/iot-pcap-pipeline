@@ -13,6 +13,9 @@ Frozen checkout-ready contract: `artifacts/v1/serving_contract.json`
 | `pcap_aggregation_review.json` | Recommended policy + freeze gate status |
 | `d0_complete.json` | D0 closure marker (engineering justification recorded) |
 | `d1_complete.json` | D1 local inference closure + parity status |
+| `d2_complete.json` | D2 FastAPI closure |
+| `d3_complete.json` | Historical local Docker smoke (pre-AMD64 registry digest) |
+| `d4_vertex_complete.json` | Cloud deployment: AR digest, Vertex model/endpoint, smoke + parity |
 
 ```bash
 uv run iot-pcap-pipeline evaluate-pcap-aggregation

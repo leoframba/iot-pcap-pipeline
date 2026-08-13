@@ -248,10 +248,10 @@ def main() -> int:
         ],
         "next": "Cloud deployment: push digest to Artifact Registry and pin Vertex to sha256 digest.",
     }
-    out = root / "data" / "serving" / "v1" / "d3_complete.json"
+    out = root / "data" / "serving" / "v1" / "d3_ci_run.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(complete, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"ok": True, "d3_complete": str(out), **meta}, indent=2))
+    print(json.dumps({"ok": True, "d3_ci_run": str(out), **meta}, indent=2))
     return 0
 
 

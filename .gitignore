@@ -100,3 +100,6 @@ data/test/
 
 # Ephemeral Docker smoke fixture mount
 .docker-smoke-fixtures/
+
+# Per-CI Docker smoke identity (checked-in d3_complete.json is historical)
+data/serving/v1/d3_ci_run.json

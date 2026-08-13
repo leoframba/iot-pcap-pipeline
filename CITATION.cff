@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+title: iot-pcap-pipeline
+message: If you use this software, please cite it and the CICIoMT2024 dataset.
+type: software
+authors:
+  - family-names: Framba
+    given-names: Leo
+    alias: leoframba
+    email: 89568350+leoframba@users.noreply.github.com
+repository-code: https://github.com/leoframba/iot-pcap-pipeline
+license: MIT
+version: 1.0.0
+date-released: "2026-08-12"
+abstract: >-
+  End-to-end IoMT intrusion detection system that converts raw network
+  PCAPs into deterministic packet-window features, scores them with a
+  frozen HistGradientBoosting model, and serves PCAP-level BENIGN/ATTACK
+  predictions through a Dockerized FastAPI service on Google Vertex AI.
+keywords:
+  - cybersecurity
+  - intrusion-detection
+  - iomt
+  - pcap
+  - machine-learning
+  - fastapi
+  - vertex-ai
+preferred-citation:
+  type: article
+  title: "CICIoMT2024: A benchmark dataset for multi-protocol security assessment in IoMT"
+  authors:
+    - family-names: Dadkhah
+      given-names: Sajjad
+    - family-names: Neto
+      given-names: Euclides Carlos Pinto
+    - family-names: Ferreira
+      given-names: Raphael
+    - family-names: Molokwu
+      given-names: Reginald Chukwuka
+    - family-names: Sadeghi
+      given-names: Somayeh
+    - family-names: Ghorbani
+      given-names: Ali A.
+  year: 2024
+  month: 12
+  journal: Internet of Things
+  volume: 28
+  pages: "101351"
+  doi: 10.1016/j.iot.2024.101351
+  url: https://doi.org/10.1016/j.iot.2024.101351

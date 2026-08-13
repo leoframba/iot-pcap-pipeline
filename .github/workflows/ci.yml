@@ -72,6 +72,9 @@ jobs:
       - name: Verify serving contract module
         run: uv run python -c "from iot_pcap_pipeline.serving.contract import verify_serving_contract; verify_serving_contract(); print('ok')"
 
+      - name: Ruff (syntax / undefined names)
+        run: uv run ruff check src tests scripts
+
       - name: Unit / synthetic tests (exclude corpus)
         run: uv run pytest -m "not corpus" -q --tb=short
 
@@ -111,8 +114,8 @@ jobs:
           export REPO_ROOT="${PWD}"
           uv run python scripts/docker_smoke.py
 
-      - name: Upload d3_complete.json
+      - name: Upload d3 CI run record
         uses: actions/upload-artifact@v4
         with:
-          name: d3-complete
-          path: data/serving/v1/d3_complete.json
+          name: d3-ci-run
+          path: data/serving/v1/d3_ci_run.json

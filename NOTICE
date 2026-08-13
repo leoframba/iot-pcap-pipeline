@@ -1,0 +1,36 @@
+# NOTICE
+
+## Code
+
+Source code in this repository is licensed under the MIT License (see `LICENSE`).
+That grant covers original pipeline, serving, and tooling code. It does **not**
+cover third-party datasets or models trained from them.
+
+## CICIoMT2024 dataset
+
+Training and evaluation use the Wi-Fi / MQTT slice of **CICIoMT2024**, published
+by the Canadian Institute for Cybersecurity (CIC), University of New Brunswick.
+
+CIC's dataset FAQ states that you may redistribute, republish, and mirror CIC
+datasets, but **any use or redistribution must include a citation** to the
+dataset and the listed research paper. See:
+
+- https://www.unb.ca/cic/datasets/iomt-dataset-2024.html
+- https://www.unb.ca/cic/datasets/
+
+This repository does **not** ship raw PCAPs (`data/raw/` is gitignored). Obtain
+the corpus from CIC and cite:
+
+Dadkhah, S., Neto, E. C. P., Ferreira, R., Molokwu, R. C., Sadeghi, S., &
+Ghorbani, A. A. (2024). CICIoMT2024: A benchmark dataset for multi-protocol
+security assessment in IoMT. *Internet of Things*, 28, 101351.
+https://doi.org/10.1016/j.iot.2024.101351
+
+## Derived model artifact
+
+`artifacts/v1/H0_full_fit.joblib` is a model trained on CICIoMT2024-derived
+window features. It is checked in so the serving image is reproducible. It is
+**not** MIT-licensed original source; treat it as a derived research artifact
+and keep the CIC citation if you redistribute it.
+
+Do not treat this detector as a certified medical-device security product.

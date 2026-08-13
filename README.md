@@ -4,7 +4,7 @@ End-to-end IoMT intrusion detection system that converts raw network PCAPs into 
 
 CICIoMT2024 is a **benchmark** for IoMT traffic classification. The authors themselves identify deployability, real-time evaluation, and efficiency as work beyond that benchmark. This repository takes the raw-PCAP corpus toward an actual serving system: lineage-aware TRAIN/VAL/TEST, a frozen model, a serving contract, and a cloud endpoint that scores PCAPs from GCS.
 
-Research chronology (Phase 1/2), CLI commands, and freeze tables live in [docs/RESEARCH_AND_DEVELOPMENT.md](docs/RESEARCH_AND_DEVELOPMENT.md). Cloud identities and runbooks: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Research chronology (Phase 1/2), CLI commands, and freeze tables live in [docs/RESEARCH_AND_DEVELOPMENT.md](docs/RESEARCH_AND_DEVELOPMENT.md). Cloud identities and runbooks: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). V2 design notes: [docs/FUTURE_WORK.md](docs/FUTURE_WORK.md).
 
 ## Architecture
 
@@ -53,9 +53,37 @@ Parser, windows, features, model, threshold, and aggregation are **frozen** for 
 | MQTT malformed | ~22.92% |
 | Recon VulScan | 40.34% |
 
-Those gaps are expected from the training mix (spoofing is ~0.007% of TRAIN windows) and from the nontemporal 22-feature subset. Do not treat V1 as a general-purpose medical-device IDS.
+These failures are consistent with sparse training coverage for some rare attack types and with V1's aggregate statistical feature set, which does not explicitly model ARP identity changes or MQTT payload validity. Do not treat V1 as a general-purpose medical-device IDS.
 
 Full family tables: [`data/modeling/v1/V1_ASSESSMENT.md`](data/modeling/v1/V1_ASSESSMENT.md).
+
+## V2 directions
+
+V1 is a **deployment-oriented generalist**. Aggregate 99.826% attack recall is not the end of the problem: the remaining failures are low-volume and protocol-semantic attacks, not high-volume floods.
+
+Better sampling of the current FIT mix is not enough. Spoofing has only 6,423 FIT windows from **one** lineage, and **no** independent TRAIN-validation lineage. Reweighting that capture changes its training weight; it does not create new spoofing diversity or independent validation evidence.
+
+A future V2 would be three connected changes:
+
+1. **Rare-class data first.** Collect additional independent captures for rare attack families and more realistic benign environments, then evaluate sampling that stops flood traffic from dominating training.
+2. **Specialists, not a second copy of HGB.** Keep the current detector as a generalist. Add context-specific specialists for traffic that needs longer-term or protocol-aware state. Combine them with a **gated or learned fusion** layer, not a naïve OR (independent detectors compound false positives).
+3. **Honest selection.** Stay lineage-grouped. Train any fusion model on out-of-fold specialist predictions. Require a **new untouched evaluation set** — do not reuse V1 TEST for another final-performance claim.
+
+```mermaid
+flowchart LR
+  PCAP[PCAP] --> PARSE[Shared parsing]
+  PARSE --> G[Generalist HGB]
+  PARSE --> L[Low-volume specialist]
+  PARSE --> A[ARP / context specialist]
+  PARSE --> M[MQTT specialist]
+  G --> F[Gated / meta fusion]
+  L --> F
+  A --> F
+  M --> F
+  F --> V[Verdict]
+```
+
+FIT probes for ARP IP↔MAC identity and MQTT structural violations were **closed as weak signals** on this corpus. V2 does **not** mean attaching those same features to V1. See [docs/FUTURE_WORK.md](docs/FUTURE_WORK.md) and the V2A / V2M write-ups under `data/experiments/`.
 
 ## Technology stack
 
@@ -81,7 +109,7 @@ Scores are **uncalibrated** ranking values. The JSON field is `score` / `window_
 
 ## Demo
 
-The live Vertex endpoint is **not** kept running for demos (idle replicas cost money). Proof of a successful cloud call is the sanitized screenshot below plus [`data/serving/v1/d4_vertex_complete.json`](data/serving/v1/d4_vertex_complete.json). Redeploy with [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) and `scripts/vertex_smoke.py`.
+The live Vertex endpoint is **not** kept running for demos (idle replicas cost money). Cloud identity, smoke status, and cloud-vs-local parity are in [`data/serving/v1/d4_vertex_complete.json`](data/serving/v1/d4_vertex_complete.json). Redeploy with [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) and `scripts/vertex_smoke.py`.
 
 **Request** (Vertex `rawPredict` body):
 
@@ -124,8 +152,6 @@ The live Vertex endpoint is **not** kept running for demos (idle replicas cost m
   ]
 }
 ```
-
-![Sanitized Vertex rawPredict screenshot](docs/assets/vertex-predict-demo.png)
 
 Local file (no HTTP):
 
@@ -171,6 +197,7 @@ docker run --rm --platform linux/amd64 -p 8080:8080 iomt-ids:v1-amd64
 | [`data/serving/v1/`](data/serving/v1/) | D0–D4 serving records |
 | [`docs/RESEARCH_AND_DEVELOPMENT.md`](docs/RESEARCH_AND_DEVELOPMENT.md) | Phase 1/2 chronology |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | GCP runbook |
+| [`docs/FUTURE_WORK.md`](docs/FUTURE_WORK.md) | V2 directions (data, specialists, fusion) |
 | [`LICENSE`](LICENSE) | Code license (MIT) |
 | [`NOTICE`](NOTICE) | Dataset / model-artifact provenance |
 
